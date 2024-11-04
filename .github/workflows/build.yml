@@ -1,0 +1,26 @@
+name: Build
+
+on:
+  push:
+    branches: ['**']
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set Up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23.1'
+
+    - name: Install Dependencies
+      run: go get .
+      working-directory: ./src
+
+    - name: Run Tests
+      run: go test -v ./...
+      working-directory: ./src
