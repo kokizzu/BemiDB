@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strconv"
 	"strings"
 
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
@@ -62,12 +61,16 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 	}
 
 	if len(selectStatement.FromClause) > 0 {
-		selectStatement = selectRemapper.remapWhere(selectStatement)
+		if selectStatement.FromClause[0].GetRangeVar() != nil {
+			selectStatement = selectRemapper.remapWhere(selectStatement)
+		}
 		selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel)
 		for i, fromNode := range selectStatement.FromClause {
 			if fromNode.GetRangeVar() != nil {
-				LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" SELECT statement #"+strconv.Itoa(i+1))
+				LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" SELECT statement")
 				selectStatement.FromClause[i] = selectRemapper.remapTable(fromNode)
+			} else if fromNode.GetRangeSubselect() != nil {
+				selectRemapper.remapSelectStatement(fromNode.GetRangeSubselect().Subquery.GetSelectStmt(), indentLevel+1)
 			}
 		}
 		return selectStatement
