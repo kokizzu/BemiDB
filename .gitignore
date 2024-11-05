@@ -1,3 +1,5 @@
 /iceberg
 /iceberg-test
 .env
+/benchmark/tpch-kit
+/benchmark/data/*.tbl

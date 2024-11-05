@@ -12,17 +12,19 @@ and allows running complex queries using the Postgres-compatible analytical quer
   - [Local disk storage](#local-disk-storage)
   - [S3 block storage](#s3-block-storage)
 - [Architecture](#architecture)
-- [Roadmap](#roadmap)
+- [Future roadmap](#future-roadmap)
 - [Development](#development)
+- [Benchmark](#benchmark)
 - [License](#license)
 
 ## Highlights
 
+- **Performance**: runs analytical queries up to 2000x faster than Postgres.
 - **Single Binary**: consists of a single binary that can be run on any machine.
 - **Postgres Replication**: automatically syncs data from Postgres databases.
-- **Query Engine**: embeds a query engine optimized for analytical workloads.
-- **Compressed Data**: uses an open columnar format for tables with compression.
+- **Compressed Data**: uses an open columnar format for tables with 4x compression.
 - **Scalable Storage**: storage is separated from compute and can natively work on S3.
+- **Query Engine**: embeds a query engine optimized for analytical workloads.
 - **Postgres-Compatible**: integrates with any services and tools in the Postgres ecosystem.
 - **Open-Source**: released under the OSI-approved license.
 
@@ -124,7 +126,7 @@ BemiDB consists of the following main components:
 
 <img src="/img/architecture.png" alt="Architecture" width="720px">
 
-## Roadmap
+## Future roadmap
 
 - [ ] Native support for complex data structures like JSON and arrays.
 - [ ] Incremental data synchronization into Iceberg tables.
@@ -158,6 +160,23 @@ To sync data from a Postgres database, use the following command:
 ```sh
 make sync
 ```
+
+## Benchmark
+
+BemiDB is optimized for analytical workloads and can run complex queries up to 2000x faster than Postgres.
+
+On the TPC-H benchmark with 22 sequential queries, BemiDB outperforms Postgres by a significant margin:
+
+* Scale factor: 0.1
+  * BemiDB unindexed: 2.3s 👍
+  * Postgres unindexed: 1h23m13s 👎 (2,170x slower)
+  * Postgres indexed: 1.5s 👍 (99.97% bottleneck reduction)
+* Scale factor: 1.0
+  * BemiDB unindexed: 25.6s 👍
+  * Postgres unindexed: ∞ 👎 (infinitely slower)
+  * Postgres indexed: 1h34m40s 👎 (220x slower)
+
+See the [benchmark](/benchmark) directory for more details.
 
 ## License
 
