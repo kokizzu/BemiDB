@@ -63,6 +63,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"count"},
 			"values":      {"5"},
 		},
+		"SELECT AVG(decimal_value) / 2 AS half_average FROM public.test_table": {
+			"description": {"half_average"},
+			"values":      {"3.5"},
+		},
 	}
 
 	for query, responses := range responsesByQuery {

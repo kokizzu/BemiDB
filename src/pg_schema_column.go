@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -102,6 +103,14 @@ func (pgSchemaColumn *PgSchemaColumn) FormatParquetValue(value string) *string {
 			timestamp := strconv.FormatInt(parsedTime.UnixMilli(), 10)
 			return &timestamp
 		}
+	case "date":
+		parsedTime, err := time.Parse("2006-01-02", value)
+		PanicIfError(err)
+		date := fmt.Sprintf("%d", parsedTime.Unix()/86400)
+		return &date
+	case "bpchar":
+		trimmedValue := strings.TrimRight(value, " ")
+		return &trimmedValue
 	default:
 		if strings.HasPrefix(pgSchemaColumn.UdtName, "_") {
 			switch strings.TrimLeft(pgSchemaColumn.UdtName, "_") {
@@ -141,7 +150,7 @@ func (pgSchemaColumn PgSchemaColumn) toIcebergSchemaField() IcebergSchemaField {
 	}
 
 	switch pgSchemaColumn.UdtName {
-	case "varchar", "char", "text", "jsonb", "json", "uuid":
+	case "varchar", "char", "text", "jsonb", "json", "uuid", "bpchar":
 		icebergSchemaField.Type = "string"
 	case "int2", "int4", "int8":
 		icebergSchemaField.Type = "int"
@@ -187,7 +196,7 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 	}
 
 	switch pgSchemaColumn.UdtName {
-	case "varchar", "char", "text", "bytea", "jsonb", "json":
+	case "varchar", "char", "text", "bytea", "jsonb", "json", "bpchar":
 		parquetSchemaField.Type = "BYTE_ARRAY"
 		parquetSchemaField.ConvertedType = "UTF8"
 	case "int2", "int4", "int8":
@@ -196,10 +205,14 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 		parquetSchemaField.Type = "FLOAT"
 	case "numeric":
 		parquetSchemaField.Type = "FIXED_LEN_BYTE_ARRAY"
-		parquetSchemaField.Length = pgSchemaColumn.NumericPrecision + "." + pgSchemaColumn.NumericScale
 		parquetSchemaField.ConvertedType = "DECIMAL"
 		parquetSchemaField.Scale = pgSchemaColumn.NumericScale
 		parquetSchemaField.Precision = pgSchemaColumn.NumericPrecision
+		scale, err := strconv.Atoi(pgSchemaColumn.NumericScale)
+		PanicIfError(err)
+		precision, err := strconv.Atoi(pgSchemaColumn.NumericPrecision)
+		PanicIfError(err)
+		parquetSchemaField.Length = strconv.Itoa(scale + precision)
 	case "bool":
 		parquetSchemaField.Type = "BOOLEAN"
 	case "uuid":

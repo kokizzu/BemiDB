@@ -243,33 +243,6 @@ func MakeStatementNode(targetList []*pgQuery.Node) *pgQuery.Node {
 	}
 }
 
-// FROM: iceberg_scan('table_path', allow_moved_paths = true)
-func MakeIcebergTableNode(tablePath string) *pgQuery.Node {
-	return pgQuery.MakeSimpleRangeFunctionNode([]*pgQuery.Node{
-		pgQuery.MakeListNode([]*pgQuery.Node{
-			pgQuery.MakeFuncCallNode(
-				[]*pgQuery.Node{
-					pgQuery.MakeStrNode("iceberg_scan"),
-				},
-				[]*pgQuery.Node{
-					pgQuery.MakeAConstStrNode(
-						tablePath,
-						0,
-					),
-					// pgQuery.MakeAExprNode(
-					// 	pgQuery.A_Expr_Kind_AEXPR_OP,
-					// 	[]*pgQuery.Node{pgQuery.MakeStrNode("=")},
-					// 	pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("allow_moved_paths")}, 0),
-					// 	MakeAConstBoolNode(true),
-					// 	0,
-					// ),
-				},
-				0,
-			),
-		}),
-	})
-}
-
 func makeSubselectNode(columns []string, rowsValues [][]string) *pgQuery.Node {
 	var columnNodes []*pgQuery.Node
 	for _, column := range columns {

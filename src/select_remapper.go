@@ -1,8 +1,10 @@
 package main
 
 import (
-	pgQuery "github.com/pganalyze/pg_query_go/v5"
+	"strconv"
 	"strings"
+
+	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
 const (
@@ -56,13 +58,18 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 	if len(selectStatement.FromClause) > 0 && selectStatement.FromClause[0].GetJoinExpr() != nil {
 		selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel)
 		selectRemapper.remapJoinExpressions(selectStatement.FromClause[0], indentLevel)
+		return selectStatement
 	}
 
-	if len(selectStatement.FromClause) > 0 && selectStatement.FromClause[0].GetRangeVar() != nil {
-		LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" SELECT statement")
+	if len(selectStatement.FromClause) > 0 {
 		selectStatement = selectRemapper.remapWhere(selectStatement)
-		selectStatement.FromClause[0] = selectRemapper.remapTable(selectStatement.FromClause[0])
 		selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel)
+		for i, fromNode := range selectStatement.FromClause {
+			if fromNode.GetRangeVar() != nil {
+				LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" SELECT statement #"+strconv.Itoa(i+1))
+				selectStatement.FromClause[i] = selectRemapper.remapTable(fromNode)
+			}
+		}
 		return selectStatement
 	}
 
@@ -159,15 +166,8 @@ func (selectRemapper *SelectRemapper) remapTable(node *pgQuery.Node) *pgQuery.No
 		}
 	}
 
-	// FROM iceberg.table => FROM iceberg_scan('iceberg/schema.db/table', allow_moved_paths = true)
-	schemaTable := SchemaTable{Schema: schemaName, Table: tableName}
-	if schemaTable.Schema == "" {
-		schemaTable.Schema = PG_DEFAULT_SCHEMA
-	}
-
-	icebergPath := selectRemapper.icebergReader.MetadataFilePath(schemaTable)
-	tableNode := MakeIcebergTableNode(icebergPath)
-	return selectRemapper.overrideTable(node, tableNode)
+	// iceberg.table
+	return node
 }
 
 func (selectRemapper *SelectRemapper) appendWhereCondition(selectStatement *pgQuery.SelectStmt, whereCondition *pgQuery.Node) *pgQuery.SelectStmt {

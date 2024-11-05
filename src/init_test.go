@@ -19,19 +19,27 @@ var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 		OrdinalPosition: "2",
 	},
 	{
-		ColumnName:      "value",
+		ColumnName:      "int_value",
 		UdtName:         "int4",
 		IsNullable:      "NO",
 		OrdinalPosition: "3",
 	},
+	{
+		ColumnName:       "decimal_value",
+		UdtName:          "numeric",
+		IsNullable:       "NO",
+		OrdinalPosition:  "4",
+		NumericPrecision: "10",
+		NumericScale:     "2",
+	},
 }
 
 var TEST_LOADED_ROWS = [][]string{
-	{"1", "metric_1", "5"},
-	{"2", "metric_2", "10"},
-	{"3", "metric_1", "5"},
-	{"4", "metric_2", "10"},
-	{"5", "metric_1", "5"},
+	{"1", "metric_1", "5", "5.0"},
+	{"2", "metric_2", "10", "10.0"},
+	{"3", "metric_1", "5", "5.0"},
+	{"4", "metric_2", "10", "10.0"},
+	{"5", "metric_1", "5", "5.0"},
 }
 
 func init() {
