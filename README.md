@@ -7,14 +7,16 @@ and allows running complex queries using the Postgres-compatible analytical quer
 ## Contents
 
 - [Highlights](#highlights)
+- [Use cases](#use-cases)
 - [Quickstart](#quickstart)
 - [Configuration](#configuration)
   - [Local disk storage](#local-disk-storage)
   - [S3 block storage](#s3-block-storage)
 - [Architecture](#architecture)
 - [Future roadmap](#future-roadmap)
-- [Development](#development)
 - [Benchmark](#benchmark)
+- [Development](#development)
+- [Alternatives](#alternatives)
 - [License](#license)
 
 ## Highlights
@@ -27,6 +29,13 @@ and allows running complex queries using the Postgres-compatible analytical quer
 - **Query Engine**: embeds a query engine optimized for analytical workloads.
 - **Postgres-Compatible**: integrates with any services and tools in the Postgres ecosystem.
 - **Open-Source**: released under the OSI-approved license.
+
+## Use cases
+
+- **Run complex analytical queries like it's your Postgres database**. Without worrying about performance impact and indexing.
+- **Simplify your data stack down to a single binary**. No complex setup, no data movement, no CDC, no ETL, no DW.
+- **Integrate with Postgres-compatible tools and services**. Query and visualize data with BI tools, notebooks, and ORMs.
+- **Have all data automatically synced into your data lakehouse**. Using Iceberg tables with Parquet data on object storage.
 
 ## Quickstart
 
@@ -137,6 +146,23 @@ BemiDB consists of the following main components:
 - [ ] Cache layer for frequently accessed data.
 - [ ] Add support for materialized views.
 
+## Benchmark
+
+BemiDB is optimized for analytical workloads and can run complex queries up to 2000x faster than Postgres.
+
+On the TPC-H benchmark with 22 sequential queries, BemiDB outperforms Postgres by a significant margin:
+
+* Scale factor: 0.1
+  * BemiDB unindexed: 2.3s 👍
+  * Postgres unindexed: 1h23m13s 👎 (2,170x slower)
+  * Postgres indexed: 1.5s 👍 (99.97% bottleneck reduction)
+* Scale factor: 1.0
+  * BemiDB unindexed: 25.6s 👍
+  * Postgres unindexed: ∞ 👎 (infinitely slower)
+  * Postgres indexed: 1h34m40s 👎 (220x slower)
+
+See the [benchmark](/benchmark) directory for more details.
+
 ## Development
 
 We develop BemiDB using [Devbox](https://www.jetify.com/devbox) to ensure a consistent development environment without relying on Docker.
@@ -161,22 +187,29 @@ To sync data from a Postgres database, use the following command:
 make sync
 ```
 
-## Benchmark
+## Alternatives
 
-BemiDB is optimized for analytical workloads and can run complex queries up to 2000x faster than Postgres.
-
-On the TPC-H benchmark with 22 sequential queries, BemiDB outperforms Postgres by a significant margin:
-
-* Scale factor: 0.1
-  * BemiDB unindexed: 2.3s 👍
-  * Postgres unindexed: 1h23m13s 👎 (2,170x slower)
-  * Postgres indexed: 1.5s 👍 (99.97% bottleneck reduction)
-* Scale factor: 1.0
-  * BemiDB unindexed: 25.6s 👍
-  * Postgres unindexed: ∞ 👎 (infinitely slower)
-  * Postgres indexed: 1h34m40s 👎 (220x slower)
-
-See the [benchmark](/benchmark) directory for more details.
+- PostgreSQL
+  - The most loved general-purpose transactional (OLTP) database. Can run analytical queries at small scale.
+  - Slow for analytical (OLAP) queries on medium and large datasets. Requires manual tuning and indexing.
+- PostgreSQL + foreign data wrapper extensions (parquet_fdw, parquet_s3_fdw, etc.)
+  - Allow querying external data sources like columnar Parquet files directly from PostgreSQL.
+  - Not optimized query engine. Requires manual data syncing and schema mapping. Extensions may not be supported by PostgreSQL hosting providers.
+- PostgreSQL + OLAP query engine extensions (pg_duckdb, pg_analytics, etc.)
+  - Integrate an analytical query engine directly into PostgreSQL.
+  - Cumbersome to set up and use (creating foreign tables, secrets management, calling custom functions). PostgreSQL data is not integrated and optimized. Extensions may not be supported by PostgreSQL hosting providers.
+- DuckDB
+  - Designed for OLAP use cases. Easy to run with a single binary.
+  - Limited support in the data ecosystem (notebooks, BI tools, etc.). Requires manual data syncing and schema mapping for best performance.
+- Real-time and high-volume databases (ClickHouse, Druid, etc.)
+  - High-performance OLAP databases optimized for real-time analytics.
+  - Require expertise to set up and manage the distributed systems. Limitations on data mutability. Steeper learning curve. Require manual data syncing and schema mapping.
+- Big data query engines (Spark, Trino, etc.)
+  - Distributed SQL query engines for big data analytics.
+  - Complex to set up and manage a distributed query engine (ZooKeeper, JVM, etc.). Don't have a storage layer themselves. Require manual data syncing and schema mapping.
+- Proprietary solutions (Snowflake, AWS Redshift, GCP BigQuery, Databricks, etc.)
+  - Fully managed cloud data warehouses and lakehouses optimized for OLAP.
+  - Can be expensive compared to other alternatives. Vendor lock-in, proprietary solutions. Require separate systems for data syncing and schema mapping.
 
 ## License
 
