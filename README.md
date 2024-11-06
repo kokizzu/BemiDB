@@ -43,7 +43,7 @@ It consists of a single binary that seamlessly connects to a Postgres database, 
 Install BemiDB:
 
 ```sh
-curl -sSL https://api.bemidb.com/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/BemiHQ/BemiDB/refs/heads/main/scripts/install.sh | bash
 ```
 
 Sync data from a Postgres database:

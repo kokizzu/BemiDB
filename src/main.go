@@ -2,7 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 )
+
+const VERSION = "0.1.0"
 
 func main() {
 	flag.Parse()
@@ -20,6 +23,8 @@ func main() {
 		start(config)
 	case "sync":
 		syncFromPg(config)
+	case "version":
+		fmt.Println("BemiDB version:", VERSION)
 	default:
 		panic("Unknown command: " + command)
 	}

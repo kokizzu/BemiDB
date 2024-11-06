@@ -7,8 +7,11 @@ install:
 up:
 	devbox run --env-file .env "cd src && go run ."
 
+.PHONY: build
 build:
-	devbox run "go build -C src -o ../bemidb"
+	rm -rf build/bemidb-* && \
+		devbox run "go build -C src -o ../build/bemidb-darwin-arm64" && \
+		./scripts/build.sh
 
 sync:
 	devbox run --env-file .env "cd src && go run . sync"
