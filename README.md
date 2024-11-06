@@ -4,6 +4,8 @@ BemiDB is a Postgres read replica optimized for analytics.
 It consists of a single binary that seamlessly connects to a Postgres database, replicates the data in a compressed columnar format,
 and allows running complex queries using the Postgres-compatible analytical query engine.
 
+![BemiDB](/img/BemiDB.gif)
+
 ## Contents
 
 - [Highlights](#highlights)
