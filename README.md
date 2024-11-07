@@ -1,8 +1,7 @@
 # BemiDB
 
 BemiDB is a Postgres read replica optimized for analytics.
-It consists of a single binary that seamlessly connects to a Postgres database, replicates the data in a compressed columnar format,
-and allows running complex queries using the Postgres-compatible analytical query engine.
+It consists of a single binary that seamlessly connects to a Postgres database, replicates the data in a compressed columnar format, and allows you to run complex queries using its Postgres-compatible analytical query engine.
 
 ![BemiDB](/img/BemiDB.gif)
 
@@ -30,7 +29,7 @@ and allows running complex queries using the Postgres-compatible analytical quer
 - **Scalable Storage**: storage is separated from compute and can natively work on S3.
 - **Query Engine**: embeds a query engine optimized for analytical workloads.
 - **Postgres-Compatible**: integrates with any services and tools in the Postgres ecosystem.
-- **Open-Source**: released under the OSI-approved license.
+- **Open-Source**: released under an OSI-approved license.
 
 ## Use cases
 
@@ -132,7 +131,7 @@ BemiDB consists of the following main components:
 
 - **Database Server**: implements the [Postgres protocol](https://www.postgresql.org/docs/current/protocol.html) to enable Postgres compatibility.
 - **Query Engine**: embeds the [DuckDB](https://duckdb.org/) query engine to run analytical queries.
-- **Storage Layer**: uses the [Iceberg](https://iceberg.apache.org/) table format to store data in a columnar compressed Parquet files.
+- **Storage Layer**: uses the [Iceberg](https://iceberg.apache.org/) table format to store data in columnar compressed Parquet files.
 - **Postgres Connector**: connects to a Postgres databases to sync tables' schema and data.
 
 <img src="/img/architecture.png" alt="Architecture" width="720px">
@@ -205,7 +204,7 @@ make sync
   - Limited support in the data ecosystem (notebooks, BI tools, etc.). Requires manual data syncing and schema mapping for best performance.
 - Real-time and high-volume databases (ClickHouse, Druid, etc.)
   - High-performance OLAP databases optimized for real-time analytics.
-  - Require expertise to set up and manage the distributed systems. Limitations on data mutability. Steeper learning curve. Require manual data syncing and schema mapping.
+  - Require expertise to set up and manage distributed systems. Limitations on data mutability. Steeper learning curve. Require manual data syncing and schema mapping.
 - Big data query engines (Spark, Trino, etc.)
   - Distributed SQL query engines for big data analytics.
   - Complex to set up and manage a distributed query engine (ZooKeeper, JVM, etc.). Don't have a storage layer themselves. Require manual data syncing and schema mapping.
