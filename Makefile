@@ -10,8 +10,8 @@ up:
 .PHONY: build
 build:
 	rm -rf build/bemidb-* && \
-		devbox run "go build -C src -o ../build/bemidb-darwin-arm64" && \
-		./scripts/build.sh
+		devbox run "./scripts/build-darwin.sh" && \
+		./scripts/build-linux.sh
 
 sync:
 	devbox run --env-file .env "cd src && go run . sync"
