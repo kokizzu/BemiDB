@@ -1,8 +1,9 @@
-go build -C src -o ../build/bemidb-darwin-arm64
+cd src
+go build -o ../build/bemidb-darwin-arm64
 
-LIBCPP_PATH=$(otool -L ./build/bemidb-darwin-arm64 | grep -o '/.*/libc++\.1\.0\.dylib')
-sudo cp $LIBCPP_PATH ./build/libc++.1.0.dylib
-
+cd ../build
+LIBCPP_PATH=$(otool -L ./bemidb-darwin-arm64 | grep -o '/.*/libc++\.1\.0\.dylib')
+sudo cp $LIBCPP_PATH ./libc++.1.0.dylib
 sudo cp $LIBCPP_PATH /usr/local/lib/libc++.1.0.dylib
-install_name_tool -change $LIBCPP_PATH /usr/local/lib/libc++.1.0.dylib ./build/bemidb-darwin-arm64
-otool -L ./build/bemidb-darwin-arm64
+install_name_tool -change $LIBCPP_PATH /usr/local/lib/libc++.1.0.dylib ./bemidb-darwin-arm64
+otool -L ./bemidb-darwin-arm64

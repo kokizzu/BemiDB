@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 
 	"github.com/google/uuid"
 	"github.com/xitongsys/parquet-go-source/local"
@@ -26,12 +25,9 @@ func (storage *StorageLocal) IcebergMetadataFilePath(schemaTable SchemaTable) st
 }
 
 func (storage *StorageLocal) IcebergSchemaTables() (schemaTables []SchemaTable, err error) {
-	_, sourceFilePath, _, ok := runtime.Caller(0)
-	if !ok {
-		panic("Failed to get source file path")
-	}
-	projectDir := filepath.Dir(sourceFilePath)
-	schemasPath := filepath.Join(projectDir, storage.config.IcebergPath)
+	execPath, err := os.Getwd()
+	PanicIfError(err)
+	schemasPath := filepath.Join(execPath, storage.config.IcebergPath)
 
 	schemas, err := storage.nestedDirectories(schemasPath)
 	if err != nil {
@@ -176,12 +172,9 @@ func (storage *StorageLocal) CreateVersionHint(metadataDirPath string, metadataF
 }
 
 func (storage *StorageLocal) tablePath(schemaTable SchemaTable) string {
-	_, sourceFilePath, _, ok := runtime.Caller(0)
-	if !ok {
-		panic("Failed to get source file path")
-	}
-	projectDir := filepath.Dir(sourceFilePath)
-	return filepath.Join(projectDir, storage.config.IcebergPath, schemaTable.Schema, schemaTable.Table)
+	execPath, err := os.Getwd()
+	PanicIfError(err)
+	return filepath.Join(execPath, storage.config.IcebergPath, schemaTable.Schema, schemaTable.Table)
 }
 
 func (storage *StorageLocal) fileSystemPrefix() string {

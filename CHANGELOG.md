@@ -4,6 +4,7 @@
 
 - Bump DuckDB version to 1.1.3
 - Compile the binary for arm64 MacOS with linked libc++
+- Fix loading tables with a relative Iceberg path on a local disk
 
 ### v0.1.0 - 2024-11-06
 
