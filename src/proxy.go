@@ -150,7 +150,7 @@ func (proxy *Proxy) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pg
 		case "int64", "*big.Int":
 			var value sql.NullInt64
 			valuePtrs[i] = &value
-		case "float64":
+		case "float64", "float32":
 			var value sql.NullFloat64
 			valuePtrs[i] = &value
 		case "string":
