@@ -14,10 +14,10 @@ It consists of a single binary that seamlessly connects to a Postgres database, 
   - [Local disk storage](#local-disk-storage)
   - [S3 block storage](#s3-block-storage)
 - [Architecture](#architecture)
-- [Future roadmap](#future-roadmap)
 - [Benchmark](#benchmark)
-- [Development](#development)
+- [Future roadmap](#future-roadmap)
 - [Alternatives](#alternatives)
+- [Development](#development)
 - [License](#license)
 
 ## Highlights
@@ -49,7 +49,7 @@ curl -sSL https://raw.githubusercontent.com/BemiHQ/BemiDB/refs/heads/main/script
 Sync data from a Postgres database:
 
 ```sh
-bemidb sync --pg-database-url postgres://postgres:postgres@localhost:5432/dbname
+bemidb --pg-database-url postgres://postgres:postgres@localhost:5432/dbname sync
 ```
 
 Run BemiDB database:
@@ -136,17 +136,6 @@ BemiDB consists of the following main components:
 
 <img src="/img/architecture.png" alt="Architecture" width="720px">
 
-## Future roadmap
-
-- [ ] Native support for complex data structures like JSON and arrays.
-- [ ] Incremental data synchronization into Iceberg tables.
-- [ ] Direct Postgres-compatible write operations.
-- [ ] Real-time replication from Postgres using CDC.
-- [ ] TLS and authentication support for Postgres connections.
-- [ ] Iceberg table compaction and partitioning.
-- [ ] Cache layer for frequently accessed data.
-- [ ] Add support for materialized views.
-
 ## Benchmark
 
 BemiDB is optimized for analytical workloads and can run complex queries up to 2000x faster than Postgres.
@@ -163,6 +152,106 @@ On the TPC-H benchmark with 22 sequential queries, BemiDB outperforms Postgres b
   * Postgres indexed: 1h34m40s 👎 (220x slower)
 
 See the [benchmark](/benchmark) directory for more details.
+
+## Future roadmap
+
+- [ ] Native support for complex data structures like JSON and arrays.
+- [ ] Incremental data synchronization into Iceberg tables.
+- [ ] Direct Postgres-compatible write operations.
+- [ ] Real-time replication from Postgres using CDC.
+- [ ] TLS and authentication support for Postgres connections.
+- [ ] Iceberg table compaction and partitioning.
+- [ ] Cache layer for frequently accessed data.
+- [ ] Add support for materialized views.
+
+## Alternatives
+
+#### BemiDB vs PostgreSQL
+
+PostgreSQL pros:
+
+- It is the most loved general-purpose transactional (OLTP) database 💛
+- Capable of running analytical queries at small scale
+
+PostgreSQL cons:
+
+- Slow for analytical (OLAP) queries on medium and large datasets
+- Requires creating indexes for specific analytical queries, which impacts the "write" performance for transactional queries
+- Materialized views as a "cache" require manual maintenance and become increasingly slow to refresh as the data grows
+- Further tuning may not be possible if executing various ad-hoc analytical queries
+
+#### BemiDB vs PostgreSQL extensions
+
+PostgreSQL extensions pros:
+
+- There is a wide range of extensions available in the PostgreSQL ecosystem
+- Open-source community driven
+
+PostgreSQL extensions cons:
+
+- Performance overhead when running analytical queries affecting transactional queries
+- Limited support for installable extensions in managed PostgreSQL services (for example, AWS Aurora [allowlist](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraPostgreSQLReleaseNotes/AuroraPostgreSQL.Extensions.html#AuroraPostgreSQL.Extensions.16))
+- Increased PostgreSQL maintenance complexity when upgrading versions
+- Require manual data syncing and schema mapping if data is stored in a different format
+
+Main types of extensions for analytics:
+
+- Foreign data wrapper extensions (parquet_fdw, parquet_s3_fdw, etc.)
+  - Pros: allow querying external data sources like columnar Parquet files directly from PostgreSQL
+  - Cons: use not optimized for analytics query engines
+- OLAP query engine extensions (pg_duckdb, pg_analytics, etc.)
+  - Pros: integrate an analytical query engine directly into PostgreSQL
+  - Cons: cumbersome to use (creating foreign tables, calling custom functions), data layer is not integrated and optimized
+
+#### BemiDB vs DuckDB
+
+DuckDB pros:
+
+- Designed for OLAP use cases
+- Easy to run with a single binary
+
+DuckDB cons:
+
+- Limited support in the data ecosystem like notebooks, BI tools, etc.
+- Requires manual data syncing and schema mapping for best performance
+- Limited features compared to a full-fledged database: no support for writing into Iceberg tables, reading from Iceberg according to the spec, etc.
+
+#### BemiDB vs real-time OLAP databases (ClickHouse, Druid, etc.)
+
+Real-time OLAP databases pros:
+
+- High-performance optimized for real-time analytics
+
+Real-time OLAP databases cons:
+
+- Require expertise to set up and manage distributed systems
+- Limitations on data mutability
+- Steeper learning curve
+- Require manual data syncing and schema mapping
+
+#### BemiDB vs big data query engines (Spark, Trino, etc.)
+
+Big data query engines pros:
+
+- Distributed SQL query engines for big data analytics
+
+Big data query engines cons:
+
+- Complex to set up and manage a distributed query engine (ZooKeeper, JVM, etc.)
+- Don't have a storage layer themselves
+- Require manual data syncing and schema mapping
+
+#### BemiDB vs proprietary solutions (Snowflake, Redshift, BigQuery, Databricks, etc.)
+
+Proprietary solutions pros:
+
+- Fully managed cloud data warehouses and lakehouses optimized for OLAP
+
+Proprietary solutions cons:
+
+- Can be expensive compared to other alternatives
+- Vendor lock-in and limited control over the data
+- Require separate systems for data syncing and schema mapping
 
 ## Development
 
@@ -187,30 +276,6 @@ To sync data from a Postgres database, use the following command:
 ```sh
 make sync
 ```
-
-## Alternatives
-
-- PostgreSQL
-  - The most loved general-purpose transactional (OLTP) database. Can run analytical queries at small scale.
-  - Slow for analytical (OLAP) queries on medium and large datasets. Requires manual tuning and indexing.
-- PostgreSQL + foreign data wrapper extensions (parquet_fdw, parquet_s3_fdw, etc.)
-  - Allow querying external data sources like columnar Parquet files directly from PostgreSQL.
-  - Not optimized query engine. Requires manual data syncing and schema mapping. Extensions may not be supported by PostgreSQL hosting providers.
-- PostgreSQL + OLAP query engine extensions (pg_duckdb, pg_analytics, etc.)
-  - Integrate an analytical query engine directly into PostgreSQL.
-  - Cumbersome to set up and use (creating foreign tables, secrets management, calling custom functions). PostgreSQL data is not integrated and optimized. Extensions may not be supported by PostgreSQL hosting providers.
-- DuckDB
-  - Designed for OLAP use cases. Easy to run with a single binary.
-  - Limited support in the data ecosystem (notebooks, BI tools, etc.). Requires manual data syncing and schema mapping for best performance.
-- Real-time and high-volume databases (ClickHouse, Druid, etc.)
-  - High-performance OLAP databases optimized for real-time analytics.
-  - Require expertise to set up and manage distributed systems. Limitations on data mutability. Steeper learning curve. Require manual data syncing and schema mapping.
-- Big data query engines (Spark, Trino, etc.)
-  - Distributed SQL query engines for big data analytics.
-  - Complex to set up and manage a distributed query engine (ZooKeeper, JVM, etc.). Don't have a storage layer themselves. Require manual data syncing and schema mapping.
-- Proprietary solutions (Snowflake, AWS Redshift, GCP BigQuery, Databricks, etc.)
-  - Fully managed cloud data warehouses and lakehouses optimized for OLAP.
-  - Can be expensive compared to other alternatives. Vendor lock-in, proprietary solutions. Require separate systems for data syncing and schema mapping.
 
 ## License
 
