@@ -76,13 +76,14 @@ By default, BemiDB stores data on the local disk.
 Here is an example of running BemiDB with default settings and storing data in a local `iceberg` directory:
 
 ```sh
-bemidb start \
+bemidb \
   --port 54321 \
   --database bemidb \
   --storage-type LOCAL \
   --iceberg-path ./iceberg \ # $PWD/iceberg/*
   --init-sql ./init.sql \
-  --log-level INFO
+  --log-level INFO \
+  start
 ```
 
 ### S3 block storage
@@ -90,15 +91,16 @@ bemidb start \
 BemiDB natively supports S3 storage. You can specify the S3 settings using the following flags:
 
 ```sh
-bemidb start \
+bemidb \
   --port 54321 \
   --database bemidb \
   --storage-type AWS_S3 \
   --iceberg-path iceberg \ # s3://[AWS_S3_BUCKET]/iceberg/*
-  --aws-region us-east-1 \
+  --aws-region [AWS_REGION] \
   --aws-s3-bucket [AWS_S3_BUCKET] \
   --aws-access-key-id [AWS_ACCESS_KEY_ID] \
-  --aws-secret-access-key [AWS_SECRET_ACCESS_KEY]
+  --aws-secret-access-key [AWS_SECRET_ACCESS_KEY] \
+  start
 ```
 
 Here is the minimal IAM policy required for BemiDB to work with S3:
