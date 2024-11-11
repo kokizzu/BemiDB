@@ -175,9 +175,10 @@ func (syncer *Syncer) exportPgTableToCsv(conn *pgx.Conn, pgSchemaTable SchemaTab
 	PanicIfError(err)
 	defer DeleteTemporaryFile(tempFile)
 
-	result, err := conn.Exec(
+	result, err := conn.PgConn().CopyTo(
 		context.Background(),
-		"COPY "+pgSchemaTable.String()+" TO '"+tempFile.Name()+"' WITH CSV HEADER",
+		tempFile,
+		"COPY "+pgSchemaTable.String()+" TO STDOUT WITH CSV HEADER",
 	)
 	PanicIfError(err)
 	LogDebug(syncer.config, "Copied", result.RowsAffected(), "row(s) into", tempFile.Name())
