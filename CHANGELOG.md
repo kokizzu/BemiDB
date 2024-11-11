@@ -1,5 +1,9 @@
 # Changelog
 
+### [v0.3.1](https://github.com/BemiHQ/BemiDB/compare/v0.3.0...v0.3.1) - 2024-11-10
+
+- Fix the binary compilation for arm64 MacOS with linked libc++abi
+
 ### [v0.3.0](https://github.com/BemiHQ/BemiDB/compare/v0.2.0...v0.3.0) - 2024-11-10
 
 - Fix Postgres `COPY` command if Postgres is running remotely [#8](https://github.com/BemiHQ/BemiDB/pull/8)
