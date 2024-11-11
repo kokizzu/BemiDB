@@ -1,19 +1,23 @@
 # Changelog
 
-### [v0.3.1](https://github.com/BemiHQ/BemiDB/compare/v0.3.0...v0.3.1) - 2024-11-10
+#### [v0.3.2](https://github.com/BemiHQ/BemiDB/compare/v0.3.1...v0.3.2) - 2024-11-11
+
+- Fix Postgres `bigint` type conversion to Iceberg and Parquet
+
+#### [v0.3.1](https://github.com/BemiHQ/BemiDB/compare/v0.3.0...v0.3.1) - 2024-11-10
 
 - Fix the binary compilation for arm64 MacOS with linked libc++abi
 
-### [v0.3.0](https://github.com/BemiHQ/BemiDB/compare/v0.2.0...v0.3.0) - 2024-11-10
+#### [v0.3.0](https://github.com/BemiHQ/BemiDB/compare/v0.2.0...v0.3.0) - 2024-11-10
 
 - Fix Postgres `COPY` command if Postgres is running remotely [#8](https://github.com/BemiHQ/BemiDB/pull/8)
 
-### [v0.2.0](https://github.com/BemiHQ/BemiDB/compare/v0.1.0...v0.2.0) - 2024-11-08
+#### [v0.2.0](https://github.com/BemiHQ/BemiDB/compare/v0.1.0...v0.2.0) - 2024-11-08
 
 - Bump DuckDB version to 1.1.3
 - Compile the binary for arm64 MacOS with linked libc++
 - Fix loading tables with a relative Iceberg path on a local disk
 
-### v0.1.0 - 2024-11-06
+#### v0.1.0 - 2024-11-06
 
 - Create initial version

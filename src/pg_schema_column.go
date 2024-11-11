@@ -152,8 +152,10 @@ func (pgSchemaColumn PgSchemaColumn) toIcebergSchemaField() IcebergSchemaField {
 	switch pgSchemaColumn.UdtName {
 	case "varchar", "char", "text", "jsonb", "json", "uuid", "bpchar":
 		icebergSchemaField.Type = "string"
-	case "int2", "int4", "int8":
+	case "int2", "int4":
 		icebergSchemaField.Type = "int"
+	case "int8":
+		icebergSchemaField.Type = "long"
 	case "float4", "float8":
 		icebergSchemaField.Type = "float"
 	case "numeric":
@@ -199,8 +201,10 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 	case "varchar", "char", "text", "bytea", "jsonb", "json", "bpchar":
 		parquetSchemaField.Type = "BYTE_ARRAY"
 		parquetSchemaField.ConvertedType = "UTF8"
-	case "int2", "int4", "int8":
+	case "int2", "int4":
 		parquetSchemaField.Type = "INT32"
+	case "int8":
+		parquetSchemaField.Type = "INT64"
 	case "float4", "float8":
 		parquetSchemaField.Type = "FLOAT"
 	case "numeric":
