@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	PG_SCHEMA_TRUE  = "YES"
-	PG_SCHEMA_FALSE = "FALSE"
+	PG_SCHEMA_TRUE            = "YES"
+	PG_SCHEMA_FALSE           = "FALSE"
+	PG_DATA_TYPE_USER_DEFINED = "USER-DEFINED"
 
 	PARQUET_SCHEMA_REPETITION_TYPE_REQUIRED = "REQUIRED"
 	PARQUET_SCHEMA_REPETITION_TYPE_OPTIONAL = "OPTIONAL"
@@ -18,6 +19,7 @@ const (
 
 type PgSchemaColumn struct {
 	ColumnName             string
+	DataType               string
 	UdtName                string
 	IsNullable             string
 	OrdinalPosition        string
@@ -126,6 +128,8 @@ func (pgSchemaColumn *PgSchemaColumn) FormatParquetValue(value string) *string {
 				value = "[" + strings.Join(values, ",") + "]"
 				return &value
 			}
+		} else if pgSchemaColumn.DataType == PG_DATA_TYPE_USER_DEFINED {
+			return &value
 		}
 	}
 
@@ -175,7 +179,7 @@ func (pgSchemaColumn PgSchemaColumn) toIcebergSchemaField() IcebergSchemaField {
 	case "time", "timetz":
 		icebergSchemaField.Type = "time"
 	default:
-		if strings.HasPrefix(pgSchemaColumn.UdtName, "_") {
+		if pgSchemaColumn.DataType == PG_DATA_TYPE_USER_DEFINED || strings.HasPrefix(pgSchemaColumn.UdtName, "_") {
 			icebergSchemaField.Type = "string"
 		} else {
 			panic("Unsupported PostgreSQL type: " + pgSchemaColumn.UdtName)
@@ -244,7 +248,7 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 		parquetSchemaField.Type = "BYTE_ARRAY"
 		parquetSchemaField.ConvertedType = "INTERVAL"
 	default:
-		if strings.HasPrefix(pgSchemaColumn.UdtName, "_") {
+		if pgSchemaColumn.DataType == PG_DATA_TYPE_USER_DEFINED || strings.HasPrefix(pgSchemaColumn.UdtName, "_") {
 			parquetSchemaField.Type = "BYTE_ARRAY"
 			parquetSchemaField.ConvertedType = "UTF8"
 		} else {

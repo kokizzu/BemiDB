@@ -134,6 +134,7 @@ func (syncer *Syncer) pgTableSchemaColumns(conn *pgx.Conn, pgSchemaTable SchemaT
 		context.Background(),
 		`SELECT
 			column_name,
+			data_type,
 			udt_name,
 			is_nullable,
 			ordinal_position,
@@ -155,6 +156,7 @@ func (syncer *Syncer) pgTableSchemaColumns(conn *pgx.Conn, pgSchemaTable SchemaT
 		var pgSchemaColumn PgSchemaColumn
 		err = rows.Scan(
 			&pgSchemaColumn.ColumnName,
+			&pgSchemaColumn.DataType,
 			&pgSchemaColumn.UdtName,
 			&pgSchemaColumn.IsNullable,
 			&pgSchemaColumn.OrdinalPosition,
