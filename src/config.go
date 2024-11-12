@@ -20,7 +20,8 @@ const (
 	ENV_AWS_ACCESS_KEY_ID     = "BEMIDB_AWS_ACCESS_KEY_ID"
 	ENV_AWS_SECRET_ACCESS_KEY = "BEMIDB_AWS_SECRET_ACCESS_KEY"
 
-	ENV_PG_DATABASE_URL = "PG_DATABASE_URL"
+	ENV_PG_DATABASE_URL  = "PG_DATABASE_URL"
+	ENV_PG_SYNC_INTERVAL = "PG_SYNC_INTERVAL"
 
 	DEFAULT_PORT              = "54321"
 	DEFAULT_DATABASE          = "bemidb"
@@ -39,6 +40,7 @@ type Config struct {
 	StorageType     string
 	PgDatabaseUrl   string
 	Aws             AwsConfig
+	Interval        string
 }
 
 type AwsConfig struct {
@@ -88,6 +90,8 @@ func registerFlags() {
 	} else if !slices.Contains(STORAGE_TYPES, _config.StorageType) {
 		panic("Invalid storage type " + _config.StorageType + ". Must be one of " + strings.Join(STORAGE_TYPES, ", "))
 	}
+
+	flag.StringVar(&_config.Interval, "interval", os.Getenv(ENV_PG_SYNC_INTERVAL), "Interval between syncs (e.g., 1h, 30m). Valid time units are 'ns', 'us' (or 'µs'), 'ms', 's', 'm', 'h'.")
 
 	flag.StringVar(&_config.PgDatabaseUrl, "pg-database-url", os.Getenv(ENV_PG_DATABASE_URL), "PostgreSQL database URL")
 

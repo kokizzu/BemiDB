@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
 )
 
-const VERSION = "0.5.0"
+const VERSION = "0.5.1"
 
 func main() {
 	flag.Parse()
@@ -22,7 +23,20 @@ func main() {
 	case "start":
 		start(config)
 	case "sync":
-		syncFromPg(config)
+		if config.Interval != "" {
+			duration, err := time.ParseDuration(config.Interval)
+			if err != nil {
+				panic("Invalid interval format: " + config.Interval)
+			}
+			LogInfo(config, "Starting sync loop with interval:", config.Interval)
+			for {
+				syncFromPg(config)
+				LogInfo(config, "Sleeping for", config.Interval)
+				time.Sleep(duration)
+			}
+		} else {
+			syncFromPg(config)
+		}
 	case "version":
 		fmt.Println("BemiDB version:", VERSION)
 	default:

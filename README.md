@@ -50,7 +50,18 @@ curl -sSL https://raw.githubusercontent.com/BemiHQ/BemiDB/refs/heads/main/script
 Sync data from a Postgres database:
 
 ```sh
-bemidb --pg-database-url postgres://postgres:postgres@localhost:5432/dbname sync
+./bemidb --pg-database-url postgres://postgres:postgres@localhost:5432/dbname sync
+```
+
+Sync data periodically from a Postgres database:
+```sh
+./bemidb --pg-database-url postgres://postgres:postgres@localhost:5432/dbname --interval 1h sync
+```
+_This will sync the data every hour._
+
+Alternatively, you can set the interval using an environment variable. Add the following line to your `.env` file:
+```env
+PG_SYNC_INTERVAL=1h
 ```
 
 Run BemiDB database:

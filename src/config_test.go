@@ -26,6 +26,10 @@ func TestLoadConfig(t *testing.T) {
 		if config.StorageType != "LOCAL" {
 			t.Errorf("Expected storageType to be LOCAL, got %s", config.StorageType)
 		}
+
+		if config.Interval != "" {
+			t.Errorf("Expected interval to be empty, got %s", config.Interval)
+		}
 	})
 
 	t.Run("Uses config values from environment variables", func(t *testing.T) {
@@ -35,6 +39,7 @@ func TestLoadConfig(t *testing.T) {
 		t.Setenv("BEMIDB_ICEBERG_PATH", "iceberg-path")
 		t.Setenv("BEMIDB_LOG_LEVEL", "ERROR")
 		t.Setenv("BEMIDB_STORAGE_TYPE", "LOCAL")
+		t.Setenv("PG_SYNC_INTERVAL", "30m")
 
 		config := LoadConfig(true)
 
@@ -55,6 +60,10 @@ func TestLoadConfig(t *testing.T) {
 		}
 		if config.StorageType != "LOCAL" {
 			t.Errorf("Expected storageType to be local, got %s", config.StorageType)
+		}
+
+		if config.Interval != "30m" {
+			t.Errorf("Expected interval to be 30m, got %s", config.Interval)
 		}
 	})
 
@@ -106,16 +115,21 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("Uses config values from environment variables for PG", func(t *testing.T) {
 		t.Setenv("PG_DATABASE_URL", "postgres://user:password@localhost:5432/template1")
+		t.Setenv("PG_SYNC_INTERVAL", "1h")
 
 		config := LoadConfig(true)
 
 		if config.PgDatabaseUrl != "postgres://user:password@localhost:5432/template1" {
 			t.Errorf("Expected pgDatabaseUrl to be postgres://user:password@localhost:5432/template1, got %s", config.PgDatabaseUrl)
 		}
+
+		if config.Interval != "1h" {
+			t.Errorf("Expected interval to be 1h, got %s", config.Interval)
+		}
 	})
 
 	t.Run("Uses command line arguments", func(t *testing.T) {
-		setTestArgs([]string{"--port", "12345", "--database", "mydb", "--init-sql", "./init/duckdb.sql", "--iceberg-path", "iceberg-path", "--log-level", "ERROR", "--storage-type", "local"})
+		setTestArgs([]string{"--port", "12345", "--database", "mydb", "--init-sql", "./init/duckdb.sql", "--iceberg-path", "iceberg-path", "--log-level", "ERROR", "--storage-type", "local", "--interval", "2h30m"})
 
 		config := LoadConfig()
 
@@ -136,6 +150,9 @@ func TestLoadConfig(t *testing.T) {
 		}
 		if config.StorageType != "local" {
 			t.Errorf("Expected storageType to be local, got %s", config.StorageType)
+		}
+		if config.Interval != "2h30m" {
+			t.Errorf("Expected interval to be 2h30m, got %s", config.Interval)
 		}
 	})
 }
