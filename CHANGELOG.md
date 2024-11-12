@@ -1,5 +1,9 @@
 # Changelog
 
+#### [v0.4.3](https://github.com/BemiHQ/BemiDB/compare/v0.4.2...v0.4.3) - 2024-11-12
+
+- Fix serializing Postgres `tsvector` type
+
 #### [v0.4.2](https://github.com/BemiHQ/BemiDB/compare/v0.4.1...v0.4.2) - 2024-11-12
 
 - Fix converting Postgres timestamps without timezones
