@@ -1,5 +1,9 @@
 # Changelog
 
+#### [v0.4.2](https://github.com/BemiHQ/BemiDB/compare/v0.4.1...v0.4.2) - 2024-11-12
+
+- Fix converting Postgres timestamps without timezones
+
 #### [v0.4.1](https://github.com/BemiHQ/BemiDB/compare/v0.4.0...v0.4.1) - 2024-11-12
 
 - Fix syncing camel-cased Postgres tables
@@ -18,7 +22,7 @@
 
 #### [v0.3.0](https://github.com/BemiHQ/BemiDB/compare/v0.2.0...v0.3.0) - 2024-11-10
 
-- Fix Postgres `COPY` command if Postgres is running remotely [#8](https://github.com/BemiHQ/BemiDB/pull/8)
+- Make Postgres `COPY` command work with remotely running Postgres [#8](https://github.com/BemiHQ/BemiDB/pull/8)
 
 #### [v0.2.0](https://github.com/BemiHQ/BemiDB/compare/v0.1.0...v0.2.0) - 2024-11-08
 

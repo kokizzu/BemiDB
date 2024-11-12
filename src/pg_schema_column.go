@@ -8,9 +8,11 @@ import (
 )
 
 const (
-	PG_SCHEMA_TRUE            = "YES"
-	PG_SCHEMA_FALSE           = "FALSE"
-	PG_DATA_TYPE_USER_DEFINED = "USER-DEFINED"
+	PG_SCHEMA_TRUE  = "YES"
+	PG_SCHEMA_FALSE = "FALSE"
+
+	PG_DATA_TYPE_USER_DEFINED  = "USER-DEFINED"
+	PG_DATA_TYPE_TS_WITHOUT_TZ = "timestamp without time zone"
 
 	PARQUET_SCHEMA_REPETITION_TYPE_REQUIRED = "REQUIRED"
 	PARQUET_SCHEMA_REPETITION_TYPE_OPTIONAL = "OPTIONAL"
@@ -93,15 +95,25 @@ func (pgSchemaColumn *PgSchemaColumn) FormatParquetValue(value string) *string {
 	switch pgSchemaColumn.UdtName {
 	case "timestamp", "timestamptz":
 		if pgSchemaColumn.DatetimePrecision == "6" {
+			if pgSchemaColumn.DataType == PG_DATA_TYPE_TS_WITHOUT_TZ {
+				parsedTime, err := time.Parse("2006-01-02 15:04:05.999999", value)
+				PanicIfError(err)
+				timestamp := strconv.FormatInt(parsedTime.UnixMicro(), 10)
+				return &timestamp
+			}
 			parsedTime, err := time.Parse("2006-01-02 15:04:05.999999-07", value)
 			PanicIfError(err)
-
 			timestamp := strconv.FormatInt(parsedTime.UnixMicro(), 10)
 			return &timestamp
 		} else {
+			if pgSchemaColumn.DataType == PG_DATA_TYPE_TS_WITHOUT_TZ {
+				parsedTime, err := time.Parse("2006-01-02 15:04:05.999", value)
+				PanicIfError(err)
+				timestamp := strconv.FormatInt(parsedTime.UnixMilli(), 10)
+				return &timestamp
+			}
 			parsedTime, err := time.Parse("2006-01-02 15:04:05.999-07", value)
 			PanicIfError(err)
-
 			timestamp := strconv.FormatInt(parsedTime.UnixMilli(), 10)
 			return &timestamp
 		}

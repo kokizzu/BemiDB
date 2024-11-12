@@ -213,6 +213,8 @@ func (proxy *Proxy) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pg
 				switch cols[i].DatabaseTypeName() {
 				case "DATE":
 					values = append(values, []byte(value.Time.Format("2006-01-02")))
+				case "TIMESTAMP":
+					values = append(values, []byte(value.Time.Format("2006-01-02 15:04:05.999999")))
 				default:
 					panic("Unsupported type: " + cols[i].DatabaseTypeName())
 				}
