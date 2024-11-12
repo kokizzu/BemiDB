@@ -1,5 +1,9 @@
 package main
 
+import (
+	"fmt"
+)
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type OrderedMap struct {
@@ -58,5 +62,5 @@ type SchemaTable struct {
 }
 
 func (schemaTable SchemaTable) String() string {
-	return schemaTable.Schema + "." + schemaTable.Table
+	return fmt.Sprintf(`"%s"."%s"`, schemaTable.Schema, schemaTable.Table)
 }
