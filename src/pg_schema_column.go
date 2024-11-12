@@ -49,7 +49,7 @@ type IcebergSchemaField struct {
 	Required bool
 }
 
-func (pgSchemaColumn PgSchemaColumn) ToStringParquetSchemaField() string {
+func (pgSchemaColumn PgSchemaColumn) ToParquetSchemaFieldMap() map[string]interface{} {
 	field := pgSchemaColumn.toParquetSchemaField()
 
 	keyVals := []string{
@@ -72,10 +72,12 @@ func (pgSchemaColumn PgSchemaColumn) ToStringParquetSchemaField() string {
 		keyVals = append(keyVals, "precision="+field.Precision)
 	}
 
-	return strings.Join(keyVals, ", ")
+	return map[string]interface{}{
+		"Tag": strings.Join(keyVals, ", "),
+	}
 }
 
-func (pgSchemaColumn PgSchemaColumn) ToMapIcebergSchemaField() map[string]interface{} {
+func (pgSchemaColumn PgSchemaColumn) ToIcebergSchemaFieldMap() map[string]interface{} {
 	field := pgSchemaColumn.toIcebergSchemaField()
 
 	return map[string]interface{}{
