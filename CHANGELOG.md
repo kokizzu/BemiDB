@@ -1,6 +1,10 @@
 # Changelog
 
-#### [v0.4.4](https://github.com/BemiHQ/BemiDB/compare/v0.4.2...v0.4.3) - 2024-11-12
+#### [v0.5.0](https://github.com/BemiHQ/BemiDB/compare/v0.4.4...v0.5.0) - 2024-11-12
+
+- Add support for native array types
+
+#### [v0.4.4](https://github.com/BemiHQ/BemiDB/compare/v0.4.3...v0.4.4) - 2024-11-12
 
 - Fix arm64 MacOS path with linked libc++
 

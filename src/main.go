@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-const VERSION = "0.4.4"
+const VERSION = "0.5.0"
 
 func main() {
 	flag.Parse()

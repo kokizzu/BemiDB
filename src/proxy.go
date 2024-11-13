@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -51,7 +54,7 @@ func NewProxy(config *Config, duckdb *Duckdb, icebergReader *IcebergReader) *Pro
 	PanicIfError(err)
 	for _, schemaTable := range schemaTables {
 		metadataFilePath := icebergReader.MetadataFilePath(schemaTable)
-		query := "CREATE VIEW IF NOT EXISTS " + schemaTable.Schema + "." + schemaTable.Table + " AS SELECT * FROM iceberg_scan('" + metadataFilePath + "')"
+		query := "CREATE VIEW IF NOT EXISTS " + schemaTable.Schema + "." + schemaTable.Table + " AS SELECT * FROM iceberg_scan('" + metadataFilePath + "', skip_schema_inference = true)"
 		LogDebug(config, "Querying DuckDB:", query)
 		duckdb.Db.ExecContext(context.Background(), query)
 	}
@@ -165,8 +168,14 @@ func (proxy *Proxy) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pg
 		case "duckdb.Decimal":
 			var value NullDecimal
 			valuePtrs[i] = &value
+		case "[]interface {}": // array
+			var value []interface{}
+			valuePtrs[i] = &value
+		case "[]uint8": // uuid
+			var value string
+			valuePtrs[i] = &value
 		default:
-			panic("Unsupported type: " + col.ScanType().String())
+			panic("Unsupported queried type: " + col.ScanType().String())
 		}
 	}
 
@@ -225,6 +234,30 @@ func (proxy *Proxy) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pg
 			if value.Valid {
 				values = append(values, []byte(value.String()))
 			} else {
+				values = append(values, nil)
+			}
+		case *string:
+			values = append(values, []byte(*value))
+		case *[]interface{}:
+			var stringVals []string
+			for _, v := range *value {
+				switch v.(type) {
+				case []uint8:
+					stringVals = append(stringVals, fmt.Sprintf("%s", v))
+				default:
+					stringVals = append(stringVals, fmt.Sprintf("%v", v))
+				}
+			}
+			buffer := &bytes.Buffer{}
+			csvWriter := csv.NewWriter(buffer)
+			err := csvWriter.Write(stringVals)
+			if err == nil {
+				csvWriter.Flush()
+				formattedValue := "{" + strings.TrimRight(buffer.String(), "\n") + "}"
+				values = append(values, []byte(formattedValue))
+
+			} else {
+				LogError(proxy.config, "Couldn't create a CSV line:", err, stringVals)
 				values = append(values, nil)
 			}
 		default:

@@ -15,6 +15,7 @@ It consists of a single binary that seamlessly connects to a Postgres database, 
   - [S3 block storage](#s3-block-storage)
 - [Architecture](#architecture)
 - [Benchmark](#benchmark)
+- [Data type mapping](#data-type-mapping)
 - [Future roadmap](#future-roadmap)
 - [Alternatives](#alternatives)
 - [Development](#development)
@@ -154,6 +155,36 @@ On the TPC-H benchmark with 22 sequential queries, BemiDB outperforms Postgres b
   * Postgres indexed: 1h34m40s 👎 (220x slower)
 
 See the [benchmark](/benchmark) directory for more details.
+
+## Data type mapping
+
+Primitive data types are mapped as follows:
+
+| PostgreSQL    | Parquet                                           | Iceberg                          |
+|---------------|---------------------------------------------------|----------------------------------|
+| `char`        | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `varchar`     | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `text`        | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `bpchar`      | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `int2`        | `INT32`                                           | `int`                            |
+| `int4`        | `INT32`                                           | `int`                            |
+| `int8`        | `INT64`                                           | `long`                           |
+| `float4`      | `FLOAT`                                           | `float`                          |
+| `float8`      | `FLOAT`                                           | `float`                          |
+| `numeric`     | `FIXED_LEN_BYTE_ARRAY` (`DECIMAL`)                | `decimal(P, S)`                  |
+| `bool`        | `BOOLEAN`                                         | `boolean`                        |
+| `date`        | `INT32` (`DATE`)                                  | `date`                           |
+| `time`        | `INT64` (`TIME_MICROS` / `TIME_MILLIS`)           | `time`                           |
+| `timetz`      | `INT64` (`TIME_MICROS` / `TIME_MILLIS`)           | `time`                           |
+| `timestamp`   | `INT64` (`TIMESTAMP_MICROS` / `TIMESTAMP_MILLIS`) | `timestamp` / `timestamp_ns`     |
+| `timestamptz` | `INT64` (`TIMESTAMP_MICROS` / `TIMESTAMP_MILLIS`) | `timestamptz` / `timestamptz_ns` |
+| `uuid`        | `FIXED_LEN_BYTE_ARRAY`                            | `uuid`                           |
+| `bytea`       | `BYTE_ARRAY` (`UTF8`)                             | `binary`                         |
+| `interval`    | `BYTE_ARRAY` (`INTERVAL`)                         | `string`                         |
+| `json`        | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `jsonb`       | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `tsvector`    | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `_*` (array)  | `REPEATED` `*`                                    | `list`                           |
 
 ## Future roadmap
 
