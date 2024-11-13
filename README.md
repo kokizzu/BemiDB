@@ -213,10 +213,9 @@ Primitive data types are mapped as follows:
 | PostgreSQL              | Parquet                                           | Iceberg                          |
 |-------------------------|---------------------------------------------------|----------------------------------|
 | `bool`                  | `BOOLEAN`                                         | `boolean`                        |
-| `char`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `bpchar`                | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `varchar`               | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `text`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `bpchar`                | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `int2`                  | `INT32`                                           | `int`                            |
 | `int4`                  | `INT32`                                           | `int`                            |
 | `int8`                  | `INT64`                                           | `long`                           |
@@ -230,7 +229,7 @@ Primitive data types are mapped as follows:
 | `timestamptz`           | `INT64` (`TIMESTAMP_MICROS` / `TIMESTAMP_MILLIS`) | `timestamptz` / `timestamptz_ns` |
 | `uuid`                  | `FIXED_LEN_BYTE_ARRAY`                            | `uuid`                           |
 | `bytea`                 | `BYTE_ARRAY` (`UTF8`)                             | `binary`                         |
-| `interval`              | `BYTE_ARRAY` (`INTERVAL`)                         | `string`                         |
+| `interval`              | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `json`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `jsonb`                 | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `tsvector`              | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |

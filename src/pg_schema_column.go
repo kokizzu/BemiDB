@@ -8,41 +8,21 @@ import (
 )
 
 const (
+	PG_NULL_STRING = "BEMIDB_NULL"
+
 	PG_SCHEMA_TRUE  = "YES"
 	PG_SCHEMA_FALSE = "FALSE"
 
-	PG_DATA_TYPE_USER_DEFINED  = "USER-DEFINED"
-	PG_DATA_TYPE_TS_WITHOUT_TZ = "timestamp without time zone"
+	PG_DATA_TYPE_ARRAY        = "ARRAY"
+	PG_DATA_TYPE_USER_DEFINED = "USER-DEFINED"
 
 	PARQUET_SCHEMA_REPETITION_TYPE_REQUIRED = "REQUIRED"
 	PARQUET_SCHEMA_REPETITION_TYPE_OPTIONAL = "OPTIONAL"
 	PARQUET_SCHEMA_REPETITION_TYPE_REPEATED = "REPEATED"
-)
 
-var PARQUET_TYPE_BY_PG_UDT_TYPE = map[string]string{
-	"char":        "BYTE_ARRAY",
-	"varchar":     "BYTE_ARRAY",
-	"text":        "BYTE_ARRAY",
-	"bpchar":      "BYTE_ARRAY",
-	"int2":        "INT32",
-	"int4":        "INT32",
-	"int8":        "INT64",
-	"float4":      "FLOAT",
-	"float8":      "FLOAT",
-	"numeric":     "FIXED_LEN_BYTE_ARRAY",
-	"bool":        "BOOLEAN",
-	"date":        "INT32",
-	"time":        "INT64",
-	"timetz":      "INT64",
-	"timestamp":   "INT64",
-	"timestamptz": "INT64",
-	"uuid":        "FIXED_LEN_BYTE_ARRAY",
-	"bytea":       "BYTE_ARRAY",
-	"interval":    "BYTE_ARRAY",
-	"json":        "BYTE_ARRAY",
-	"jsonb":       "BYTE_ARRAY",
-	"tsvector":    "BYTE_ARRAY",
-}
+	// 0000-01-01 00:00:00 +0000 UTC
+	EPOCH_TIME_MS = -62167219200000
+)
 
 type PgSchemaColumn struct {
 	ColumnName             string
@@ -120,7 +100,7 @@ func (pgSchemaColumn PgSchemaColumn) ToIcebergSchemaFieldMap() IcebergSchemaFiel
 	}
 
 	primitiveType := pgSchemaColumn.icebergPrimitiveType()
-	if strings.HasPrefix(pgSchemaColumn.UdtName, "_") {
+	if pgSchemaColumn.DataType == PG_DATA_TYPE_ARRAY {
 		icebergSchemaField.Type = map[string]interface{}{
 			"type":             "list",
 			"element":          primitiveType,
@@ -135,16 +115,22 @@ func (pgSchemaColumn PgSchemaColumn) ToIcebergSchemaFieldMap() IcebergSchemaFiel
 }
 
 func (pgSchemaColumn *PgSchemaColumn) FormatParquetValue(value string) interface{} {
-	if value == "" && pgSchemaColumn.IsNullable == PG_SCHEMA_TRUE {
-		return nil // Convert optional empty row string value to nil
+	if value == PG_NULL_STRING {
+		return nil
 	}
 
-	if strings.HasPrefix(pgSchemaColumn.UdtName, "_") {
-		csvReader := csv.NewReader(strings.NewReader(strings.Trim(value, "{}")))
+	if pgSchemaColumn.DataType == PG_DATA_TYPE_ARRAY {
+		var values []interface{}
+
+		csvString := strings.Trim(value, "{}")
+		if csvString == "" {
+			return values
+		}
+
+		csvReader := csv.NewReader(strings.NewReader(csvString))
 		stringValues, err := csvReader.Read()
 		PanicIfError(err)
 
-		var values []interface{}
 		for _, stringValue := range stringValues {
 			values = append(values, pgSchemaColumn.parquetPrimitiveValue(stringValue))
 		}
@@ -163,7 +149,7 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 	}
 
 	// Set RepetitionType
-	if pgSchemaColumn.IsNullable == "YES" {
+	if pgSchemaColumn.IsNullable == PG_SCHEMA_TRUE {
 		parquetSchemaField.RepetitionType = PARQUET_SCHEMA_REPETITION_TYPE_OPTIONAL
 	} else {
 		parquetSchemaField.RepetitionType = PARQUET_SCHEMA_REPETITION_TYPE_REQUIRED
@@ -171,7 +157,7 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 
 	// Set other field properties
 	switch pgSchemaColumn.UdtName {
-	case "varchar", "char", "text", "bytea", "jsonb", "json", "bpchar", "tsvector":
+	case "varchar", "char", "text", "bytea", "jsonb", "json", "bpchar", "tsvector", "interval":
 		parquetSchemaField.ConvertedType = "UTF8"
 	case "numeric":
 		parquetSchemaField.ConvertedType = "DECIMAL"
@@ -198,10 +184,8 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 		} else {
 			parquetSchemaField.ConvertedType = "TIME_MILLIS"
 		}
-	case "interval":
-		parquetSchemaField.ConvertedType = "INTERVAL"
 	default:
-		if strings.HasPrefix(pgSchemaColumn.UdtName, "_") {
+		if pgSchemaColumn.DataType == PG_DATA_TYPE_ARRAY {
 			parquetSchemaField.RepetitionType = PARQUET_SCHEMA_REPETITION_TYPE_REPEATED
 		} else if pgSchemaColumn.DataType == PG_DATA_TYPE_USER_DEFINED {
 			parquetSchemaField.ConvertedType = "UTF8"
@@ -213,7 +197,7 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 
 func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interface{} {
 	switch strings.TrimLeft(pgSchemaColumn.UdtName, "_") {
-	case "varchar", "char", "text", "bytea", "jsonb", "json", "tsvector", "numeric", "uuid":
+	case "varchar", "char", "text", "bytea", "jsonb", "json", "tsvector", "numeric", "uuid", "interval":
 		return value
 	case "bpchar":
 		trimmedValue := strings.TrimRight(value, " ")
@@ -238,35 +222,45 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interf
 		boolValue, err := strconv.ParseBool(value)
 		PanicIfError(err)
 		return boolValue
-	case "timestamp", "timestamptz":
+	case "timestamp":
 		if pgSchemaColumn.DatetimePrecision == "6" {
-			if pgSchemaColumn.DataType == PG_DATA_TYPE_TS_WITHOUT_TZ {
-				parsedTime, err := time.Parse("2006-01-02 15:04:05.999999", value)
-				PanicIfError(err)
-				return parsedTime.UnixMicro()
-			}
+			parsedTime, err := time.Parse("2006-01-02 15:04:05.999999", value)
+			PanicIfError(err)
+			return parsedTime.UnixMicro()
+		} else {
+			parsedTime, err := time.Parse("2006-01-02 15:04:05.999", value)
+			PanicIfError(err)
+			return parsedTime.UnixMilli()
+		}
+	case "timestamptz":
+		if pgSchemaColumn.DatetimePrecision == "6" {
 			parsedTime, err := time.Parse("2006-01-02 15:04:05.999999-07", value)
 			PanicIfError(err)
 			return parsedTime.UnixMicro()
 		} else {
-			if pgSchemaColumn.DataType == PG_DATA_TYPE_TS_WITHOUT_TZ {
-				parsedTime, err := time.Parse("2006-01-02 15:04:05.999", value)
-				PanicIfError(err)
-				return parsedTime.UnixMilli()
-			}
 			parsedTime, err := time.Parse("2006-01-02 15:04:05.999-07", value)
 			PanicIfError(err)
 			return parsedTime.UnixMilli()
 		}
-	case "time", "timetz":
+	case "time":
+		if pgSchemaColumn.DatetimePrecision == "6" {
+			parsedTime, err := time.Parse("15:04:05.999999", value)
+			PanicIfError(err)
+			return int64(-EPOCH_TIME_MS*1000 + parsedTime.UnixMicro())
+		} else {
+			parsedTime, err := time.Parse("15:04:05.999", value)
+			PanicIfError(err)
+			return -EPOCH_TIME_MS + parsedTime.UnixMilli()
+		}
+	case "timetz":
 		if pgSchemaColumn.DatetimePrecision == "6" {
 			parsedTime, err := time.Parse("15:04:05.999999-07", value)
 			PanicIfError(err)
-			return parsedTime.UnixMicro()
+			return int64(-EPOCH_TIME_MS*1000 + parsedTime.UnixMicro())
 		} else {
 			parsedTime, err := time.Parse("15:04:05.999-07", value)
 			PanicIfError(err)
-			return parsedTime.UnixMilli()
+			return -EPOCH_TIME_MS + parsedTime.UnixMilli()
 		}
 	case "date":
 		parsedTime, err := time.Parse("2006-01-02", value)
@@ -282,13 +276,31 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interf
 }
 
 func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveType() string {
-	result := PARQUET_TYPE_BY_PG_UDT_TYPE[strings.TrimLeft(pgSchemaColumn.UdtName, "_")]
-	if result != "" {
-		return result
-	}
-
-	if pgSchemaColumn.DataType == PG_DATA_TYPE_USER_DEFINED {
+	switch strings.TrimLeft(pgSchemaColumn.UdtName, "_") {
+	case "varchar", "char", "text", "bpchar", "bytea", "interval", "jsonb", "json", "tsvector":
 		return "BYTE_ARRAY"
+	case "int2", "int4", "date":
+		return "INT32"
+	case "int8":
+		return "INT64"
+	case "float4", "float8":
+		return "FLOAT"
+	case "numeric", "uuid":
+		return "FIXED_LEN_BYTE_ARRAY"
+	case "bool":
+		return "BOOLEAN"
+	case "time", "timetz":
+		if pgSchemaColumn.DatetimePrecision == "6" {
+			return "INT64"
+		} else {
+			return "INT32"
+		}
+	case "timestamp", "timestamptz":
+		return "INT64"
+	default:
+		if pgSchemaColumn.DataType == PG_DATA_TYPE_USER_DEFINED {
+			return "BYTE_ARRAY"
+		}
 	}
 
 	panic("Unsupported PostgreSQL type: " + pgSchemaColumn.UdtName)

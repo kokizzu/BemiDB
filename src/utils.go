@@ -25,3 +25,7 @@ func CreateTemporaryFile(prefix string) (file *os.File, err error) {
 func DeleteTemporaryFile(file *os.File) {
 	os.Remove(file.Name())
 }
+
+func IntToString(i int) string {
+	return fmt.Sprintf("%d", i)
+}

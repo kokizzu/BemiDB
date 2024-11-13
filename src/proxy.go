@@ -26,6 +26,8 @@ type Proxy struct {
 	config         *Config
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 type NullDecimal struct {
 	Valid bool
 	duckDb.Decimal
@@ -48,6 +50,8 @@ func (nullDecimal NullDecimal) String() string {
 	}
 	return ""
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func NewProxy(config *Config, duckdb *Duckdb, icebergReader *IcebergReader) *Proxy {
 	schemaTables, err := icebergReader.SchemaTables()
@@ -156,7 +160,7 @@ func (proxy *Proxy) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pg
 		case "float64", "float32":
 			var value sql.NullFloat64
 			valuePtrs[i] = &value
-		case "string":
+		case "string", "[]uint8": // []uint8 is for uuid
 			var value sql.NullString
 			valuePtrs[i] = &value
 		case "bool":
@@ -170,9 +174,6 @@ func (proxy *Proxy) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pg
 			valuePtrs[i] = &value
 		case "[]interface {}": // array
 			var value []interface{}
-			valuePtrs[i] = &value
-		case "[]uint8": // uuid
-			var value string
 			valuePtrs[i] = &value
 		default:
 			panic("Unsupported queried type: " + col.ScanType().String())
@@ -222,6 +223,8 @@ func (proxy *Proxy) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pg
 				switch cols[i].DatabaseTypeName() {
 				case "DATE":
 					values = append(values, []byte(value.Time.Format("2006-01-02")))
+				case "TIME":
+					values = append(values, []byte(value.Time.Format("15:04:05.999999")))
 				case "TIMESTAMP":
 					values = append(values, []byte(value.Time.Format("2006-01-02 15:04:05.999999")))
 				default:

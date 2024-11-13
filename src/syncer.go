@@ -180,7 +180,7 @@ func (syncer *Syncer) exportPgTableToCsv(conn *pgx.Conn, pgSchemaTable SchemaTab
 	result, err := conn.PgConn().CopyTo(
 		context.Background(),
 		tempFile,
-		"COPY "+pgSchemaTable.String()+" TO STDOUT WITH CSV HEADER",
+		"COPY "+pgSchemaTable.String()+" TO STDOUT WITH CSV HEADER NULL '"+PG_NULL_STRING+"'",
 	)
 	PanicIfError(err)
 	LogDebug(syncer.config, "Copied", result.RowsAffected(), "row(s) into", tempFile.Name())

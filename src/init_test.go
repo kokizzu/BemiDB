@@ -7,110 +7,240 @@ import (
 
 var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 	{
-		ColumnName:      "id",
-		DataType:        "character varying",
-		UdtName:         "varchar",
-		IsNullable:      "NO",
-		OrdinalPosition: "1",
+		ColumnName: "bool_column",
+		DataType:   "boolean",
+		UdtName:    "bool",
 	},
 	{
-		ColumnName:      "name",
-		DataType:        "text",
-		UdtName:         "text",
-		IsNullable:      "NO",
-		OrdinalPosition: "2",
+		ColumnName:             "bpchar_column",
+		DataType:               "character",
+		UdtName:                "bpchar",
+		CharacterMaximumLength: "10",
 	},
 	{
-		ColumnName:      "int_value",
-		DataType:        "integer",
-		UdtName:         "int4",
-		IsNullable:      "NO",
-		OrdinalPosition: "3",
+		ColumnName:             "varchar_column",
+		DataType:               "character varying",
+		UdtName:                "varchar",
+		CharacterMaximumLength: "255",
 	},
 	{
-		ColumnName:      "bigint_value",
-		DataType:        "bigint",
-		UdtName:         "int8",
-		IsNullable:      "NO",
-		OrdinalPosition: "4",
+		ColumnName: "text_column",
+		DataType:   "text",
+		UdtName:    "text",
 	},
 	{
-		ColumnName:       "decimal_value",
+		ColumnName:       "int2_column",
+		DataType:         "smallint",
+		UdtName:          "int2",
+		NumericPrecision: "16",
+		NumericScale:     "0",
+	},
+	{
+		ColumnName:       "int4_column",
+		DataType:         "integer",
+		UdtName:          "int4",
+		NumericPrecision: "32",
+		NumericScale:     "0",
+	},
+	{
+		ColumnName:       "int8_column",
+		DataType:         "bigint",
+		UdtName:          "int8",
+		NumericPrecision: "64",
+		NumericScale:     "0",
+	},
+	{
+		ColumnName:       "float4_column",
+		DataType:         "real",
+		UdtName:          "float4",
+		NumericPrecision: "24",
+	},
+	{
+		ColumnName:       "float8_column",
+		DataType:         "double precision",
+		UdtName:          "float8",
+		NumericPrecision: "53",
+	},
+	{
+		ColumnName:       "numeric_column",
 		DataType:         "numeric",
 		UdtName:          "numeric",
-		IsNullable:       "NO",
-		OrdinalPosition:  "5",
 		NumericPrecision: "10",
 		NumericScale:     "2",
 	},
 	{
-		ColumnName:        "timestamp_without_tz_value",
-		DataType:          "timestamp without time zone",
-		UdtName:           "timestamp",
-		IsNullable:        "NO",
-		OrdinalPosition:   "6",
+		ColumnName:        "date_column",
+		DataType:          "date",
+		UdtName:           "date",
+		DatetimePrecision: "0",
+	},
+	{
+		ColumnName:        "time_column",
+		DataType:          "time without time zone",
+		UdtName:           "time",
 		DatetimePrecision: "6",
 	},
 	{
-		ColumnName:      "user_defined_value",
-		DataType:        "USER-DEFINED",
-		UdtName:         "user_defined",
-		IsNullable:      "NO",
-		OrdinalPosition: "7",
+		ColumnName:        "time_ms_column",
+		DataType:          "time without time zone",
+		UdtName:           "time",
+		DatetimePrecision: "3",
+	},
+	{
+		ColumnName:        "timetz_column",
+		DataType:          "time with time zone",
+		UdtName:           "timetz",
+		DatetimePrecision: "6",
+	},
+	{
+		ColumnName:        "timetz_ms_column",
+		DataType:          "time with time zone",
+		UdtName:           "timetz",
+		DatetimePrecision: "3",
+	},
+	{
+		ColumnName:        "timestamp_column",
+		DataType:          "timestamp without time zone",
+		UdtName:           "timestamp",
+		DatetimePrecision: "6",
+	},
+	{
+		ColumnName:        "timestamp_ms_column",
+		DataType:          "timestamp without time zone",
+		UdtName:           "timestamp",
+		DatetimePrecision: "3",
+	},
+	{
+		ColumnName:        "timestamptz_column",
+		DataType:          "timestamp with time zone",
+		UdtName:           "timestamptz",
+		DatetimePrecision: "6",
+	},
+	{
+		ColumnName:        "timestamptz_ms_column",
+		DataType:          "timestamp with time zone",
+		UdtName:           "timestamptz",
+		DatetimePrecision: "3",
+	},
+	{
+		ColumnName: "uuid_column",
+		DataType:   "uuid",
+		UdtName:    "uuid",
+	},
+	{
+		ColumnName: "bytea_column",
+		DataType:   "bytea",
+		UdtName:    "bytea",
+	},
+	{
+		ColumnName:        "interval_column",
+		DataType:          "interval",
+		UdtName:           "interval",
+		DatetimePrecision: "6",
+	},
+	{
+		ColumnName: "json_column",
+		DataType:   "json",
+		UdtName:    "json",
+	},
+	{
+		ColumnName: "jsonb_column",
+		DataType:   "jsonb",
+		UdtName:    "jsonb",
+	},
+	{
+		ColumnName: "tsvector_column",
+		DataType:   "tsvector",
+		UdtName:    "tsvector",
+	},
+	{
+		ColumnName: "array_text_column",
+		DataType:   "ARRAY",
+		UdtName:    "_text",
+	},
+	{
+		ColumnName: "array_int_column",
+		DataType:   "ARRAY",
+		UdtName:    "_int4",
+	},
+	{
+		ColumnName: "user_defined_column",
+		DataType:   "USER-DEFINED",
+		UdtName:    "address",
 	},
 }
 
 var TEST_LOADED_ROWS = [][]string{
 	{
-		"1",
-		"metric_1",
-		"5",
-		"9223372036854775807",
-		"5.0",
-		"2024-01-01 00:00:00.123456",
-		"user_defined",
+		"true",                                 // bool_column
+		"bpchar",                               // bpchar_column
+		"varchar",                              // varchar_column
+		"text",                                 // text_column
+		"32767",                                // int2_column
+		"2147483647",                           // int4_column
+		"9223372036854775807",                  // int8_column
+		"3.14",                                 // float4_column
+		"3.141592653589793",                    // float8_column
+		"12345.67",                             // numeric_column
+		"2021-01-01",                           // date_column
+		"12:00:00.123456",                      // time_column
+		"12:00:00.123",                         // time_ms_column
+		"12:00:00.123456-05",                   // timetz_column
+		"12:00:00.123-05",                      // timetz_ms_column
+		"2024-01-01 12:00:00.123456",           // timestamp_column
+		"2024-01-01 12:00:00.123",              // timestamp_ms_column
+		"2024-01-01 12:00:00.123456-05",        // timestamptz_column
+		"2024-01-01 12:00:00.123-05",           // timestamptz_ms_column
+		"58a7c845-af77-44b2-8664-7ca613d92f04", // uuid_column
+		"\\x1234",                              // bytea_column
+		"1 mon 2 days 01:00:01.000001",         // interval_column
+		"{\"key\": \"value\"}",                 // json_column
+		"{\"key\": \"value\"}",                 // jsonb_column
+		"'sampl':1 'text':2 'tsvector':4",      // tsvector_column
+		"{one,two,three}",                      // array_text_column
+		"{1,2,3}",                              // array_int_column
+		"(Toronto)",                            // user_defined_column
 	},
 	{
-		"2",
-		"metric_2",
-		"10",
-		"-9223372036854775808",
-		"10.0",
-		"2024-01-01 00:00:00",
-		"user_defined",
-	},
-	{
-		"3",
-		"metric_1",
-		"5",
-		"0",
-		"5.0",
-		"2024-01-01 00:00:00.000123",
-		"user_defined",
-	},
-	{
-		"4",
-		"metric_2",
-		"10",
-		"1",
-		"10.0",
-		"2024-01-01 00:00:00.123",
-		"user_defined",
-	},
-	{
-		"5",
-		"metric_1",
-		"5",
-		"-1",
-		"5.0",
-		"2024-01-01 00:00:00.000000",
-		"user_defined",
+		"false",                         // bool_column
+		"",                              // bpchar_column
+		PG_NULL_STRING,                  // varchar_column
+		"",                              // text_column
+		"-32767",                        // int2_column
+		PG_NULL_STRING,                  // int4_column
+		"-9223372036854775807",          // int8_column
+		PG_NULL_STRING,                  // float4_column
+		"-3.141592653589793",            // float8_column
+		"-12345.00",                     // numeric_column
+		PG_NULL_STRING,                  // date_column
+		"12:00:00.123",                  // time_column
+		PG_NULL_STRING,                  // time_ms_column
+		"12:00:00.12300+05",             // timetz_column
+		"12:00:00.1+05",                 // timetz_ms_column
+		"2024-01-01 12:00:00",           // timestamp_column
+		PG_NULL_STRING,                  // timestamp_ms_column
+		"2024-01-01 12:00:00.000123+05", // timestamptz_column
+		"2024-01-01 12:00:00.12+05",     // timestamptz_ms_column
+		PG_NULL_STRING,                  // uuid_column
+		PG_NULL_STRING,                  // bytea_column
+		PG_NULL_STRING,                  // interval_column
+		PG_NULL_STRING,                  // json_column
+		"{}",                            // jsonb_column
+		PG_NULL_STRING,                  // tsvector_column
+		PG_NULL_STRING,                  // array_text_column
+		"{}",                            // array_int_column
+		PG_NULL_STRING,                  // user_defined_column
 	},
 }
 
 func init() {
 	config := loadTestConfig()
 	icebergWriter := NewIcebergWriter(config)
+
+	for i := range TEST_PG_SCHEMA_COLUMNS {
+		TEST_PG_SCHEMA_COLUMNS[i].OrdinalPosition = IntToString(i + 1)
+		TEST_PG_SCHEMA_COLUMNS[i].IsNullable = "YES"
+	}
 
 	i := 0
 	icebergWriter.Write(
