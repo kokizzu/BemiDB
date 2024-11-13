@@ -13,6 +13,7 @@ It consists of a single binary that seamlessly connects to a Postgres database, 
 - [Configuration](#configuration)
   - [Local disk storage](#local-disk-storage)
   - [S3 block storage](#s3-block-storage)
+  - [Periodic data sync](#periodic-data-sync)
 - [Architecture](#architecture)
 - [Benchmark](#benchmark)
 - [Data type mapping](#data-type-mapping)
@@ -53,21 +54,10 @@ Sync data from a Postgres database:
 ./bemidb --pg-database-url postgres://postgres:postgres@localhost:5432/dbname sync
 ```
 
-Sync data periodically from a Postgres database:
-```sh
-./bemidb --pg-database-url postgres://postgres:postgres@localhost:5432/dbname --interval 1h sync
-```
-_This will sync the data every hour._
-
-Alternatively, you can set the interval using an environment variable. Add the following line to your `.env` file:
-```env
-PG_SYNC_INTERVAL=1h
-```
-
 Run BemiDB database:
 
 ```sh
-bemidb start
+./bemidb start
 ```
 
 Run Postgres queries on top of the BemiDB database:
@@ -88,7 +78,7 @@ By default, BemiDB stores data on the local disk.
 Here is an example of running BemiDB with default settings and storing data in a local `iceberg` directory:
 
 ```sh
-bemidb \
+./bemidb \
   --port 54321 \
   --database bemidb \
   --storage-type LOCAL \
@@ -98,12 +88,26 @@ bemidb \
   start
 ```
 
+To run BemiDB with environment variables:
+
+```sh
+# Default settings
+export BEMIDB_PORT=54321
+export BEMIDB_DATABASE=bemidb
+export BEMIDB_STORAGE_TYPE=LOCAL
+export BEMIDB_ICEBERG_PATH=./iceberg
+export BEMIDB_INIT_SQL=./init.sql
+export BEMIDB_LOG_LEVEL=INFO
+
+./bemidb start
+```
+
 ### S3 block storage
 
 BemiDB natively supports S3 storage. You can specify the S3 settings using the following flags:
 
 ```sh
-bemidb \
+./bemidb \
   --port 54321 \
   --database bemidb \
   --storage-type AWS_S3 \
@@ -114,6 +118,22 @@ bemidb \
   --aws-secret-access-key [AWS_SECRET_ACCESS_KEY] \
   start
 ```
+
+To run BemiDB with environment variables:
+
+```sh
+export BEMIDB_PORT=54321
+export BEMIDB_DATABASE=bemidb
+export BEMIDB_STORAGE_TYPE=AWS_S3
+export BEMIDB_ICEBERG_PATH=iceberg
+export BEMIDB_AWS_REGION=[AWS_REGION]
+export BEMIDB_AWS_S3_BUCKET=[AWS_S3_BUCKET]
+export BEMIDB_AWS_ACCESS_KEY_ID=[AWS_ACCESS_KEY_ID]
+export BEMIDB_AWS_SECRET_ACCESS_KEY=[AWS_SECRET_ACCESS_KEY]
+
+./bemidb start
+```
+
 
 Here is the minimal IAM policy required for BemiDB to work with S3:
 
@@ -138,6 +158,25 @@ Here is the minimal IAM policy required for BemiDB to work with S3:
     ]
 }
 ```
+
+### Periodic data sync
+
+Sync data periodically from a Postgres database:
+
+```sh
+./bemidb --pg-database-url postgres://postgres:postgres@localhost:5432/dbname --interval 1h sync
+```
+
+Alternatively, you can set the interval using environment variables:
+
+```sh
+export PG_DATABASE_URL=postgres://postgres:postgres@localhost:5432/dbname
+export PG_SYNC_INTERVAL=1h
+
+./bemidb sync
+```
+
+Note that incremental real-time replication is not supported yet (WIP). Please see the [Future roadmap](#future-roadmap).
 
 ## Architecture
 
@@ -171,31 +210,32 @@ See the [benchmark](/benchmark) directory for more details.
 
 Primitive data types are mapped as follows:
 
-| PostgreSQL    | Parquet                                           | Iceberg                          |
-|---------------|---------------------------------------------------|----------------------------------|
-| `char`        | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `varchar`     | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `text`        | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `bpchar`      | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `int2`        | `INT32`                                           | `int`                            |
-| `int4`        | `INT32`                                           | `int`                            |
-| `int8`        | `INT64`                                           | `long`                           |
-| `float4`      | `FLOAT`                                           | `float`                          |
-| `float8`      | `FLOAT`                                           | `float`                          |
-| `numeric`     | `FIXED_LEN_BYTE_ARRAY` (`DECIMAL`)                | `decimal(P, S)`                  |
-| `bool`        | `BOOLEAN`                                         | `boolean`                        |
-| `date`        | `INT32` (`DATE`)                                  | `date`                           |
-| `time`        | `INT64` (`TIME_MICROS` / `TIME_MILLIS`)           | `time`                           |
-| `timetz`      | `INT64` (`TIME_MICROS` / `TIME_MILLIS`)           | `time`                           |
-| `timestamp`   | `INT64` (`TIMESTAMP_MICROS` / `TIMESTAMP_MILLIS`) | `timestamp` / `timestamp_ns`     |
-| `timestamptz` | `INT64` (`TIMESTAMP_MICROS` / `TIMESTAMP_MILLIS`) | `timestamptz` / `timestamptz_ns` |
-| `uuid`        | `FIXED_LEN_BYTE_ARRAY`                            | `uuid`                           |
-| `bytea`       | `BYTE_ARRAY` (`UTF8`)                             | `binary`                         |
-| `interval`    | `BYTE_ARRAY` (`INTERVAL`)                         | `string`                         |
-| `json`        | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `jsonb`       | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `tsvector`    | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `_*` (array)  | `REPEATED` `*`                                    | `list`                           |
+| PostgreSQL              | Parquet                                           | Iceberg                          |
+|-------------------------|---------------------------------------------------|----------------------------------|
+| `bool`                  | `BOOLEAN`                                         | `boolean`                        |
+| `char`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `varchar`               | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `text`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `bpchar`                | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `int2`                  | `INT32`                                           | `int`                            |
+| `int4`                  | `INT32`                                           | `int`                            |
+| `int8`                  | `INT64`                                           | `long`                           |
+| `float4`                | `FLOAT`                                           | `float`                          |
+| `float8`                | `FLOAT`                                           | `float`                          |
+| `numeric`               | `FIXED_LEN_BYTE_ARRAY` (`DECIMAL`)                | `decimal(P, S)`                  |
+| `date`                  | `INT32` (`DATE`)                                  | `date`                           |
+| `time`                  | `INT64` (`TIME_MICROS` / `TIME_MILLIS`)           | `time`                           |
+| `timetz`                | `INT64` (`TIME_MICROS` / `TIME_MILLIS`)           | `time`                           |
+| `timestamp`             | `INT64` (`TIMESTAMP_MICROS` / `TIMESTAMP_MILLIS`) | `timestamp` / `timestamp_ns`     |
+| `timestamptz`           | `INT64` (`TIMESTAMP_MICROS` / `TIMESTAMP_MILLIS`) | `timestamptz` / `timestamptz_ns` |
+| `uuid`                  | `FIXED_LEN_BYTE_ARRAY`                            | `uuid`                           |
+| `bytea`                 | `BYTE_ARRAY` (`UTF8`)                             | `binary`                         |
+| `interval`              | `BYTE_ARRAY` (`INTERVAL`)                         | `string`                         |
+| `json`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `jsonb`                 | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `tsvector`              | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `_*` (array)            | `REPEATED` `*`                                    | `list`                           |
+| `*` (user-defined type) | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 
 ## Future roadmap
 

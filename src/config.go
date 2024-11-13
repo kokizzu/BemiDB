@@ -40,7 +40,7 @@ type Config struct {
 	StorageType     string
 	PgDatabaseUrl   string
 	Aws             AwsConfig
-	Interval        string
+	SyncInterval    string
 }
 
 type AwsConfig struct {
@@ -91,7 +91,7 @@ func registerFlags() {
 		panic("Invalid storage type " + _config.StorageType + ". Must be one of " + strings.Join(STORAGE_TYPES, ", "))
 	}
 
-	flag.StringVar(&_config.Interval, "interval", os.Getenv(ENV_PG_SYNC_INTERVAL), "Interval between syncs (e.g., 1h, 30m). Valid time units are 'ns', 'us' (or 'µs'), 'ms', 's', 'm', 'h'.")
+	flag.StringVar(&_config.SyncInterval, "interval", os.Getenv(ENV_PG_SYNC_INTERVAL), "Interval between syncs (e.g., 1h, 30m). Valid time units are 'ns', 'us' (or 'µs'), 'ms', 's', 'm', 'h'.")
 
 	flag.StringVar(&_config.PgDatabaseUrl, "pg-database-url", os.Getenv(ENV_PG_DATABASE_URL), "PostgreSQL database URL")
 

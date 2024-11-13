@@ -27,8 +27,8 @@ func TestLoadConfig(t *testing.T) {
 			t.Errorf("Expected storageType to be LOCAL, got %s", config.StorageType)
 		}
 
-		if config.Interval != "" {
-			t.Errorf("Expected interval to be empty, got %s", config.Interval)
+		if config.SyncInterval != "" {
+			t.Errorf("Expected interval to be empty, got %s", config.SyncInterval)
 		}
 	})
 
@@ -62,8 +62,8 @@ func TestLoadConfig(t *testing.T) {
 			t.Errorf("Expected storageType to be local, got %s", config.StorageType)
 		}
 
-		if config.Interval != "30m" {
-			t.Errorf("Expected interval to be 30m, got %s", config.Interval)
+		if config.SyncInterval != "30m" {
+			t.Errorf("Expected interval to be 30m, got %s", config.SyncInterval)
 		}
 	})
 
@@ -123,8 +123,8 @@ func TestLoadConfig(t *testing.T) {
 			t.Errorf("Expected pgDatabaseUrl to be postgres://user:password@localhost:5432/template1, got %s", config.PgDatabaseUrl)
 		}
 
-		if config.Interval != "1h" {
-			t.Errorf("Expected interval to be 1h, got %s", config.Interval)
+		if config.SyncInterval != "1h" {
+			t.Errorf("Expected interval to be 1h, got %s", config.SyncInterval)
 		}
 	})
 
@@ -151,8 +151,8 @@ func TestLoadConfig(t *testing.T) {
 		if config.StorageType != "local" {
 			t.Errorf("Expected storageType to be local, got %s", config.StorageType)
 		}
-		if config.Interval != "2h30m" {
-			t.Errorf("Expected interval to be 2h30m, got %s", config.Interval)
+		if config.SyncInterval != "2h30m" {
+			t.Errorf("Expected interval to be 2h30m, got %s", config.SyncInterval)
 		}
 	})
 }

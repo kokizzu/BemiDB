@@ -23,15 +23,15 @@ func main() {
 	case "start":
 		start(config)
 	case "sync":
-		if config.Interval != "" {
-			duration, err := time.ParseDuration(config.Interval)
+		if config.SyncInterval != "" {
+			duration, err := time.ParseDuration(config.SyncInterval)
 			if err != nil {
-				panic("Invalid interval format: " + config.Interval)
+				panic("Invalid interval format: " + config.SyncInterval)
 			}
-			LogInfo(config, "Starting sync loop with interval:", config.Interval)
+			LogInfo(config, "Starting sync loop with interval:", config.SyncInterval)
 			for {
 				syncFromPg(config)
-				LogInfo(config, "Sleeping for", config.Interval)
+				LogInfo(config, "Sleeping for", config.SyncInterval)
 				time.Sleep(duration)
 			}
 		} else {
