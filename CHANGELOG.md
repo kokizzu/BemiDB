@@ -1,5 +1,9 @@
 # Changelog
 
+#### [v0.4.4](https://github.com/BemiHQ/BemiDB/compare/v0.4.2...v0.4.3) - 2024-11-12
+
+- Fix arm64 MacOS path with linked libc++
+
 #### [v0.4.3](https://github.com/BemiHQ/BemiDB/compare/v0.4.2...v0.4.3) - 2024-11-12
 
 - Fix serializing Postgres `tsvector` type
