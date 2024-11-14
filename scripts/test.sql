@@ -134,7 +134,11 @@ SELECT
   column_name,
   data_type,
   udt_name,
+  is_nullable,
+  character_maximum_length,
   numeric_precision,
   numeric_scale,
   datetime_precision
-FROM information_schema.columns WHERE table_name = 'test_table' ORDER BY ordinal_position;
+FROM information_schema.columns
+WHERE table_schema NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+ORDER BY table_schema, table_name, ordinal_position;

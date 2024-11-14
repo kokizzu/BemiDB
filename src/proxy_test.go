@@ -255,6 +255,14 @@ func TestHandleQuery(t *testing.T) {
 		//	"description": {"tsvector_column"},
 		//	"values":      {"null"},
 		// },
+		// "SELECT point_column FROM public.test_table WHERE point_column IS NOT NULL": {
+		//	"description": {"point_column"},
+		//	"values":      {"(37.347301483154,45.002101898193)"},
+		// },
+		// "SELECT point_column FROM public.test_table WHERE point_column IS NULL": {
+		//	"description": {"point_column"},
+		//	"values":      {"null"},
+		// },
 		// "SELECT array_text_column FROM public.test_table WHERE array_text_column IS NOT NULL": {
 		//	"description": {"array_text_column"},
 		//	"values":      {"{one,two,three}"},

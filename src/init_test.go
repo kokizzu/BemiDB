@@ -154,6 +154,11 @@ var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 		UdtName:    "tsvector",
 	},
 	{
+		ColumnName: "point_column",
+		DataType:   "point",
+		UdtName:    "point",
+	},
+	{
 		ColumnName: "array_text_column",
 		DataType:   "ARRAY",
 		UdtName:    "_text",
@@ -197,6 +202,7 @@ var TEST_LOADED_ROWS = [][]string{
 		"{\"key\": \"value\"}",                 // json_column
 		"{\"key\": \"value\"}",                 // jsonb_column
 		"'sampl':1 'text':2 'tsvector':4",      // tsvector_column
+		"(37.347301483154,45.002101898193)",    // point_column
 		"{one,two,three}",                      // array_text_column
 		"{1,2,3}",                              // array_int_column
 		"(Toronto)",                            // user_defined_column
@@ -227,6 +233,7 @@ var TEST_LOADED_ROWS = [][]string{
 		PG_NULL_STRING,                  // json_column
 		"{}",                            // jsonb_column
 		PG_NULL_STRING,                  // tsvector_column
+		PG_NULL_STRING,                  // point_column
 		PG_NULL_STRING,                  // array_text_column
 		"{}",                            // array_int_column
 		PG_NULL_STRING,                  // user_defined_column

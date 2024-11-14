@@ -142,10 +142,13 @@ func (pgSchemaColumn *PgSchemaColumn) FormatParquetValue(value string) interface
 }
 
 func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField {
+	primitiveType, primitiveConvertedType := pgSchemaColumn.parquetPrimitiveTypes()
+
 	parquetSchemaField := ParquetSchemaField{
-		Name:    pgSchemaColumn.ColumnName,
-		FieldId: pgSchemaColumn.OrdinalPosition,
-		Type:    pgSchemaColumn.parquetPrimitiveType(),
+		Name:          pgSchemaColumn.ColumnName,
+		FieldId:       pgSchemaColumn.OrdinalPosition,
+		Type:          primitiveType,
+		ConvertedType: primitiveConvertedType,
 	}
 
 	// Set RepetitionType
@@ -157,10 +160,7 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 
 	// Set other field properties
 	switch pgSchemaColumn.UdtName {
-	case "varchar", "char", "text", "bytea", "jsonb", "json", "bpchar", "tsvector", "interval":
-		parquetSchemaField.ConvertedType = "UTF8"
 	case "numeric":
-		parquetSchemaField.ConvertedType = "DECIMAL"
 		parquetSchemaField.Scale = pgSchemaColumn.NumericScale
 		parquetSchemaField.Precision = pgSchemaColumn.NumericPrecision
 		scale, err := strconv.Atoi(pgSchemaColumn.NumericScale)
@@ -170,25 +170,9 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 		parquetSchemaField.Length = strconv.Itoa(scale + precision)
 	case "uuid":
 		parquetSchemaField.Length = "36"
-	case "date":
-		parquetSchemaField.ConvertedType = "DATE"
-	case "timestamp", "timestamptz":
-		if pgSchemaColumn.DatetimePrecision == "6" {
-			parquetSchemaField.ConvertedType = "TIMESTAMP_MICROS"
-		} else {
-			parquetSchemaField.ConvertedType = "TIMESTAMP_MILLIS"
-		}
-	case "time", "timetz":
-		if pgSchemaColumn.DatetimePrecision == "6" {
-			parquetSchemaField.ConvertedType = "TIME_MICROS"
-		} else {
-			parquetSchemaField.ConvertedType = "TIME_MILLIS"
-		}
 	default:
 		if pgSchemaColumn.DataType == PG_DATA_TYPE_ARRAY {
 			parquetSchemaField.RepetitionType = PARQUET_SCHEMA_REPETITION_TYPE_REPEATED
-		} else if pgSchemaColumn.DataType == PG_DATA_TYPE_USER_DEFINED {
-			parquetSchemaField.ConvertedType = "UTF8"
 		}
 	}
 
@@ -197,7 +181,8 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 
 func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interface{} {
 	switch strings.TrimLeft(pgSchemaColumn.UdtName, "_") {
-	case "varchar", "char", "text", "bytea", "jsonb", "json", "tsvector", "numeric", "uuid", "interval":
+	case "varchar", "char", "text", "bytea", "jsonb", "json", "tsvector", "numeric", "uuid", "interval",
+		"point", "line", "lseg", "box", "path", "polygon", "circle":
 		return value
 	case "bpchar":
 		trimmedValue := strings.TrimRight(value, " ")
@@ -275,31 +260,40 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interf
 	panic("Unsupported PostgreSQL value: " + value)
 }
 
-func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveType() string {
+func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveTypes() (primitiveType string, primitiveConvertedType string) {
 	switch strings.TrimLeft(pgSchemaColumn.UdtName, "_") {
-	case "varchar", "char", "text", "bpchar", "bytea", "interval", "jsonb", "json", "tsvector":
-		return "BYTE_ARRAY"
-	case "int2", "int4", "date":
-		return "INT32"
+	case "varchar", "char", "text", "bpchar", "bytea", "interval", "jsonb", "json", "tsvector",
+		"point", "line", "lseg", "box", "path", "polygon", "circle":
+		return "BYTE_ARRAY", "UTF8"
+	case "date":
+		return "INT32", "DATE"
+	case "int2", "int4":
+		return "INT32", ""
 	case "int8":
-		return "INT64"
+		return "INT64", ""
 	case "float4", "float8":
-		return "FLOAT"
-	case "numeric", "uuid":
-		return "FIXED_LEN_BYTE_ARRAY"
+		return "FLOAT", ""
+	case "numeric":
+		return "FIXED_LEN_BYTE_ARRAY", "DECIMAL"
+	case "uuid":
+		return "FIXED_LEN_BYTE_ARRAY", ""
 	case "bool":
-		return "BOOLEAN"
+		return "BOOLEAN", ""
 	case "time", "timetz":
 		if pgSchemaColumn.DatetimePrecision == "6" {
-			return "INT64"
+			return "INT64", "TIME_MICROS"
 		} else {
-			return "INT32"
+			return "INT32", "TIME_MILLIS"
 		}
 	case "timestamp", "timestamptz":
-		return "INT64"
+		if pgSchemaColumn.DatetimePrecision == "6" {
+			return "INT64", "TIMESTAMP_MICROS"
+		} else {
+			return "INT64", "TIMESTAMP_MILLIS"
+		}
 	default:
 		if pgSchemaColumn.DataType == PG_DATA_TYPE_USER_DEFINED {
-			return "BYTE_ARRAY"
+			return "BYTE_ARRAY", "UTF8"
 		}
 	}
 
@@ -308,7 +302,8 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveType() string {
 
 func (pgSchemaColumn *PgSchemaColumn) icebergPrimitiveType() string {
 	switch strings.TrimLeft(pgSchemaColumn.UdtName, "_") {
-	case "varchar", "char", "text", "interval", "jsonb", "json", "bpchar", "tsvector":
+	case "varchar", "char", "text", "interval", "jsonb", "json", "bpchar", "tsvector",
+		"point", "line", "lseg", "box", "path", "polygon", "circle":
 		return "string"
 	case "uuid":
 		return "uuid"

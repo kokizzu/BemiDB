@@ -233,6 +233,13 @@ Primitive data types are mapped as follows:
 | `json`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `jsonb`                 | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `tsvector`              | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `point`                 | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `line`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `lseg`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `box`                   | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `path`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `polygon`               | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `circle`                | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `_*` (array)            | `REPEATED` `*`                                    | `list`                           |
 | `*` (user-defined type) | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 
