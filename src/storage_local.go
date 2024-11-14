@@ -24,12 +24,19 @@ func (storage *StorageLocal) IcebergMetadataFilePath(schemaTable SchemaTable) st
 	return storage.tablePath(schemaTable) + "/metadata/v1.metadata.json"
 }
 
-func (storage *StorageLocal) IcebergSchemaTables() (schemaTables []SchemaTable, err error) {
-	execPath, err := os.Getwd()
-	PanicIfError(err)
-	schemasPath := filepath.Join(execPath, storage.config.IcebergPath)
+func (storage *StorageLocal) IcebergSchemas() (schemas []string, err error) {
+	schemasPath := storage.absoluteIcebergPath()
+	schemas, err = storage.nestedDirectories(schemasPath)
+	if err != nil {
+		return nil, err
+	}
 
-	schemas, err := storage.nestedDirectories(schemasPath)
+	return schemas, nil
+}
+
+func (storage *StorageLocal) IcebergSchemaTables() (schemaTables []SchemaTable, err error) {
+	schemasPath := storage.absoluteIcebergPath()
+	schemas, err := storage.IcebergSchemas()
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +56,26 @@ func (storage *StorageLocal) IcebergSchemaTables() (schemaTables []SchemaTable, 
 	return schemaTables, nil
 }
 
+func (storage *StorageLocal) absoluteIcebergPath(relativePaths ...string) string {
+	execPath, err := os.Getwd()
+	PanicIfError(err)
+
+	return filepath.Join(execPath, storage.config.IcebergPath, filepath.Join(relativePaths...))
+}
+
 // Write ---------------------------------------------------------------------------------------------------------------
+
+func (storage *StorageLocal) DeleteSchema(schema string) error {
+	schemaPath := storage.absoluteIcebergPath(schema)
+
+	_, err := os.Stat(schemaPath)
+	if !os.IsNotExist(err) {
+		err := os.RemoveAll(schemaPath)
+		return err
+	}
+
+	return nil
+}
 
 func (storage *StorageLocal) DeleteSchemaTable(schemaTable SchemaTable) error {
 	tablePath := storage.tablePath(schemaTable)
@@ -172,9 +198,7 @@ func (storage *StorageLocal) CreateVersionHint(metadataDirPath string, metadataF
 }
 
 func (storage *StorageLocal) tablePath(schemaTable SchemaTable) string {
-	execPath, err := os.Getwd()
-	PanicIfError(err)
-	return filepath.Join(execPath, storage.config.IcebergPath, schemaTable.Schema, schemaTable.Table)
+	return storage.absoluteIcebergPath(schemaTable.Schema, schemaTable.Table)
 }
 
 func (storage *StorageLocal) fileSystemPrefix() string {

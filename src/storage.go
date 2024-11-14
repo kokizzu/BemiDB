@@ -51,10 +51,12 @@ type MetadataFile struct {
 
 type Storage interface {
 	// Read
+	IcebergSchemas() (schemas []string, err error)
 	IcebergSchemaTables() (schemaTables []SchemaTable, err error)
 	IcebergMetadataFilePath(schemaTable SchemaTable) (path string)
 
 	// Write
+	DeleteSchema(schema string) (err error)
 	DeleteSchemaTable(schemaTable SchemaTable) (err error)
 	CreateDataDir(schemaTable SchemaTable) (dataDirPath string)
 	CreateMetadataDir(schemaTable SchemaTable) (metadataDirPath string)

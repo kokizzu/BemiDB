@@ -357,3 +357,8 @@ func (icebergWriter *IcebergWriter) DeleteSchemaTable(schemaTable SchemaTable) {
 	err := icebergWriter.storage.DeleteSchemaTable(schemaTable)
 	PanicIfError(err)
 }
+
+func (icebergWriter *IcebergWriter) DeleteSchema(schema string) {
+	err := icebergWriter.storage.DeleteSchema(schema)
+	PanicIfError(err)
+}

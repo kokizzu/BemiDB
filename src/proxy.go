@@ -54,13 +54,29 @@ func (nullDecimal NullDecimal) String() string {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func NewProxy(config *Config, duckdb *Duckdb, icebergReader *IcebergReader) *Proxy {
+	ctx := context.Background()
+
+	schemas, err := icebergReader.Schemas()
+	PanicIfError(err)
+	for _, schema := range schemas {
+		_, err := duckdb.ExecContext(
+			ctx,
+			"CREATE SCHEMA IF NOT EXISTS \"$schema\"",
+			map[string]string{"schema": schema},
+		)
+		PanicIfError(err)
+	}
+
 	schemaTables, err := icebergReader.SchemaTables()
 	PanicIfError(err)
 	for _, schemaTable := range schemaTables {
 		metadataFilePath := icebergReader.MetadataFilePath(schemaTable)
-		query := "CREATE VIEW IF NOT EXISTS " + schemaTable.Schema + "." + schemaTable.Table + " AS SELECT * FROM iceberg_scan('" + metadataFilePath + "', skip_schema_inference = true)"
-		LogDebug(config, "Querying DuckDB:", query)
-		duckdb.Db.ExecContext(context.Background(), query)
+		_, err := duckdb.ExecContext(
+			ctx,
+			"CREATE VIEW IF NOT EXISTS \"$schema\".\"$table\" AS SELECT * FROM iceberg_scan('$metadataFilePath', skip_schema_inference = true)",
+			map[string]string{"schema": schemaTable.Schema, "table": schemaTable.Table, "metadataFilePath": metadataFilePath},
+		)
+		PanicIfError(err)
 	}
 
 	return &Proxy{
@@ -78,8 +94,7 @@ func (proxy *Proxy) HandleQuery(originalQuery string) ([]pgproto3.Message, error
 		return nil, err
 	}
 
-	LogDebug(proxy.config, "Querying DuckDB:", query)
-	rows, err := proxy.duckdb.Db.QueryContext(context.Background(), query)
+	rows, err := proxy.duckdb.QueryContext(context.Background(), query)
 	if err != nil {
 		LogError(proxy.config, "Couldn't handle query via DuckDB:", query+"\n"+err.Error())
 

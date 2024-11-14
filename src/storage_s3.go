@@ -55,16 +55,29 @@ func (storage *StorageS3) IcebergMetadataFilePath(schemaTable SchemaTable) strin
 	return storage.fileSystemPrefix() + storage.tablePrefix(schemaTable) + "metadata/v1.metadata.json"
 }
 
-func (storage *StorageS3) IcebergSchemaTables() (schemaTables []SchemaTable, err error) {
+func (storage *StorageS3) IcebergSchemas() (schemas []string, err error) {
 	schemasPrefix := storage.config.IcebergPath + "/"
-	schemaPrefixes, err := storage.nestedDirectoryPrefixes(schemasPrefix)
+	schemas, err = storage.nestedDirectoryPrefixes(schemasPrefix)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, schemaPrefix := range schemaPrefixes {
-		schemaParts := strings.Split(schemaPrefix, "/")
-		schema := schemaParts[len(schemaParts)-2]
+	for i, schema := range schemas {
+		schemaParts := strings.Split(schema, "/")
+		schemas[i] = schemaParts[len(schemaParts)-2]
+	}
+
+	return schemas, nil
+}
+
+func (storage *StorageS3) IcebergSchemaTables() (schemaTables []SchemaTable, err error) {
+	schemas, err := storage.IcebergSchemas()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, schema := range schemas {
+		schemaPrefix := storage.config.IcebergPath + "/" + schema + "/"
 		tables, err := storage.nestedDirectoryPrefixes(schemaPrefix)
 		if err != nil {
 			return nil, err
@@ -83,41 +96,14 @@ func (storage *StorageS3) IcebergSchemaTables() (schemaTables []SchemaTable, err
 
 // Write ---------------------------------------------------------------------------------------------------------------
 
+func (storage *StorageS3) DeleteSchema(schema string) (err error) {
+	schemaPrefix := storage.config.IcebergPath + "/" + schema + "/"
+	return storage.deleteNestedObjects(schemaPrefix)
+}
+
 func (storage *StorageS3) DeleteSchemaTable(schemaTable SchemaTable) (err error) {
-	ctx := context.Background()
 	tablePrefix := storage.tablePrefix(schemaTable)
-
-	listResponse, err := storage.s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
-		Bucket: aws.String(storage.config.Aws.S3Bucket),
-		Prefix: aws.String(tablePrefix),
-	})
-	if err != nil {
-		return fmt.Errorf("Failed to list objects: %v", err)
-	}
-
-	var objectsToDelete []types.ObjectIdentifier
-	for _, obj := range listResponse.Contents {
-		LogDebug(storage.config, "Object to delete:", *obj.Key)
-		objectsToDelete = append(objectsToDelete, types.ObjectIdentifier{Key: obj.Key})
-	}
-
-	if len(objectsToDelete) > 0 {
-		_, err = storage.s3Client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
-			Bucket: aws.String(storage.config.Aws.S3Bucket),
-			Delete: &types.Delete{
-				Objects: objectsToDelete,
-				Quiet:   aws.Bool(true),
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("Failed to delete objects: %v", err)
-		}
-		LogDebug(storage.config, "Deleted", len(objectsToDelete), "object(s).")
-	} else {
-		LogDebug(storage.config, "No objects to delete.")
-	}
-
-	return nil
+	return storage.deleteNestedObjects(tablePrefix)
 }
 
 func (storage *StorageS3) CreateDataDir(schemaTable SchemaTable) (dataDirPath string) {
@@ -310,4 +296,40 @@ func (storage *StorageS3) nestedDirectoryPrefixes(prefix string) (dirs []string,
 	}
 
 	return dirs, nil
+}
+
+func (storage *StorageS3) deleteNestedObjects(prefix string) (err error) {
+	ctx := context.Background()
+
+	listResponse, err := storage.s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+		Bucket: aws.String(storage.config.Aws.S3Bucket),
+		Prefix: aws.String(prefix),
+	})
+	if err != nil {
+		return fmt.Errorf("Failed to list objects: %v", err)
+	}
+
+	var objectsToDelete []types.ObjectIdentifier
+	for _, obj := range listResponse.Contents {
+		LogDebug(storage.config, "Object to delete:", *obj.Key)
+		objectsToDelete = append(objectsToDelete, types.ObjectIdentifier{Key: obj.Key})
+	}
+
+	if len(objectsToDelete) > 0 {
+		_, err = storage.s3Client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+			Bucket: aws.String(storage.config.Aws.S3Bucket),
+			Delete: &types.Delete{
+				Objects: objectsToDelete,
+				Quiet:   aws.Bool(true),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("Failed to delete objects: %v", err)
+		}
+		LogDebug(storage.config, "Deleted", len(objectsToDelete), "object(s).")
+	} else {
+		LogDebug(storage.config, "No objects to delete.")
+	}
+
+	return nil
 }

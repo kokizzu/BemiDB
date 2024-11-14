@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"os"
+	"regexp"
 	"strings"
 
 	_ "github.com/marcboeker/go-duckdb"
@@ -18,7 +19,7 @@ var DEFAULT_BOOT_QUERIES = []string{
 }
 
 type Duckdb struct {
-	Db     *sql.DB
+	db     *sql.DB
 	config *Config
 }
 
@@ -40,30 +41,42 @@ func NewDuckdb(config *Config) *Duckdb {
 
 	switch config.StorageType {
 	case STORAGE_TYPE_AWS_S3:
-		query := "CREATE SECRET aws_s3_secret (TYPE S3, KEY_ID $access_key_id, SECRET $secret_access_key, REGION $region, SCOPE $s3_bucket)"
+		query := "CREATE SECRET aws_s3_secret (TYPE S3, KEY_ID '$accessKeyId', SECRET '$secretAccessKey', REGION '$region', SCOPE '$s3Bucket')"
 		_, err = db.ExecContext(ctx, replaceNamedStringArgs(query, map[string]string{
-			"access_key_id":     config.Aws.AccessKeyId,
-			"secret_access_key": config.Aws.SecretAccessKey,
-			"region":            config.Aws.Region,
-			"s3_bucket":         "s3://" + config.Aws.S3Bucket,
+			"accessKeyId":     config.Aws.AccessKeyId,
+			"secretAccessKey": config.Aws.SecretAccessKey,
+			"region":          config.Aws.Region,
+			"s3Bucket":        "s3://" + config.Aws.S3Bucket,
 		}))
 		LogDebug(config, "Querying DuckDB:", query)
 		PanicIfError(err)
 	}
 
 	return &Duckdb{
-		Db:     db,
+		db:     db,
 		config: config,
 	}
 }
 
+func (duckdb *Duckdb) ExecContext(ctx context.Context, query string, args map[string]string) (sql.Result, error) {
+	LogDebug(duckdb.config, "Querying DuckDB:", query, args)
+	return duckdb.db.ExecContext(ctx, replaceNamedStringArgs(query, args))
+}
+
+func (duckdb *Duckdb) QueryContext(ctx context.Context, query string) (*sql.Rows, error) {
+	LogDebug(duckdb.config, "Querying DuckDB:", query)
+	return duckdb.db.QueryContext(ctx, query)
+}
+
 func (duckdb *Duckdb) Close() {
-	duckdb.Db.Close()
+	duckdb.db.Close()
 }
 
 func replaceNamedStringArgs(query string, args map[string]string) string {
+	re := regexp.MustCompile(`['";]`) // Escape single quotes, double quotes, and semicolons from args
+
 	for key, value := range args {
-		query = strings.ReplaceAll(query, "$"+key, "'"+value+"'")
+		query = strings.ReplaceAll(query, "$"+key, re.ReplaceAllString(value, ""))
 	}
 	return query
 }

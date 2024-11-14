@@ -47,7 +47,7 @@ func (syncer *Syncer) SyncFromPostgres() {
 		}
 	}
 
-	syncer.deleteOldIcebergTables(pgSchemaTables)
+	syncer.deleteOldIcebergSchemaTables(pgSchemaTables)
 }
 
 func (syncer *Syncer) listPgSchemas(conn *pgx.Conn) []string {
@@ -188,7 +188,7 @@ func (syncer *Syncer) exportPgTableToCsv(conn *pgx.Conn, pgSchemaTable SchemaTab
 	return os.Open(tempFile.Name())
 }
 
-func (syncer *Syncer) deleteOldIcebergTables(pgSchemaTables []SchemaTable) {
+func (syncer *Syncer) deleteOldIcebergSchemaTables(pgSchemaTables []SchemaTable) {
 	icebergSchemaTables, err := syncer.icebergReader.SchemaTables()
 	PanicIfError(err)
 
@@ -204,6 +204,24 @@ func (syncer *Syncer) deleteOldIcebergTables(pgSchemaTables []SchemaTable) {
 		if !found {
 			LogInfo(syncer.config, "Deleting", icebergSchemaTable.String(), "...")
 			syncer.icebergWriter.DeleteSchemaTable(icebergSchemaTable)
+		}
+	}
+
+	icebergSchemas, err := syncer.icebergReader.Schemas()
+	PanicIfError(err)
+
+	for _, icebergSchema := range icebergSchemas {
+		found := false
+		for _, pgSchema := range pgSchemaTables {
+			if icebergSchema == pgSchema.Schema {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			LogInfo(syncer.config, "Deleting", icebergSchema, "...")
+			syncer.icebergWriter.DeleteSchema(icebergSchema)
 		}
 	}
 }

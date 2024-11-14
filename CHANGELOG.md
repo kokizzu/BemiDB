@@ -1,5 +1,9 @@
 # Changelog
 
+#### [v0.7.0](https://github.com/BemiHQ/BemiDB/compare/v0.6.0...v0.7.0) - 2024-11-14
+
+- Add support for non-`public` schemas
+
 #### [v0.6.0](https://github.com/BemiHQ/BemiDB/compare/v0.5.1...v0.6.0) - 2024-11-14
 
 - Add support for Postgres geometric data types

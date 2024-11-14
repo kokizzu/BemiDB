@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 )
 
@@ -9,20 +10,23 @@ func TestNewDuckdb(t *testing.T) {
 		config := loadTestConfig()
 
 		duckdb := NewDuckdb(config)
-
 		defer duckdb.Close()
-		if duckdb.Db == nil {
-			t.Errorf("Expected DuckDB instance to be created")
-		}
 
-		row := duckdb.Db.QueryRow("SELECT 1")
-		var result int
-		err := row.Scan(&result)
+		rows, err := duckdb.QueryContext(context.Background(), "SELECT 1")
 		if err != nil {
 			t.Errorf("Expected query to succeed")
 		}
-		if result != 1 {
-			t.Errorf("Expected query result to be 1, got %d", result)
+		defer rows.Close()
+
+		for rows.Next() {
+			var result int
+			err = rows.Scan(&result)
+			if err != nil {
+				t.Errorf("Expected query to return a result")
+			}
+			if result != 1 {
+				t.Errorf("Expected query result to be 1, got %d", result)
+			}
 		}
 	})
 }
