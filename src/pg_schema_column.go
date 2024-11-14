@@ -18,7 +18,6 @@ const (
 
 	PARQUET_SCHEMA_REPETITION_TYPE_REQUIRED = "REQUIRED"
 	PARQUET_SCHEMA_REPETITION_TYPE_OPTIONAL = "OPTIONAL"
-	PARQUET_SCHEMA_REPETITION_TYPE_REPEATED = "REPEATED"
 
 	// 0000-01-01 00:00:00 +0000 UTC
 	EPOCH_TIME_MS = -62167219200000
@@ -37,14 +36,16 @@ type PgSchemaColumn struct {
 }
 
 type ParquetSchemaField struct {
-	Name           string
-	Type           string
-	RepetitionType string
-	FieldId        string
-	Length         string
-	ConvertedType  string
-	Scale          string
-	Precision      string
+	Name                string
+	Type                string
+	RepetitionType      string
+	FieldId             string
+	Length              string
+	ConvertedType       string
+	Scale               string
+	Precision           string
+	NestedType          string
+	NestedConvertedType string
 }
 
 type IcebergSchemaField struct {
@@ -57,7 +58,7 @@ type IcebergSchemaField struct {
 func (pgSchemaColumn PgSchemaColumn) ToParquetSchemaFieldMap() map[string]interface{} {
 	field := pgSchemaColumn.toParquetSchemaField()
 
-	keyVals := []string{
+	tagKeyVals := []string{
 		"name=" + field.Name,
 		"type=" + field.Type,
 		"repetitiontype=" + field.RepetitionType,
@@ -65,21 +66,38 @@ func (pgSchemaColumn PgSchemaColumn) ToParquetSchemaFieldMap() map[string]interf
 	}
 
 	if field.Length != "" {
-		keyVals = append(keyVals, "length="+field.Length)
+		tagKeyVals = append(tagKeyVals, "length="+field.Length)
 	}
 	if field.ConvertedType != "" {
-		keyVals = append(keyVals, "convertedtype="+field.ConvertedType)
+		tagKeyVals = append(tagKeyVals, "convertedtype="+field.ConvertedType)
 	}
 	if field.Scale != "" {
-		keyVals = append(keyVals, "scale="+field.Scale)
+		tagKeyVals = append(tagKeyVals, "scale="+field.Scale)
 	}
 	if field.Precision != "" {
-		keyVals = append(keyVals, "precision="+field.Precision)
+		tagKeyVals = append(tagKeyVals, "precision="+field.Precision)
 	}
 
-	return map[string]interface{}{
-		"Tag": strings.Join(keyVals, ", "),
+	result := map[string]interface{}{
+		"Tag": strings.Join(tagKeyVals, ", "),
 	}
+
+	if field.NestedType != "" {
+		nestedTagKeyVals := []string{
+			"name=element",
+			"type=" + field.NestedType,
+		}
+
+		if field.NestedConvertedType != "" {
+			nestedTagKeyVals = append(nestedTagKeyVals, "convertedtype="+field.NestedConvertedType)
+		}
+
+		result["Fields"] = []map[string]interface{}{
+			{"Tag": strings.Join(nestedTagKeyVals, ", ")},
+		}
+	}
+
+	return result
 }
 
 func (pgSchemaColumn PgSchemaColumn) ToIcebergSchemaFieldMap() IcebergSchemaField {
@@ -172,7 +190,10 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 		parquetSchemaField.Length = "36"
 	default:
 		if pgSchemaColumn.DataType == PG_DATA_TYPE_ARRAY {
-			parquetSchemaField.RepetitionType = PARQUET_SCHEMA_REPETITION_TYPE_REPEATED
+			parquetSchemaField.NestedType = parquetSchemaField.Type
+			parquetSchemaField.NestedConvertedType = parquetSchemaField.ConvertedType
+			parquetSchemaField.Type = "LIST"
+			parquetSchemaField.ConvertedType = ""
 		}
 	}
 

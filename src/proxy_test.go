@@ -263,21 +263,21 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"point_column"},
 			"values":      {""},
 		},
-		// "SELECT array_text_column FROM public.test_table WHERE array_text_column IS NOT NULL": {
-		// 	"description": {"array_text_column"},
-		// 	"values":      {"{one,two,three}"},
-		// },
-		// "SELECT array_text_column FROM public.test_table WHERE array_text_column IS NULL": {
-		// 	"description": {"array_text_column"},
-		// 	"values":      {""},
-		// },
+		"SELECT array_text_column FROM public.test_table WHERE array_text_column IS NOT NULL": {
+			"description": {"array_text_column"},
+			"values":      {"{one,two,three}"},
+		},
+		"SELECT array_text_column FROM public.test_table WHERE array_text_column IS NULL": {
+			"description": {"array_text_column"},
+			"values":      {""},
+		},
 		"SELECT array_int_column FROM public.test_table WHERE bool_column = TRUE": {
 			"description": {"array_int_column"},
 			"values":      {"{1,2,3}"},
 		},
 		"SELECT array_int_column FROM public.test_table WHERE bool_column = FALSE": {
 			"description": {"array_int_column"},
-			"values":      {"{}"},
+			"values":      {""},
 		},
 		"SELECT user_defined_column FROM public.test_table WHERE user_defined_column IS NOT NULL": {
 			"description": {"user_defined_column"},

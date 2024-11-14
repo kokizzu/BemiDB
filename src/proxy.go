@@ -29,24 +29,65 @@ type Proxy struct {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type NullDecimal struct {
-	Valid bool
-	duckDb.Decimal
+	Present bool
+	Value   duckDb.Decimal
 }
 
 func (nullDecimal *NullDecimal) Scan(value interface{}) error {
 	if value == nil {
-		nullDecimal.Valid = false
+		nullDecimal.Present = false
 		return nil
 	}
 
-	nullDecimal.Valid = true
-	nullDecimal.Decimal = value.(duckDb.Decimal)
+	nullDecimal.Present = true
+	nullDecimal.Value = value.(duckDb.Decimal)
 	return nil
 }
 
 func (nullDecimal NullDecimal) String() string {
-	if nullDecimal.Valid {
-		return fmt.Sprintf("%v", nullDecimal.Decimal.Float64())
+	if nullDecimal.Present {
+		return fmt.Sprintf("%v", nullDecimal.Value.Float64())
+	}
+	return ""
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type NullArray struct {
+	Present bool
+	Value   []interface{}
+}
+
+func (nullArray *NullArray) Scan(value interface{}) error {
+	if value == nil {
+		nullArray.Present = false
+		return nil
+	}
+
+	nullArray.Present = true
+	nullArray.Value = value.([]interface{})
+	return nil
+}
+
+func (nullArray NullArray) String() string {
+	if nullArray.Present {
+		var stringVals []string
+		for _, v := range nullArray.Value {
+			switch v.(type) {
+			case []uint8:
+				stringVals = append(stringVals, fmt.Sprintf("%s", v))
+			default:
+				stringVals = append(stringVals, fmt.Sprintf("%v", v))
+			}
+		}
+		buffer := &bytes.Buffer{}
+		csvWriter := csv.NewWriter(buffer)
+		err := csvWriter.Write(stringVals)
+		if err != nil {
+			return ""
+		}
+		csvWriter.Flush()
+		return "{" + strings.TrimRight(buffer.String(), "\n") + "}"
 	}
 	return ""
 }
@@ -187,8 +228,8 @@ func (proxy *Proxy) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pg
 		case "duckdb.Decimal":
 			var value NullDecimal
 			valuePtrs[i] = &value
-		case "[]interface {}": // array
-			var value []interface{}
+		case "[]interface {}":
+			var value NullArray
 			valuePtrs[i] = &value
 		default:
 			panic("Unsupported queried type: " + col.ScanType().String())
@@ -249,35 +290,19 @@ func (proxy *Proxy) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pg
 				values = append(values, nil)
 			}
 		case *NullDecimal:
-			if value.Valid {
+			if value.Present {
+				values = append(values, []byte(value.String()))
+			} else {
+				values = append(values, nil)
+			}
+		case *NullArray:
+			if value.Present {
 				values = append(values, []byte(value.String()))
 			} else {
 				values = append(values, nil)
 			}
 		case *string:
 			values = append(values, []byte(*value))
-		case *[]interface{}:
-			var stringVals []string
-			for _, v := range *value {
-				switch v.(type) {
-				case []uint8:
-					stringVals = append(stringVals, fmt.Sprintf("%s", v))
-				default:
-					stringVals = append(stringVals, fmt.Sprintf("%v", v))
-				}
-			}
-			buffer := &bytes.Buffer{}
-			csvWriter := csv.NewWriter(buffer)
-			err := csvWriter.Write(stringVals)
-			if err == nil {
-				csvWriter.Flush()
-				formattedValue := "{" + strings.TrimRight(buffer.String(), "\n") + "}"
-				values = append(values, []byte(formattedValue))
-
-			} else {
-				LogError(proxy.config, "Couldn't create a CSV line:", err, stringVals)
-				values = append(values, nil)
-			}
 		default:
 			panic("Unsupported type: " + cols[i].ScanType().Name())
 		}

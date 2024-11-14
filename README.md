@@ -240,7 +240,7 @@ Primitive data types are mapped as follows:
 | `path`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `polygon`               | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `circle`                | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `_*` (array)            | `REPEATED` `*`                                    | `list`                           |
+| `_*` (array)            | `LIST` `*`                                        | `list`                           |
 | `*` (user-defined type) | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 
 ## Future roadmap
