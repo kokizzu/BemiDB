@@ -271,8 +271,10 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveTypes() (primitiveType str
 		return "INT32", ""
 	case "int8":
 		return "INT64", ""
-	case "float4", "float8":
+	case "float4":
 		return "FLOAT", ""
+	case "float8":
+		return "DOUBLE", ""
 	case "numeric":
 		return "FIXED_LEN_BYTE_ARRAY", "DECIMAL"
 	case "uuid":

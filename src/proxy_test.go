@@ -79,14 +79,14 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"bpchar_column"},
 			"values":      {""},
 		},
-		// "SELECT varchar_column FROM public.test_table WHERE varchar_column IS NOT NULL": {
-		// 	"description": {"varchar_column"},
-		// 	"values":      {"varchar"},
-		// },
-		// "SELECT varchar_column FROM public.test_table WHERE varchar_column IS NULL": {
-		// 	"description": {"varchar_column"},
-		// 	"values":      {""},
-		// },
+		"SELECT varchar_column FROM public.test_table WHERE varchar_column IS NOT NULL": {
+			"description": {"varchar_column"},
+			"values":      {"varchar"},
+		},
+		"SELECT varchar_column FROM public.test_table WHERE varchar_column IS NULL": {
+			"description": {"varchar_column"},
+			"values":      {""},
+		},
 		"SELECT text_column FROM public.test_table WHERE bool_column = TRUE": {
 			"description": {"text_column"},
 			"values":      {"text"},
@@ -103,14 +103,14 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"int2_column"},
 			"values":      {"-32767"},
 		},
-		// "SELECT int4_column FROM public.test_table WHERE int4_column IS NOT NULL": {
-		// 	"description": {"int4_column"},
-		// 	"values":      {"2147483647"},
-		// },
-		// "SELECT int4_column FROM public.test_table WHERE int4_column IS NULL": {
-		// 	"description": {"int4_column"},
-		// 	"values":      {"null"},
-		// },
+		"SELECT int4_column FROM public.test_table WHERE int4_column IS NOT NULL": {
+			"description": {"int4_column"},
+			"values":      {"2147483647"},
+		},
+		"SELECT int4_column FROM public.test_table WHERE int4_column IS NULL": {
+			"description": {"int4_column"},
+			"values":      {""},
+		},
 		"SELECT int8_column FROM public.test_table WHERE bool_column = TRUE": {
 			"description": {"int8_column"},
 			"values":      {"9223372036854775807"},
@@ -119,22 +119,22 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"int8_column"},
 			"values":      {"-9223372036854775807"},
 		},
-		// "SELECT float4_column FROM public.test_table WHERE float4_column IS NOT NULL": {
-		//	"description": {"float4_column"},
-		//	"values":      {"3.14"},
-		// },
-		// "SELECT float4_column FROM public.test_table WHERE float4_column IS NULL": {
-		//	"description": {"float4_column"},
-		//	"values":      {"null"},
-		// },
-		// "SELECT float8_column FROM public.test_table WHERE bool_column = TRUE": {
-		// 	"description": {"float8_column"},
-		// 	"values":      {"3.141592653589793"},
-		// },
-		// "SELECT float8_column FROM public.test_table WHERE bool_column = FALSE": {
-		// 	"description": {"float8_column"},
-		// 	"values":      {"-3.141592653589793"},
-		// },
+		"SELECT float4_column FROM public.test_table WHERE float4_column IS NOT NULL": {
+			"description": {"float4_column"},
+			"values":      {"3.14"},
+		},
+		"SELECT float4_column FROM public.test_table WHERE float4_column IS NULL": {
+			"description": {"float4_column"},
+			"values":      {""},
+		},
+		"SELECT float8_column FROM public.test_table WHERE bool_column = TRUE": {
+			"description": {"float8_column"},
+			"values":      {"3.141592653589793"},
+		},
+		"SELECT float8_column FROM public.test_table WHERE bool_column = FALSE": {
+			"description": {"float8_column"},
+			"values":      {"-3.141592653589793"},
+		},
 		"SELECT numeric_column FROM public.test_table WHERE bool_column = TRUE": {
 			"description": {"numeric_column"},
 			"values":      {"12345.67"},
@@ -143,14 +143,14 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"numeric_column"},
 			"values":      {"-12345"},
 		},
-		// "SELECT date_column FROM public.test_table WHERE date_column IS NOT NULL": {
-		//	"description": {"date_column"},
-		//	"values":      {"2021-01-01"},
-		// },
-		// "SELECT date_column FROM public.test_table WHERE date_column IS NULL": {
-		//	"description": {"date_column"},
-		//	"values":      {"null"},
-		// },
+		"SELECT date_column FROM public.test_table WHERE date_column IS NOT NULL": {
+			"description": {"date_column"},
+			"values":      {"2021-01-01"},
+		},
+		"SELECT date_column FROM public.test_table WHERE date_column IS NULL": {
+			"description": {"date_column"},
+			"values":      {""},
+		},
 		"SELECT time_column FROM public.test_table WHERE bool_column = TRUE": {
 			"description": {"time_column"},
 			"values":      {"12:00:00.123456"},
@@ -159,14 +159,14 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"time_column"},
 			"values":      {"12:00:00.123"},
 		},
-		// "SELECT time_ms_column FROM public.test_table WHERE time_ms_column IS NOT NULL": {
-		//	"description": {"time_ms_column"},
-		//	"values":      {"12:00:00.123"},
-		// },
-		// "SELECT time_ms_column FROM public.test_table WHERE time_ms_column IS NULL": {
-		//	"description": {"time_ms_column"},
-		//	"values":      {"null"},
-		// },
+		"SELECT time_ms_column FROM public.test_table WHERE time_ms_column IS NOT NULL": {
+			"description": {"time_ms_column"},
+			"values":      {"12:00:00.123"},
+		},
+		"SELECT time_ms_column FROM public.test_table WHERE time_ms_column IS NULL": {
+			"description": {"time_ms_column"},
+			"values":      {""},
+		},
 		"SELECT timetz_column FROM public.test_table WHERE bool_column = TRUE": {
 			"description": {"timetz_column"},
 			"values":      {"17:00:00.123456"},
@@ -183,14 +183,14 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"timestamp_column"},
 			"values":      {"2024-01-01 12:00:00"},
 		},
-		// "SELECT timestamp_ms_column FROM public.test_table WHERE timestamp_ms_column IS NOT NULL": {
-		//	"description": {"timestamp_ms_column"},
-		//	"values":      {"2024-01-01 12:00:00.123"},
-		// },
-		// "SELECT timestamp_ms_column FROM public.test_table WHERE timestamp_ms_column IS NULL": {
-		//	"description": {"timestamp_ms_column"},
-		//	"values":      {"null"},
-		// },
+		"SELECT timestamp_ms_column FROM public.test_table WHERE timestamp_ms_column IS NOT NULL": {
+			"description": {"timestamp_ms_column"},
+			"values":      {"2024-01-01 12:00:00.123"},
+		},
+		"SELECT timestamp_ms_column FROM public.test_table WHERE timestamp_ms_column IS NULL": {
+			"description": {"timestamp_ms_column"},
+			"values":      {""},
+		},
 		"SELECT timestamptz_column FROM public.test_table WHERE bool_column = TRUE": {
 			"description": {"timestamptz_column"},
 			"values":      {"2024-01-01 17:00:00.123456"},
@@ -207,38 +207,38 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"timestamptz_ms_column"},
 			"values":      {"2024-01-01 07:00:00.12"},
 		},
-		// "SELECT uuid_column FROM public.test_table WHERE uuid_column IS NOT NULL": {
-		//	"description": {"uuid_column"},
-		//	"values":      {"58a7c845-af77-44b2-8664-7ca613d92f04"},
-		// },
-		// "SELECT uuid_column FROM public.test_table WHERE uuid_column IS NULL": {
-		//	"description": {"uuid_column"},
-		//	"values":      {"null"},
-		// },
-		// "SELECT bytea_column FROM public.test_table WHERE bytea_column IS NOT NULL": {
-		//	"description": {"bytea_column"},
-		//	"values":      {"\\x1234"},
-		// },
-		// "SELECT bytea_column FROM public.test_table WHERE bytea_column IS NULL": {
-		//	"description": {"bytea_column"},
-		//	"values":      {"null"},
-		// },
-		// "SELECT interval_column FROM public.test_table WHERE interval_column IS NOT NULL": {
-		//	"description": {"interval_column"},
-		//	"values":      {"1 mon 2 days 01:00:01.000001"},
-		// },
-		// "SELECT interval_column FROM public.test_table WHERE interval_column IS NULL": {
-		//	"description": {"interval_column"},
-		//	"values":      {"null"},
-		// },
-		// "SELECT json_column FROM public.test_table WHERE json_column IS NOT NULL": {
-		//	"description": {"json_column"},
-		//	"values":      {"{\"key\": \"value\"}"},
-		// },
-		// "SELECT json_column FROM public.test_table WHERE json_column IS NULL": {
-		//	"description": {"json_column"},
-		//	"values":      {"null"},
-		// },
+		"SELECT uuid_column FROM public.test_table WHERE uuid_column IS NOT NULL": {
+			"description": {"uuid_column"},
+			"values":      {"58a7c845-af77-44b2-8664-7ca613d92f04"},
+		},
+		"SELECT uuid_column FROM public.test_table WHERE uuid_column IS NULL": {
+			"description": {"uuid_column"},
+			"values":      {""},
+		},
+		"SELECT bytea_column FROM public.test_table WHERE bytea_column IS NOT NULL": {
+			"description": {"bytea_column"},
+			"values":      {"\\x1234"},
+		},
+		"SELECT bytea_column FROM public.test_table WHERE bytea_column IS NULL": {
+			"description": {"bytea_column"},
+			"values":      {""},
+		},
+		"SELECT interval_column FROM public.test_table WHERE interval_column IS NOT NULL": {
+			"description": {"interval_column"},
+			"values":      {"1 mon 2 days 01:00:01.000001"},
+		},
+		"SELECT interval_column FROM public.test_table WHERE interval_column IS NULL": {
+			"description": {"interval_column"},
+			"values":      {""},
+		},
+		"SELECT json_column FROM public.test_table WHERE json_column IS NOT NULL": {
+			"description": {"json_column"},
+			"values":      {"{\"key\": \"value\"}"},
+		},
+		"SELECT json_column FROM public.test_table WHERE json_column IS NULL": {
+			"description": {"json_column"},
+			"values":      {""},
+		},
 		"SELECT jsonb_column FROM public.test_table WHERE bool_column = TRUE": {
 			"description": {"jsonb_column"},
 			"values":      {"{\"key\": \"value\"}"},
@@ -247,29 +247,29 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"jsonb_column"},
 			"values":      {"{}"},
 		},
-		// "SELECT tsvector_column FROM public.test_table WHERE tsvector_column IS NOT NULL": {
-		//	"description": {"tsvector_column"},
-		//	"values":      {"'sampl':1 'text':2 'tsvector':4"},
-		// },
-		// "SELECT tsvector_column FROM public.test_table WHERE tsvector_column IS NULL": {
-		//	"description": {"tsvector_column"},
-		//	"values":      {"null"},
-		// },
-		// "SELECT point_column FROM public.test_table WHERE point_column IS NOT NULL": {
-		//	"description": {"point_column"},
-		//	"values":      {"(37.347301483154,45.002101898193)"},
-		// },
-		// "SELECT point_column FROM public.test_table WHERE point_column IS NULL": {
-		//	"description": {"point_column"},
-		//	"values":      {"null"},
-		// },
+		"SELECT tsvector_column FROM public.test_table WHERE tsvector_column IS NOT NULL": {
+			"description": {"tsvector_column"},
+			"values":      {"'sampl':1 'text':2 'tsvector':4"},
+		},
+		"SELECT tsvector_column FROM public.test_table WHERE tsvector_column IS NULL": {
+			"description": {"tsvector_column"},
+			"values":      {""},
+		},
+		"SELECT point_column FROM public.test_table WHERE point_column IS NOT NULL": {
+			"description": {"point_column"},
+			"values":      {"(37.347301483154,45.002101898193)"},
+		},
+		"SELECT point_column FROM public.test_table WHERE point_column IS NULL": {
+			"description": {"point_column"},
+			"values":      {""},
+		},
 		// "SELECT array_text_column FROM public.test_table WHERE array_text_column IS NOT NULL": {
-		//	"description": {"array_text_column"},
-		//	"values":      {"{one,two,three}"},
+		// 	"description": {"array_text_column"},
+		// 	"values":      {"{one,two,three}"},
 		// },
 		// "SELECT array_text_column FROM public.test_table WHERE array_text_column IS NULL": {
-		//	"description": {"array_text_column"},
-		//	"values":      {"null"},
+		// 	"description": {"array_text_column"},
+		// 	"values":      {""},
 		// },
 		"SELECT array_int_column FROM public.test_table WHERE bool_column = TRUE": {
 			"description": {"array_int_column"},
@@ -279,14 +279,14 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"array_int_column"},
 			"values":      {"{}"},
 		},
-		// "SELECT user_defined_column FROM public.test_table WHERE user_defined_column IS NOT NULL": {
-		//	"description": {"user_defined_column"},
-		//	"values":      {"(Toronto)"},
-		// },
-		// "SELECT user_defined_column FROM public.test_table WHERE user_defined_column IS NULL": {
-		//	"description": {"user_defined_column"},
-		//	"values":      {"null"},
-		// },
+		"SELECT user_defined_column FROM public.test_table WHERE user_defined_column IS NOT NULL": {
+			"description": {"user_defined_column"},
+			"values":      {"(Toronto)"},
+		},
+		"SELECT user_defined_column FROM public.test_table WHERE user_defined_column IS NULL": {
+			"description": {"user_defined_column"},
+			"values":      {""},
+		},
 	}
 
 	for query, responses := range responsesByQuery {

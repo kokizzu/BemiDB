@@ -189,24 +189,6 @@ func (syncer *Syncer) exportPgTableToCsv(conn *pgx.Conn, pgSchemaTable SchemaTab
 }
 
 func (syncer *Syncer) deleteOldIcebergSchemaTables(pgSchemaTables []SchemaTable) {
-	icebergSchemaTables, err := syncer.icebergReader.SchemaTables()
-	PanicIfError(err)
-
-	for _, icebergSchemaTable := range icebergSchemaTables {
-		found := false
-		for _, pgSchemaTable := range pgSchemaTables {
-			if icebergSchemaTable.String() == pgSchemaTable.String() {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			LogInfo(syncer.config, "Deleting", icebergSchemaTable.String(), "...")
-			syncer.icebergWriter.DeleteSchemaTable(icebergSchemaTable)
-		}
-	}
-
 	icebergSchemas, err := syncer.icebergReader.Schemas()
 	PanicIfError(err)
 
@@ -222,6 +204,24 @@ func (syncer *Syncer) deleteOldIcebergSchemaTables(pgSchemaTables []SchemaTable)
 		if !found {
 			LogInfo(syncer.config, "Deleting", icebergSchema, "...")
 			syncer.icebergWriter.DeleteSchema(icebergSchema)
+		}
+	}
+
+	icebergSchemaTables, err := syncer.icebergReader.SchemaTables()
+	PanicIfError(err)
+
+	for _, icebergSchemaTable := range icebergSchemaTables {
+		found := false
+		for _, pgSchemaTable := range pgSchemaTables {
+			if icebergSchemaTable.String() == pgSchemaTable.String() {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			LogInfo(syncer.config, "Deleting", icebergSchemaTable.String(), "...")
+			syncer.icebergWriter.DeleteSchemaTable(icebergSchemaTable)
 		}
 	}
 }
