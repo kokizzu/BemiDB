@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.7.0"
+const VERSION = "0.8.0"
 
 func main() {
 	flag.Parse()

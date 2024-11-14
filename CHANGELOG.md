@@ -1,5 +1,10 @@
 # Changelog
 
+#### [v0.8.0](https://github.com/BemiHQ/BemiDB/compare/v0.7.0...v0.8.0) - 2024-11-14
+
+- Migrate arrays from REPEATED to LIST parquet format to allow NULLs
+- Fix null count stats in generated Parquet files
+
 #### [v0.7.0](https://github.com/BemiHQ/BemiDB/compare/v0.6.0...v0.7.0) - 2024-11-14
 
 - Add support for non-`public` schemas
