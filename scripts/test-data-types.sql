@@ -1,4 +1,4 @@
--- Usage: psql postgres://127.0.0.1:5432/dbname -P pager=off -f ./scripts/test.sql
+-- Usage: psql postgres://127.0.0.1:5432/dbname -P pager=off -f ./scripts/test-data-types.sql
 
 DROP TABLE IF EXISTS test_table;
 DROP TYPE IF EXISTS address;

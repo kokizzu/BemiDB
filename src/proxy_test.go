@@ -243,6 +243,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"jsonb_column"},
 			"values":      {"{\"key\": \"value\"}"},
 		},
+		"SELECT jsonb_column->'key' AS key FROM public.test_table WHERE jsonb_column->>'key' = 'value'": {
+			"description": {"key"},
+			"values":      {"\"value\""},
+		},
 		"SELECT jsonb_column FROM public.test_table WHERE bool_column = FALSE": {
 			"description": {"jsonb_column"},
 			"values":      {"{}"},

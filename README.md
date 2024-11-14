@@ -230,9 +230,6 @@ Primitive data types are mapped as follows:
 | `uuid`                  | `FIXED_LEN_BYTE_ARRAY`                            | `uuid`                           |
 | `bytea`                 | `BYTE_ARRAY` (`UTF8`)                             | `binary`                         |
 | `interval`              | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `json`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `jsonb`                 | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `tsvector`              | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `point`                 | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `line`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `lseg`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
@@ -240,12 +237,21 @@ Primitive data types are mapped as follows:
 | `path`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `polygon`               | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `circle`                | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `tsvector`              | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `json`                  | `BYTE_ARRAY` (`UTF8`)                             | `string` (JSON logical type)     |
+| `jsonb`                 | `BYTE_ARRAY` (`UTF8`)                             | `string` (JSON logical type)     |
 | `_*` (array)            | `LIST` `*`                                        | `list`                           |
 | `*` (user-defined type) | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 
+Note that Postgres `json` and `jsonb` types are implemented as JSON logical types and stored as strings (Parquet and Iceberg don't support unstructured data types).
+You can query JSON columns using standard operators, for example:
+
+```sql
+SELECT * FROM [TABLE] WHERE [JSON_COLUMN]->>'[JSON_KEY]' = '[JSON_VALUE]';
+```
+
 ## Future roadmap
 
-- [ ] Native support for complex data structures like JSON and arrays.
 - [ ] Incremental data synchronization into Iceberg tables.
 - [ ] Direct Postgres-compatible write operations.
 - [ ] Real-time replication from Postgres using CDC.
