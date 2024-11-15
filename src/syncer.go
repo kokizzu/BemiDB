@@ -19,7 +19,7 @@ type Syncer struct {
 }
 
 func NewSyncer(config *Config) *Syncer {
-	if config.PgDatabaseUrl == "" {
+	if config.Pg.DatabaseUrl == "" {
 		panic("Missing PostgreSQL database URL")
 	}
 
@@ -31,7 +31,7 @@ func NewSyncer(config *Config) *Syncer {
 func (syncer *Syncer) SyncFromPostgres() {
 	ctx := context.Background()
 
-	conn, err := pgx.Connect(ctx, syncer.config.PgDatabaseUrl)
+	conn, err := pgx.Connect(ctx, syncer.config.Pg.DatabaseUrl)
 	PanicIfError(err)
 	defer conn.Close(ctx)
 
@@ -189,13 +189,21 @@ func (syncer *Syncer) exportPgTableToCsv(conn *pgx.Conn, pgSchemaTable SchemaTab
 }
 
 func (syncer *Syncer) deleteOldIcebergSchemaTables(pgSchemaTables []SchemaTable) {
+	var prefixedPgSchemaTables []SchemaTable
+	for _, pgSchemaTable := range pgSchemaTables {
+		prefixedPgSchemaTables = append(
+			prefixedPgSchemaTables,
+			SchemaTable{Schema: syncer.config.Pg.SchemaPrefix + pgSchemaTable.Schema, Table: pgSchemaTable.Table},
+		)
+	}
+
 	icebergSchemas, err := syncer.icebergReader.Schemas()
 	PanicIfError(err)
 
 	for _, icebergSchema := range icebergSchemas {
 		found := false
-		for _, pgSchema := range pgSchemaTables {
-			if icebergSchema == pgSchema.Schema {
+		for _, pgSchemaTable := range prefixedPgSchemaTables {
+			if icebergSchema == pgSchemaTable.Schema {
 				found = true
 				break
 			}
@@ -212,7 +220,7 @@ func (syncer *Syncer) deleteOldIcebergSchemaTables(pgSchemaTables []SchemaTable)
 
 	for _, icebergSchemaTable := range icebergSchemaTables {
 		found := false
-		for _, pgSchemaTable := range pgSchemaTables {
+		for _, pgSchemaTable := range prefixedPgSchemaTables {
 			if icebergSchemaTable.String() == pgSchemaTable.String() {
 				found = true
 				break

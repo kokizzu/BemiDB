@@ -51,34 +51,33 @@ func NewS3Storage(config *Config) *StorageS3 {
 
 // Read ----------------------------------------------------------------------------------------------------------------
 
-func (storage *StorageS3) IcebergMetadataFilePath(schemaTable SchemaTable) string {
-	return storage.fileSystemPrefix() + storage.tablePrefix(schemaTable) + "metadata/v1.metadata.json"
+func (storage *StorageS3) IcebergMetadataFilePath(icebergSchemaTable SchemaTable) string {
+	return storage.fullBucketPath() + storage.tablePrefix(icebergSchemaTable, true) + "metadata/v1.metadata.json"
 }
 
-func (storage *StorageS3) IcebergSchemas() (schemas []string, err error) {
+func (storage *StorageS3) IcebergSchemas() (icebergSchemas []string, err error) {
 	schemasPrefix := storage.config.IcebergPath + "/"
-	schemas, err = storage.nestedDirectoryPrefixes(schemasPrefix)
+	icebergSchemas, err = storage.nestedDirectoryPrefixes(schemasPrefix)
 	if err != nil {
 		return nil, err
 	}
 
-	for i, schema := range schemas {
+	for i, schema := range icebergSchemas {
 		schemaParts := strings.Split(schema, "/")
-		schemas[i] = schemaParts[len(schemaParts)-2]
+		icebergSchemas[i] = schemaParts[len(schemaParts)-2]
 	}
 
-	return schemas, nil
+	return icebergSchemas, nil
 }
 
-func (storage *StorageS3) IcebergSchemaTables() (schemaTables []SchemaTable, err error) {
-	schemas, err := storage.IcebergSchemas()
+func (storage *StorageS3) IcebergSchemaTables() (icebergSchemaTables []SchemaTable, err error) {
+	icebergSchemas, err := storage.IcebergSchemas()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, schema := range schemas {
-		schemaPrefix := storage.config.IcebergPath + "/" + schema + "/"
-		tables, err := storage.nestedDirectoryPrefixes(schemaPrefix)
+	for _, icebergSchema := range icebergSchemas {
+		tables, err := storage.nestedDirectoryPrefixes(storage.config.IcebergPath + "/" + icebergSchema + "/")
 		if err != nil {
 			return nil, err
 		}
@@ -87,18 +86,17 @@ func (storage *StorageS3) IcebergSchemaTables() (schemaTables []SchemaTable, err
 			tableParts := strings.Split(tablePrefix, "/")
 			table := tableParts[len(tableParts)-2]
 
-			schemaTables = append(schemaTables, SchemaTable{Schema: schema, Table: table})
+			icebergSchemaTables = append(icebergSchemaTables, SchemaTable{Schema: icebergSchema, Table: table})
 		}
 	}
 
-	return schemaTables, nil
+	return icebergSchemaTables, nil
 }
 
 // Write ---------------------------------------------------------------------------------------------------------------
 
 func (storage *StorageS3) DeleteSchema(schema string) (err error) {
-	schemaPrefix := storage.config.IcebergPath + "/" + schema + "/"
-	return storage.deleteNestedObjects(schemaPrefix)
+	return storage.deleteNestedObjects(storage.config.IcebergPath + "/" + schema + "/")
 }
 
 func (storage *StorageS3) DeleteSchemaTable(schemaTable SchemaTable) (err error) {
@@ -170,7 +168,7 @@ func (storage *StorageS3) CreateManifest(metadataDirPath string, parquetFile Par
 	}
 	defer DeleteTemporaryFile(tempFile)
 
-	manifestFile, err = storage.storageBase.WriteManifestFile(storage.fileSystemPrefix(), tempFile.Name(), parquetFile)
+	manifestFile, err = storage.storageBase.WriteManifestFile(storage.fullBucketPath(), tempFile.Name(), parquetFile)
 	if err != nil {
 		return ManifestFile{}, err
 	}
@@ -195,7 +193,7 @@ func (storage *StorageS3) CreateManifestList(metadataDirPath string, parquetFile
 	}
 	defer DeleteTemporaryFile(tempFile)
 
-	err = storage.storageBase.WriteManifestListFile(storage.fileSystemPrefix(), tempFile.Name(), parquetFile, manifestFile)
+	err = storage.storageBase.WriteManifestListFile(storage.fullBucketPath(), tempFile.Name(), parquetFile, manifestFile)
 	if err != nil {
 		return ManifestListFile{}, err
 	}
@@ -220,7 +218,7 @@ func (storage *StorageS3) CreateMetadata(metadataDirPath string, pgSchemaColumns
 	}
 	defer DeleteTemporaryFile(tempFile)
 
-	err = storage.storageBase.WriteMetadataFile(storage.fileSystemPrefix(), tempFile.Name(), pgSchemaColumns, parquetFile, manifestFile, manifestListFile)
+	err = storage.storageBase.WriteMetadataFile(storage.fullBucketPath(), tempFile.Name(), pgSchemaColumns, parquetFile, manifestFile, manifestListFile)
 	if err != nil {
 		return MetadataFile{}, err
 	}
@@ -272,11 +270,15 @@ func (storage *StorageS3) uploadFile(filePath string, file *os.File) (err error)
 	return nil
 }
 
-func (storage *StorageS3) tablePrefix(schemaTable SchemaTable) string {
-	return storage.config.IcebergPath + "/" + schemaTable.Schema + "/" + schemaTable.Table + "/"
+func (storage *StorageS3) tablePrefix(schemaTable SchemaTable, isIcebergSchemaTable ...bool) string {
+	if len(isIcebergSchemaTable) > 0 && isIcebergSchemaTable[0] {
+		return storage.config.IcebergPath + "/" + schemaTable.Schema + "/" + schemaTable.Table + "/"
+	}
+
+	return storage.config.IcebergPath + "/" + storage.config.Pg.SchemaPrefix + schemaTable.Schema + "/" + schemaTable.Table + "/"
 }
 
-func (storage *StorageS3) fileSystemPrefix() string {
+func (storage *StorageS3) fullBucketPath() string {
 	return "s3://" + storage.config.Aws.S3Bucket + "/"
 }
 

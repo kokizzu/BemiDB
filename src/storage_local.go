@@ -20,40 +20,40 @@ func NewLocalStorage(config *Config) *StorageLocal {
 
 // Read ----------------------------------------------------------------------------------------------------------------
 
-func (storage *StorageLocal) IcebergMetadataFilePath(schemaTable SchemaTable) string {
-	return storage.tablePath(schemaTable) + "/metadata/v1.metadata.json"
+func (storage *StorageLocal) IcebergMetadataFilePath(icebergSchemaTable SchemaTable) string {
+	return storage.tablePath(icebergSchemaTable, true) + "/metadata/v1.metadata.json"
 }
 
-func (storage *StorageLocal) IcebergSchemas() (schemas []string, err error) {
+func (storage *StorageLocal) IcebergSchemas() (icebergSchemas []string, err error) {
 	schemasPath := storage.absoluteIcebergPath()
-	schemas, err = storage.nestedDirectories(schemasPath)
+	icebergSchemas, err = storage.nestedDirectories(schemasPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return schemas, nil
+	return icebergSchemas, nil
 }
 
-func (storage *StorageLocal) IcebergSchemaTables() (schemaTables []SchemaTable, err error) {
+func (storage *StorageLocal) IcebergSchemaTables() (icebergSchemaTables []SchemaTable, err error) {
 	schemasPath := storage.absoluteIcebergPath()
-	schemas, err := storage.IcebergSchemas()
+	icebergSchemas, err := storage.IcebergSchemas()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, schema := range schemas {
-		tablesPath := filepath.Join(schemasPath, schema)
+	for _, icebergSchema := range icebergSchemas {
+		tablesPath := filepath.Join(schemasPath, icebergSchema)
 		tables, err := storage.nestedDirectories(tablesPath)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, table := range tables {
-			schemaTables = append(schemaTables, SchemaTable{Schema: schema, Table: table})
+			icebergSchemaTables = append(icebergSchemaTables, SchemaTable{Schema: icebergSchema, Table: table})
 		}
 	}
 
-	return schemaTables, nil
+	return icebergSchemaTables, nil
 }
 
 func (storage *StorageLocal) absoluteIcebergPath(relativePaths ...string) string {
@@ -197,8 +197,11 @@ func (storage *StorageLocal) CreateVersionHint(metadataDirPath string, metadataF
 	return nil
 }
 
-func (storage *StorageLocal) tablePath(schemaTable SchemaTable) string {
-	return storage.absoluteIcebergPath(schemaTable.Schema, schemaTable.Table)
+func (storage *StorageLocal) tablePath(schemaTable SchemaTable, isIcebergSchemaTable ...bool) string {
+	if len(isIcebergSchemaTable) > 0 && isIcebergSchemaTable[0] {
+		return storage.absoluteIcebergPath(schemaTable.Schema, schemaTable.Table)
+	}
+	return storage.absoluteIcebergPath(storage.config.Pg.SchemaPrefix+schemaTable.Schema, schemaTable.Table)
 }
 
 func (storage *StorageLocal) fileSystemPrefix() string {

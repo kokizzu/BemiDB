@@ -108,14 +108,14 @@ func NewProxy(config *Config, duckdb *Duckdb, icebergReader *IcebergReader) *Pro
 		PanicIfError(err)
 	}
 
-	schemaTables, err := icebergReader.SchemaTables()
+	icebergSchemaTables, err := icebergReader.SchemaTables()
 	PanicIfError(err)
-	for _, schemaTable := range schemaTables {
-		metadataFilePath := icebergReader.MetadataFilePath(schemaTable)
+	for _, icebergSchemaTable := range icebergSchemaTables {
+		metadataFilePath := icebergReader.MetadataFilePath(icebergSchemaTable)
 		_, err := duckdb.ExecContext(
 			ctx,
 			"CREATE VIEW IF NOT EXISTS \"$schema\".\"$table\" AS SELECT * FROM iceberg_scan('$metadataFilePath', skip_schema_inference = true)",
-			map[string]string{"schema": schemaTable.Schema, "table": schemaTable.Table, "metadataFilePath": metadataFilePath},
+			map[string]string{"schema": icebergSchemaTable.Schema, "table": icebergSchemaTable.Table, "metadataFilePath": metadataFilePath},
 		)
 		PanicIfError(err)
 	}

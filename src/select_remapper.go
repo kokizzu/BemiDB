@@ -153,16 +153,16 @@ func (selectRemapper *SelectRemapper) remapTable(node *pgQuery.Node) *pgQuery.No
 	if schemaName == INFORMATION_SCHEMA {
 		switch tableName {
 		case INFORMATION_SCHEMA_TABLES:
-			schemaTables, err := selectRemapper.icebergReader.SchemaTables()
+			icebergSchemaTables, err := selectRemapper.icebergReader.SchemaTables()
 			if err != nil {
 				LogError(selectRemapper.config, "Failed to get Iceberg schema tables:", err)
 				return node
 			}
-			if len(schemaTables) == 0 {
+			if len(icebergSchemaTables) == 0 {
 				return node
 			}
 			// FROM information_schema.tables -> return Iceberg tables
-			tableNode := MakeInformationSchemaTablesNode(selectRemapper.config.Database, schemaTables)
+			tableNode := MakeInformationSchemaTablesNode(selectRemapper.config.Database, icebergSchemaTables)
 			return selectRemapper.overrideTable(node, tableNode)
 		default:
 			return node

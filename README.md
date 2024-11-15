@@ -11,9 +11,6 @@ It consists of a single binary that seamlessly connects to a Postgres database, 
 - [Use cases](#use-cases)
 - [Quickstart](#quickstart)
 - [Configuration](#configuration)
-  - [Local disk storage](#local-disk-storage)
-  - [S3 block storage](#s3-block-storage)
-  - [Periodic data sync](#periodic-data-sync)
 - [Architecture](#architecture)
 - [Benchmark](#benchmark)
 - [Data type mapping](#data-type-mapping)
@@ -165,19 +162,48 @@ Here is the minimal IAM policy required for BemiDB to work with S3:
 Sync data periodically from a Postgres database:
 
 ```sh
-./bemidb --pg-database-url postgres://postgres:postgres@localhost:5432/dbname --interval 1h sync
+./bemidb \
+  --pg-sync-interval 1h \
+  --pg-database-url postgres://postgres:postgres@localhost:5432/dbname \
+  sync
 ```
 
 Alternatively, you can set the interval using environment variables:
 
 ```sh
-export PG_DATABASE_URL=postgres://postgres:postgres@localhost:5432/dbname
 export PG_SYNC_INTERVAL=1h
+export PG_DATABASE_URL=postgres://postgres:postgres@localhost:5432/dbname
 
 ./bemidb sync
 ```
 
 Note that incremental real-time replication is not supported yet (WIP). Please see the [Future roadmap](#future-roadmap).
+
+### Syncing from multiple Postgres databases
+
+BemiDB supports syncing data from multiple Postgres databases into the same BemiDB database by allowing prefixing schemas.
+
+For example, if two Postgres databases `db1` and `db2` contain `public` schemas, you can prefix them as follows:
+
+```sh
+./bemidb \
+  --pg-schema-prefix db1_ \ # or PG_SCHEMA_PREFIX=db1_ using an env variable
+  --pg-database-url postgres://postgres:postgres@localhost:5432/db1 \
+  sync
+
+./bemidb \
+  --pg-schema-prefix db2_ \ # or PG_SCHEMA_PREFIX=db2_ using an env variable
+  --pg-database-url postgres://postgres:postgres@localhost:5432/db2 \
+  sync
+```
+
+Then you can query and join tables from both Postgres databases in the same BemiDB database:
+
+```sh
+./bemidb start
+
+psql postgres://localhost:54321/bemidb -c "SELECT * FROM db1_public.[TABLE] JOIN db2_public.[TABLE] ON ..."
+```
 
 ## Architecture
 

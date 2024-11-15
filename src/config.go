@@ -22,6 +22,7 @@ const (
 
 	ENV_PG_DATABASE_URL  = "PG_DATABASE_URL"
 	ENV_PG_SYNC_INTERVAL = "PG_SYNC_INTERVAL"
+	ENV_PG_SCHEMA_PREFIX = "PG_SCHEMA_PREFIX"
 
 	DEFAULT_PORT              = "54321"
 	DEFAULT_DATABASE          = "bemidb"
@@ -34,6 +35,19 @@ const (
 	STORAGE_TYPE_S3    = "S3"
 )
 
+type AwsConfig struct {
+	Region          string
+	S3Bucket        string
+	AccessKeyId     string
+	SecretAccessKey string
+}
+
+type PgConfig struct {
+	DatabaseUrl  string
+	SyncInterval string // optional
+	SchemaPrefix string // optional
+}
+
 type Config struct {
 	Port            string
 	Database        string
@@ -41,16 +55,8 @@ type Config struct {
 	InitSqlFilepath string
 	LogLevel        string
 	StorageType     string
-	PgDatabaseUrl   string
 	Aws             AwsConfig
-	SyncInterval    string
-}
-
-type AwsConfig struct {
-	Region          string
-	S3Bucket        string
-	AccessKeyId     string
-	SecretAccessKey string
+	Pg              PgConfig
 }
 
 var _config Config
@@ -94,9 +100,10 @@ func registerFlags() {
 		panic("Invalid storage type " + _config.StorageType + ". Must be one of " + strings.Join(STORAGE_TYPES, ", "))
 	}
 
-	flag.StringVar(&_config.SyncInterval, "interval", os.Getenv(ENV_PG_SYNC_INTERVAL), "Interval between syncs (e.g., 1h, 30m). Valid time units are 'ns', 'us' (or 'µs'), 'ms', 's', 'm', 'h'.")
-
-	flag.StringVar(&_config.PgDatabaseUrl, "pg-database-url", os.Getenv(ENV_PG_DATABASE_URL), "PostgreSQL database URL")
+	_config.Pg = PgConfig{}
+	flag.StringVar(&_config.Pg.SchemaPrefix, "pg-schema-prefix", os.Getenv(ENV_PG_SCHEMA_PREFIX), "(Optional) Prefix for PostgreSQL schema names")
+	flag.StringVar(&_config.Pg.SyncInterval, "pg-sync-interval", os.Getenv(ENV_PG_SYNC_INTERVAL), "(Optional) Interval between syncs (e.g., 1h, 30m). Valid time units are 'ns', 'us' (or 'µs'), 'ms', 's', 'm', 'h'.")
+	flag.StringVar(&_config.Pg.DatabaseUrl, "pg-database-url", os.Getenv(ENV_PG_DATABASE_URL), "PostgreSQL database URL")
 
 	if _config.StorageType == STORAGE_TYPE_S3 {
 		_config.Aws = AwsConfig{}

@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.8.0"
+const VERSION = "0.9.0"
 
 func main() {
 	flag.Parse()
@@ -23,15 +23,15 @@ func main() {
 	case "start":
 		start(config)
 	case "sync":
-		if config.SyncInterval != "" {
-			duration, err := time.ParseDuration(config.SyncInterval)
+		if config.Pg.SyncInterval != "" {
+			duration, err := time.ParseDuration(config.Pg.SyncInterval)
 			if err != nil {
-				panic("Invalid interval format: " + config.SyncInterval)
+				panic("Invalid interval format: " + config.Pg.SyncInterval)
 			}
-			LogInfo(config, "Starting sync loop with interval:", config.SyncInterval)
+			LogInfo(config, "Starting sync loop with interval:", config.Pg.SyncInterval)
 			for {
 				syncFromPg(config)
-				LogInfo(config, "Sleeping for", config.SyncInterval)
+				LogInfo(config, "Sleeping for", config.Pg.SyncInterval)
 				time.Sleep(duration)
 			}
 		} else {
