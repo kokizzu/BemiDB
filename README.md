@@ -110,7 +110,7 @@ BemiDB natively supports S3 storage. You can specify the S3 settings using the f
 ./bemidb \
   --port 54321 \
   --database bemidb \
-  --storage-type AWS_S3 \
+  --storage-type S3 \
   --iceberg-path iceberg \ # s3://[AWS_S3_BUCKET]/iceberg/*
   --aws-region [AWS_REGION] \
   --aws-s3-bucket [AWS_S3_BUCKET] \
@@ -124,16 +124,17 @@ To run BemiDB with environment variables:
 ```sh
 export BEMIDB_PORT=54321
 export BEMIDB_DATABASE=bemidb
-export BEMIDB_STORAGE_TYPE=AWS_S3
+export BEMIDB_STORAGE_TYPE=S3
 export BEMIDB_ICEBERG_PATH=iceberg
-export BEMIDB_AWS_REGION=[AWS_REGION]
-export BEMIDB_AWS_S3_BUCKET=[AWS_S3_BUCKET]
-export BEMIDB_AWS_ACCESS_KEY_ID=[AWS_ACCESS_KEY_ID]
-export BEMIDB_AWS_SECRET_ACCESS_KEY=[AWS_SECRET_ACCESS_KEY]
+export AWS_REGION=[AWS_REGION]
+export AWS_S3_BUCKET=[AWS_S3_BUCKET]
+export AWS_ACCESS_KEY_ID=[AWS_ACCESS_KEY_ID]
+export AWS_SECRET_ACCESS_KEY=[AWS_SECRET_ACCESS_KEY]
 
 ./bemidb start
 ```
 
+CLI arguments take precedence over environment variables, so you can override the environment variables with CLI arguments.
 
 Here is the minimal IAM policy required for BemiDB to work with S3:
 

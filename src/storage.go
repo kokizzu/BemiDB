@@ -5,9 +5,6 @@ import (
 )
 
 const (
-	STORAGE_TYPE_LOCAL  = "LOCAL"
-	STORAGE_TYPE_AWS_S3 = "AWS_S3"
-
 	PARQUET_PARALLEL_NUMBER  = 4
 	PARQUET_ROW_GROUP_SIZE   = 128 * 1024 * 1024 // 128 MB
 	PARQUET_COMPRESSION_TYPE = parquet.CompressionCodec_ZSTD
@@ -15,7 +12,7 @@ const (
 	VERSION_HINT_FILE_NAME = "version-hint.text"
 )
 
-var STORAGE_TYPES = []string{STORAGE_TYPE_LOCAL, STORAGE_TYPE_AWS_S3}
+var STORAGE_TYPES = []string{STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3}
 
 type ParquetFileStats struct {
 	ColumnSizes     map[int]int64
@@ -71,7 +68,7 @@ func NewStorage(config *Config) Storage {
 	switch config.StorageType {
 	case STORAGE_TYPE_LOCAL:
 		return NewLocalStorage(config)
-	case STORAGE_TYPE_AWS_S3:
+	case STORAGE_TYPE_S3:
 		return NewS3Storage(config)
 	}
 

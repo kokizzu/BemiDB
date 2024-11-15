@@ -73,11 +73,11 @@ func TestLoadConfig(t *testing.T) {
 		t.Setenv("BEMIDB_INIT_SQL", "./init/duckdb.sql")
 		t.Setenv("BEMIDB_ICEBERG_PATH", "iceberg-path")
 		t.Setenv("BEMIDB_LOG_LEVEL", "ERROR")
-		t.Setenv("BEMIDB_STORAGE_TYPE", "AWS_S3")
-		t.Setenv("BEMIDB_AWS_REGION", "us-west-1")
-		t.Setenv("BEMIDB_AWS_S3_BUCKET", "my_bucket")
-		t.Setenv("BEMIDB_AWS_ACCESS_KEY_ID", "my_access_key_id")
-		t.Setenv("BEMIDB_AWS_SECRET_ACCESS_KEY", "my_secret_access_key")
+		t.Setenv("BEMIDB_STORAGE_TYPE", "S3")
+		t.Setenv("AWS_REGION", "us-west-1")
+		t.Setenv("AWS_S3_BUCKET", "my_bucket")
+		t.Setenv("AWS_ACCESS_KEY_ID", "my_access_key_id")
+		t.Setenv("AWS_SECRET_ACCESS_KEY", "my_secret_access_key")
 
 		config := LoadConfig(true)
 
@@ -96,8 +96,8 @@ func TestLoadConfig(t *testing.T) {
 		if config.LogLevel != "ERROR" {
 			t.Errorf("Expected logLevel to be ERROR, got %s", config.LogLevel)
 		}
-		if config.StorageType != "AWS_S3" {
-			t.Errorf("Expected storageType to be AWS_S3, got %s", config.StorageType)
+		if config.StorageType != "S3" {
+			t.Errorf("Expected storageType to be S3, got %s", config.StorageType)
 		}
 		if config.Aws.Region != "us-west-1" {
 			t.Errorf("Expected awsRegion to be us-west-1, got %s", config.Aws.Region)

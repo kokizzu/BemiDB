@@ -40,7 +40,7 @@ func NewDuckdb(config *Config) *Duckdb {
 	}
 
 	switch config.StorageType {
-	case STORAGE_TYPE_AWS_S3:
+	case STORAGE_TYPE_S3:
 		query := "CREATE SECRET aws_s3_secret (TYPE S3, KEY_ID '$accessKeyId', SECRET '$secretAccessKey', REGION '$region', SCOPE '$s3Bucket')"
 		_, err = db.ExecContext(ctx, replaceNamedStringArgs(query, map[string]string{
 			"accessKeyId":     config.Aws.AccessKeyId,

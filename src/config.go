@@ -15,10 +15,10 @@ const (
 	ENV_LOG_LEVEL         = "BEMIDB_LOG_LEVEL"
 	ENV_STORAGE_TYPE      = "BEMIDB_STORAGE_TYPE"
 
-	ENV_AWS_REGION            = "BEMIDB_AWS_REGION"
-	ENV_AWS_S3_BUCKET         = "BEMIDB_AWS_S3_BUCKET"
-	ENV_AWS_ACCESS_KEY_ID     = "BEMIDB_AWS_ACCESS_KEY_ID"
-	ENV_AWS_SECRET_ACCESS_KEY = "BEMIDB_AWS_SECRET_ACCESS_KEY"
+	ENV_AWS_REGION            = "AWS_REGION"
+	ENV_AWS_S3_BUCKET         = "AWS_S3_BUCKET"
+	ENV_AWS_ACCESS_KEY_ID     = "AWS_ACCESS_KEY_ID"
+	ENV_AWS_SECRET_ACCESS_KEY = "AWS_SECRET_ACCESS_KEY"
 
 	ENV_PG_DATABASE_URL  = "PG_DATABASE_URL"
 	ENV_PG_SYNC_INTERVAL = "PG_SYNC_INTERVAL"
@@ -29,6 +29,9 @@ const (
 	DEFAULT_ICEBERG_PATH      = "iceberg"
 	DEFAULT_LOG_LEVEL         = "INFO"
 	DEFAULT_DB_STORAGE_TYPE   = "LOCAL"
+
+	STORAGE_TYPE_LOCAL = "LOCAL"
+	STORAGE_TYPE_S3    = "S3"
 )
 
 type Config struct {
@@ -84,7 +87,7 @@ func registerFlags() {
 		panic("Invalid log level " + _config.LogLevel + ". Must be one of " + strings.Join(LOG_LEVELS, ", "))
 	}
 
-	flag.StringVar(&_config.StorageType, "storage-type", os.Getenv(ENV_STORAGE_TYPE), "Storage type: LOCAL, AWS_S3 (default: "+DEFAULT_DB_STORAGE_TYPE+")")
+	flag.StringVar(&_config.StorageType, "storage-type", os.Getenv(ENV_STORAGE_TYPE), "Storage type: LOCAL, S3 (default: "+DEFAULT_DB_STORAGE_TYPE+")")
 	if _config.StorageType == "" {
 		_config.StorageType = DEFAULT_DB_STORAGE_TYPE
 	} else if !slices.Contains(STORAGE_TYPES, _config.StorageType) {
@@ -95,7 +98,7 @@ func registerFlags() {
 
 	flag.StringVar(&_config.PgDatabaseUrl, "pg-database-url", os.Getenv(ENV_PG_DATABASE_URL), "PostgreSQL database URL")
 
-	if _config.StorageType == STORAGE_TYPE_AWS_S3 {
+	if _config.StorageType == STORAGE_TYPE_S3 {
 		_config.Aws = AwsConfig{}
 
 		flag.StringVar(&_config.Aws.Region, "aws-region", os.Getenv(ENV_AWS_REGION), "AWS region")
