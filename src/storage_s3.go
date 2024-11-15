@@ -56,7 +56,7 @@ func (storage *StorageS3) IcebergMetadataFilePath(icebergSchemaTable SchemaTable
 }
 
 func (storage *StorageS3) IcebergSchemas() (icebergSchemas []string, err error) {
-	schemasPrefix := storage.config.IcebergPath + "/"
+	schemasPrefix := storage.config.StoragePath + "/"
 	icebergSchemas, err = storage.nestedDirectoryPrefixes(schemasPrefix)
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func (storage *StorageS3) IcebergSchemaTables() (icebergSchemaTables []SchemaTab
 	}
 
 	for _, icebergSchema := range icebergSchemas {
-		tables, err := storage.nestedDirectoryPrefixes(storage.config.IcebergPath + "/" + icebergSchema + "/")
+		tables, err := storage.nestedDirectoryPrefixes(storage.config.StoragePath + "/" + icebergSchema + "/")
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +96,7 @@ func (storage *StorageS3) IcebergSchemaTables() (icebergSchemaTables []SchemaTab
 // Write ---------------------------------------------------------------------------------------------------------------
 
 func (storage *StorageS3) DeleteSchema(schema string) (err error) {
-	return storage.deleteNestedObjects(storage.config.IcebergPath + "/" + schema + "/")
+	return storage.deleteNestedObjects(storage.config.StoragePath + "/" + schema + "/")
 }
 
 func (storage *StorageS3) DeleteSchemaTable(schemaTable SchemaTable) (err error) {
@@ -272,10 +272,10 @@ func (storage *StorageS3) uploadFile(filePath string, file *os.File) (err error)
 
 func (storage *StorageS3) tablePrefix(schemaTable SchemaTable, isIcebergSchemaTable ...bool) string {
 	if len(isIcebergSchemaTable) > 0 && isIcebergSchemaTable[0] {
-		return storage.config.IcebergPath + "/" + schemaTable.Schema + "/" + schemaTable.Table + "/"
+		return storage.config.StoragePath + "/" + schemaTable.Schema + "/" + schemaTable.Table + "/"
 	}
 
-	return storage.config.IcebergPath + "/" + storage.config.Pg.SchemaPrefix + schemaTable.Schema + "/" + schemaTable.Table + "/"
+	return storage.config.StoragePath + "/" + storage.config.Pg.SchemaPrefix + schemaTable.Schema + "/" + schemaTable.Table + "/"
 }
 
 func (storage *StorageS3) fullBucketPath() string {

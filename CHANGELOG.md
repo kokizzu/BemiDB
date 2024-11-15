@@ -1,10 +1,15 @@
 # Changelog
 
+#### WIP
+
+- **Breaking change**: Rename `--iceberg-path` flag to `--storage-path`
+
 #### [v0.9.0](https://github.com/BemiHQ/BemiDB/compare/v0.8.0...v0.9.0) - 2024-11-15
 
 - Allow syncing multiple PG databases into the same BemiDB database using schema prefixes
 - **Breaking change**: Read default `AWS_*` env vars if they exist instead of `BEMIDB_AWS_*`
 - **Breaking change**: Rename `--storage-type` flag value from `AWS_S3` to just `S3`
+- **Breaking change**: Rename `--interval` flag name to `--pg-sync-interval`
 
 #### [v0.8.0](https://github.com/BemiHQ/BemiDB/compare/v0.7.0...v0.8.0) - 2024-11-14
 

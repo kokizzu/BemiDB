@@ -60,7 +60,7 @@ func (storage *StorageLocal) absoluteIcebergPath(relativePaths ...string) string
 	execPath, err := os.Getwd()
 	PanicIfError(err)
 
-	return filepath.Join(execPath, storage.config.IcebergPath, filepath.Join(relativePaths...))
+	return filepath.Join(execPath, storage.config.StoragePath, filepath.Join(relativePaths...))
 }
 
 // Write ---------------------------------------------------------------------------------------------------------------

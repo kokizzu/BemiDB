@@ -79,7 +79,7 @@ Here is an example of running BemiDB with default settings and storing data in a
   --port 54321 \
   --database bemidb \
   --storage-type LOCAL \
-  --iceberg-path ./iceberg \ # $PWD/iceberg/*
+  --storage-path ./iceberg \ # $PWD/iceberg/*
   --init-sql ./init.sql \
   --log-level INFO \
   start
@@ -92,7 +92,7 @@ To run BemiDB with environment variables:
 export BEMIDB_PORT=54321
 export BEMIDB_DATABASE=bemidb
 export BEMIDB_STORAGE_TYPE=LOCAL
-export BEMIDB_ICEBERG_PATH=./iceberg
+export BEMIDB_STORAGE_PATH=./iceberg
 export BEMIDB_INIT_SQL=./init.sql
 export BEMIDB_LOG_LEVEL=INFO
 
@@ -108,7 +108,7 @@ BemiDB natively supports S3 storage. You can specify the S3 settings using the f
   --port 54321 \
   --database bemidb \
   --storage-type S3 \
-  --iceberg-path iceberg \ # s3://[AWS_S3_BUCKET]/iceberg/*
+  --storage-path iceberg \ # s3://[AWS_S3_BUCKET]/iceberg/*
   --aws-region [AWS_REGION] \
   --aws-s3-bucket [AWS_S3_BUCKET] \
   --aws-access-key-id [AWS_ACCESS_KEY_ID] \
@@ -122,7 +122,7 @@ To run BemiDB with environment variables:
 export BEMIDB_PORT=54321
 export BEMIDB_DATABASE=bemidb
 export BEMIDB_STORAGE_TYPE=S3
-export BEMIDB_ICEBERG_PATH=iceberg
+export BEMIDB_STORAGE_PATH=iceberg
 export AWS_REGION=[AWS_REGION]
 export AWS_S3_BUCKET=[AWS_S3_BUCKET]
 export AWS_ACCESS_KEY_ID=[AWS_ACCESS_KEY_ID]

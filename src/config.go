@@ -11,7 +11,7 @@ const (
 	ENV_PORT              = "BEMIDB_PORT"
 	ENV_DATABASE          = "BEMIDB_DATABASE"
 	ENV_INIT_SQL_FILEPATH = "BEMIDB_INIT_SQL"
-	ENV_ICEBERG_PATH      = "BEMIDB_ICEBERG_PATH"
+	ENV_STORAGE_PATH      = "BEMIDB_STORAGE_PATH"
 	ENV_LOG_LEVEL         = "BEMIDB_LOG_LEVEL"
 	ENV_STORAGE_TYPE      = "BEMIDB_STORAGE_TYPE"
 
@@ -27,7 +27,7 @@ const (
 	DEFAULT_PORT              = "54321"
 	DEFAULT_DATABASE          = "bemidb"
 	DEFAULT_INIT_SQL_FILEPATH = "./init.sql"
-	DEFAULT_ICEBERG_PATH      = "iceberg"
+	DEFAULT_STORAGE_PATH      = "iceberg"
 	DEFAULT_LOG_LEVEL         = "INFO"
 	DEFAULT_DB_STORAGE_TYPE   = "LOCAL"
 
@@ -51,10 +51,10 @@ type PgConfig struct {
 type Config struct {
 	Port            string
 	Database        string
-	IcebergPath     string
 	InitSqlFilepath string
 	LogLevel        string
 	StorageType     string
+	StoragePath     string
 	Aws             AwsConfig
 	Pg              PgConfig
 }
@@ -76,9 +76,9 @@ func registerFlags() {
 		_config.Database = DEFAULT_DATABASE
 	}
 
-	flag.StringVar(&_config.IcebergPath, "iceberg-path", os.Getenv(ENV_ICEBERG_PATH), "Path to the Iceberg folder (default: "+DEFAULT_ICEBERG_PATH+")")
-	if _config.IcebergPath == "" {
-		_config.IcebergPath = DEFAULT_ICEBERG_PATH
+	flag.StringVar(&_config.StoragePath, "storage-path", os.Getenv(ENV_STORAGE_PATH), "Path to the storage folder (default: "+DEFAULT_STORAGE_PATH+")")
+	if _config.StoragePath == "" {
+		_config.StoragePath = DEFAULT_STORAGE_PATH
 	}
 
 	flag.StringVar(&_config.InitSqlFilepath, "init-sql", os.Getenv(ENV_INIT_SQL_FILEPATH), "Path to the initialization SQL file (default: "+DEFAULT_INIT_SQL_FILEPATH+")")

@@ -17,8 +17,8 @@ func TestLoadConfig(t *testing.T) {
 		if config.InitSqlFilepath != "./init.sql" {
 			t.Errorf("Expected duckdbInitFilepath to be ./init.sql, got %s", config.InitSqlFilepath)
 		}
-		if config.IcebergPath != "iceberg" {
-			t.Errorf("Expected icebergPath to be iceberg, got %s", config.IcebergPath)
+		if config.StoragePath != "iceberg" {
+			t.Errorf("Expected StoragePath to be iceberg, got %s", config.StoragePath)
 		}
 		if config.LogLevel != "INFO" {
 			t.Errorf("Expected logLevel to be INFO, got %s", config.LogLevel)
@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 		t.Setenv("BEMIDB_PORT", "12345")
 		t.Setenv("BEMIDB_DATABASE", "mydb")
 		t.Setenv("BEMIDB_INIT_SQL", "./init/duckdb.sql")
-		t.Setenv("BEMIDB_ICEBERG_PATH", "iceberg-path")
+		t.Setenv("BEMIDB_STORAGE_PATH", "storage-path")
 		t.Setenv("BEMIDB_LOG_LEVEL", "ERROR")
 		t.Setenv("BEMIDB_STORAGE_TYPE", "LOCAL")
 
@@ -56,8 +56,8 @@ func TestLoadConfig(t *testing.T) {
 		if config.InitSqlFilepath != "./init/duckdb.sql" {
 			t.Errorf("Expected duckdbInitFilepath to be ./init/duckdb.sql, got %s", config.InitSqlFilepath)
 		}
-		if config.IcebergPath != "iceberg-path" {
-			t.Errorf("Expected icebergPath to be iceberg-path, got %s", config.IcebergPath)
+		if config.StoragePath != "storage-path" {
+			t.Errorf("Expected StoragePath to be storage-path, got %s", config.StoragePath)
 		}
 		if config.LogLevel != "ERROR" {
 			t.Errorf("Expected logLevel to be ERROR, got %s", config.LogLevel)
@@ -71,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 		t.Setenv("BEMIDB_PORT", "12345")
 		t.Setenv("BEMIDB_DATABASE", "mydb")
 		t.Setenv("BEMIDB_INIT_SQL", "./init/duckdb.sql")
-		t.Setenv("BEMIDB_ICEBERG_PATH", "iceberg-path")
+		t.Setenv("BEMIDB_STORAGE_PATH", "storage-path")
 		t.Setenv("BEMIDB_LOG_LEVEL", "ERROR")
 		t.Setenv("BEMIDB_STORAGE_TYPE", "S3")
 		t.Setenv("AWS_REGION", "us-west-1")
@@ -90,8 +90,8 @@ func TestLoadConfig(t *testing.T) {
 		if config.InitSqlFilepath != "./init/duckdb.sql" {
 			t.Errorf("Expected duckdbInitFilepath to be ./init/duckdb.sql, got %s", config.InitSqlFilepath)
 		}
-		if config.IcebergPath != "iceberg-path" {
-			t.Errorf("Expected icebergPath to be iceberg-path, got %s", config.IcebergPath)
+		if config.StoragePath != "storage-path" {
+			t.Errorf("Expected StoragePath to be storage-path, got %s", config.StoragePath)
 		}
 		if config.LogLevel != "ERROR" {
 			t.Errorf("Expected logLevel to be ERROR, got %s", config.LogLevel)
@@ -136,7 +136,7 @@ func TestLoadConfig(t *testing.T) {
 			"--port", "12345",
 			"--database", "mydb",
 			"--init-sql", "./init/duckdb.sql",
-			"--iceberg-path", "iceberg-path",
+			"--storage-path", "storage-path",
 			"--log-level", "ERROR",
 			"--storage-type", "local",
 			"--pg-database-url", "postgres://user:password@localhost:5432/db",
@@ -155,8 +155,8 @@ func TestLoadConfig(t *testing.T) {
 		if config.InitSqlFilepath != "./init/duckdb.sql" {
 			t.Errorf("Expected duckdbInitFilepath to be ./init/duckdb.sql, got %s", config.InitSqlFilepath)
 		}
-		if config.IcebergPath != "iceberg-path" {
-			t.Errorf("Expected icebergPath to be iceberg-path, got %s", config.IcebergPath)
+		if config.StoragePath != "storage-path" {
+			t.Errorf("Expected StoragePath to be storage-path, got %s", config.StoragePath)
 		}
 		if config.LogLevel != "ERROR" {
 			t.Errorf("Expected logLevel to be ERROR, got %s", config.LogLevel)

@@ -269,7 +269,7 @@ func loadTestConfig() *Config {
 
 	config := LoadConfig(true)
 	config.StorageType = STORAGE_TYPE_LOCAL
-	config.IcebergPath = "../iceberg-test"
+	config.StoragePath = "../iceberg-test"
 	config.LogLevel = "ERROR"
 
 	return config
