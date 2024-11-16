@@ -1,7 +1,8 @@
 # Changelog
 
-#### WIP
+#### [v0.10.0](https://github.com/BemiHQ/BemiDB/compare/v0.9.0...v0.10.0) - 2024-11-16
 
+- Add support for Postgres network address types
 - **Breaking change**: Rename `--iceberg-path` flag to `--storage-path`
 
 #### [v0.9.0](https://github.com/BemiHQ/BemiDB/compare/v0.8.0...v0.9.0) - 2024-11-15

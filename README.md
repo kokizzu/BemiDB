@@ -131,7 +131,7 @@ export AWS_SECRET_ACCESS_KEY=[AWS_SECRET_ACCESS_KEY]
 ./bemidb start
 ```
 
-CLI arguments take precedence over environment variables, so you can override the environment variables with CLI arguments.
+CLI arguments take precedence over environment variables. I.e. you can override the environment variables with CLI arguments.
 
 Here is the minimal IAM policy required for BemiDB to work with S3:
 
@@ -264,6 +264,10 @@ Primitive data types are mapped as follows:
 | `path`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `polygon`               | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `circle`                | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `cidr`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `inet`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `macaddr`               | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `macaddr8`              | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `tsvector`              | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `json`                  | `BYTE_ARRAY` (`UTF8`)                             | `string` (JSON logical type)     |
 | `jsonb`                 | `BYTE_ARRAY` (`UTF8`)                             | `string` (JSON logical type)     |

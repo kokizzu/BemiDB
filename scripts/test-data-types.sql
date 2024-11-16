@@ -31,6 +31,8 @@ CREATE TABLE test_table (
   uuid_column UUID,
   bytea_column BYTEA,
   interval_column INTERVAL,
+  point_column POINT,
+  inet_column INET,
   json_column JSON,
   jsonb_column JSONB,
   tsvector_column TSVECTOR,
@@ -62,6 +64,8 @@ INSERT INTO test_table (
   uuid_column,
   bytea_column,
   interval_column,
+  point_column,
+  inet_column,
   json_column,
   jsonb_column,
   tsvector_column,
@@ -69,63 +73,67 @@ INSERT INTO test_table (
   array_int_column,
   user_defined_column
 ) VALUES (
-  TRUE,
-  'bpchar',
-  'varchar',
-  'text',
-  32767::INT2,
-  2147483647::INT4,
-  9223372036854775807::INT8,
-  3.14::FLOAT4,
-  3.141592653589793::FLOAT8,
-  12345.67::NUMERIC(10, 2),
-  '2024-01-01',
-  '12:00:00.123456',
-  '12:00:00.123',
-  '12:00:00.123456-05',
-  '12:00:00.123-05',
-  '2024-01-01 12:00:00.123456',
-  '2024-01-01 12:00:00.123',
-  '2024-01-01 12:00:00.123456-05',
-  '2024-01-01 12:00:00.123-05',
-  gen_random_uuid(),
-  decode('48656c6c6f', 'hex'),
-  '1 mon 2 days 01:00:01.000001'::INTERVAL,
-  '{"key": "value"}'::JSON,
-  '{"key": "value"}'::JSONB,
-  to_tsvector('Sample text for tsvector'),
-  '{"one", "two", "three"}',
-  '{1, 2, 3}',
-  ROW('Toronto')
+  TRUE,                                     -- bool_column
+  'bpchar',                                 -- bpchar_column
+  'varchar',                                -- varchar_column
+  'text',                                   -- text_column
+  32767::INT2,                              -- int2_column
+  2147483647::INT4,                         -- int4_column
+  9223372036854775807::INT8,                -- int8_column
+  3.14::FLOAT4,                             -- float4_column
+  3.141592653589793::FLOAT8,                -- float8_column
+  12345.67::NUMERIC(10, 2),                 -- numeric_column
+  '2024-01-01',                             -- date_column
+  '12:00:00.123456',                        -- time_column
+  '12:00:00.123',                           -- time_ms_column
+  '12:00:00.123456-05',                     -- timetz_column
+  '12:00:00.123-05',                        -- timetz_ms_column
+  '2024-01-01 12:00:00.123456',             -- timestamp_column
+  '2024-01-01 12:00:00.123',                -- timestamp_ms_column
+  '2024-01-01 12:00:00.123456-05',          -- timestamptz_column
+  '2024-01-01 12:00:00.123-05',             -- timestamptz_ms_column
+  gen_random_uuid(),                        -- uuid_column
+  decode('48656c6c6f', 'hex'),              -- bytea_column
+  '1 mon 2 days 01:00:01.000001'::INTERVAL, -- interval_column
+  '(1, 2)'::POINT,                          -- point_column
+  '192.168.0.1',                            -- inet_column
+  '{"key": "value"}'::JSON,                 -- json_column
+  '{"key": "value"}'::JSONB,                -- jsonb_column
+  to_tsvector('Sample text for tsvector'),  -- tsvector_column
+  '{"one", "two", "three"}',                -- array_text_column
+  '{1, 2, 3}',                              -- array_int_column
+  ROW('Toronto')                            -- user_defined_column
 ), (
-  FALSE,
-  '',
-  NULL,
-  '',
-  -32767::INT2,
-  NULL,
-  -9223372036854775807::INT8,
-  NULL,
-  -3.141592653589793::FLOAT8,
-  -12345.00::NUMERIC(10, 2),
-  NULL,
-  '12:00:00.123',
-  NULL,
-  '12:00:00.12300+05',
-  '12:00:00.1+05',
-  '2024-01-01 12:00:00',
-  NULL,
-  '2024-01-01 12:00:00.000123+05',
-  '2024-01-01 12:00:00.12+05',
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  '{}'::JSONB,
-  NULL,
-  NULL,
-  '{}',
-  NULL
+  FALSE,                                    -- bool_column
+  '',                                       -- bpchar_column
+  NULL,                                     -- varchar_column
+  '',                                       -- text_column
+  -32767::INT2,                             -- int2_column
+  NULL,                                     -- int4_column
+  -9223372036854775807::INT8,               -- int8_column
+  NULL,                                     -- float4_column
+  -3.141592653589793::FLOAT8,               -- float8_column
+  -12345.00::NUMERIC(10, 2),                -- numeric_column
+  NULL,                                     -- date_column
+  '12:00:00.123',                           -- time_column
+  NULL,                                     -- time_ms_column
+  '12:00:00.12300+05',                      -- timetz_column
+  '12:00:00.1+05',                          -- timetz_ms_column
+  '2024-01-01 12:00:00',                    -- timestamp_column
+  NULL,                                     -- timestamp_ms_column
+  '2024-01-01 12:00:00.000123+05',          -- timestamptz_column
+  '2024-01-01 12:00:00.12+05',              -- timestamptz_ms_column
+  NULL,                                     -- uuid_column
+  NULL,                                     -- bytea_column
+  NULL,                                     -- interval_column
+  NULL,                                     -- point_column
+  NULL,                                     -- inet_column
+  NULL,                                     -- json_column
+  '{}'::JSONB,                              -- jsonb_column
+  NULL,                                     -- tsvector_column
+  NULL,                                     -- array_text_column
+  '{}',                                     -- array_int_column
+  NULL                                      -- user_defined_column
 );
 
 SELECT

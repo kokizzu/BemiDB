@@ -267,6 +267,14 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"point_column"},
 			"values":      {""},
 		},
+		"SELECT inet_column FROM public.test_table WHERE inet_column IS NOT NULL": {
+			"description": {"inet_column"},
+			"values":      {"192.168.0.1"},
+		},
+		"SELECT inet_column FROM public.test_table WHERE inet_column IS NULL": {
+			"description": {"inet_column"},
+			"values":      {""},
+		},
 		"SELECT array_text_column FROM public.test_table WHERE array_text_column IS NOT NULL": {
 			"description": {"array_text_column"},
 			"values":      {"{one,two,three}"},

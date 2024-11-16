@@ -139,16 +139,6 @@ var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 		DatetimePrecision: "6",
 	},
 	{
-		ColumnName: "json_column",
-		DataType:   "json",
-		UdtName:    "json",
-	},
-	{
-		ColumnName: "jsonb_column",
-		DataType:   "jsonb",
-		UdtName:    "jsonb",
-	},
-	{
 		ColumnName: "tsvector_column",
 		DataType:   "tsvector",
 		UdtName:    "tsvector",
@@ -157,6 +147,21 @@ var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 		ColumnName: "point_column",
 		DataType:   "point",
 		UdtName:    "point",
+	},
+	{
+		ColumnName: "inet_column",
+		DataType:   "inet",
+		UdtName:    "inet",
+	},
+	{
+		ColumnName: "json_column",
+		DataType:   "json",
+		UdtName:    "json",
+	},
+	{
+		ColumnName: "jsonb_column",
+		DataType:   "jsonb",
+		UdtName:    "jsonb",
 	},
 	{
 		ColumnName: "array_text_column",
@@ -199,10 +204,11 @@ var TEST_LOADED_ROWS = [][]string{
 		"58a7c845-af77-44b2-8664-7ca613d92f04", // uuid_column
 		"\\x1234",                              // bytea_column
 		"1 mon 2 days 01:00:01.000001",         // interval_column
-		"{\"key\": \"value\"}",                 // json_column
-		"{\"key\": \"value\"}",                 // jsonb_column
 		"'sampl':1 'text':2 'tsvector':4",      // tsvector_column
 		"(37.347301483154,45.002101898193)",    // point_column
+		"192.168.0.1",                          // inet_column
+		"{\"key\": \"value\"}",                 // json_column
+		"{\"key\": \"value\"}",                 // jsonb_column
 		"{one,two,three}",                      // array_text_column
 		"{1,2,3}",                              // array_int_column
 		"(Toronto)",                            // user_defined_column
@@ -230,10 +236,11 @@ var TEST_LOADED_ROWS = [][]string{
 		PG_NULL_STRING,                  // uuid_column
 		PG_NULL_STRING,                  // bytea_column
 		PG_NULL_STRING,                  // interval_column
-		PG_NULL_STRING,                  // json_column
-		"{}",                            // jsonb_column
 		PG_NULL_STRING,                  // tsvector_column
 		PG_NULL_STRING,                  // point_column
+		PG_NULL_STRING,                  // inet_column
+		PG_NULL_STRING,                  // json_column
+		"{}",                            // jsonb_column
 		PG_NULL_STRING,                  // array_text_column
 		"{}",                            // array_int_column
 		PG_NULL_STRING,                  // user_defined_column
