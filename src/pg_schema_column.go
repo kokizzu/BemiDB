@@ -217,6 +217,14 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interf
 		intValue, err := strconv.ParseInt(value, 10, 64)
 		PanicIfError(err)
 		return intValue
+	case "xid":
+		intValue, err := strconv.ParseUint(value, 10, 32)
+		PanicIfError(err)
+		return intValue
+	case "xid8":
+		intValue, err := strconv.ParseUint(value, 10, 64)
+		PanicIfError(err)
+		return intValue
 	case "float4":
 		floatValue, err := strconv.ParseFloat(value, 32)
 		PanicIfError(err)
@@ -300,6 +308,10 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveTypes() (primitiveType str
 		return "DOUBLE", ""
 	case "numeric":
 		return "FIXED_LEN_BYTE_ARRAY", "DECIMAL"
+	case "xid":
+		return "INT32", "UINT_32"
+	case "xid8":
+		return "INT64", "UINT_64"
 	case "uuid":
 		return "FIXED_LEN_BYTE_ARRAY", ""
 	case "bool":
@@ -333,9 +345,9 @@ func (pgSchemaColumn *PgSchemaColumn) icebergPrimitiveType() string {
 		return "string"
 	case "uuid":
 		return "uuid"
-	case "int2", "int4":
+	case "int2", "int4", "xid":
 		return "int"
-	case "int8":
+	case "int8", "xid8":
 		return "long"
 	case "float4", "float8":
 		return "float"

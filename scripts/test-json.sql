@@ -1,4 +1,4 @@
--- Usage: psql postgres://127.0.0.1:5432/dbname -P pager=off -f ./scripts/test-json.sql
+-- Usage: psql postgres://127.0.0.1:5432/dbname -P pager=off -v ON_ERROR_STOP=on -f ./scripts/test-json.sql
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 

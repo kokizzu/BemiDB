@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="0.10.0"
+VERSION="0.11.0"
 
 # Detect OS and architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')

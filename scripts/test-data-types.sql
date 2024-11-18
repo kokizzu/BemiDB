@@ -1,4 +1,4 @@
--- Usage: psql postgres://127.0.0.1:5432/dbname -P pager=off -f ./scripts/test-data-types.sql
+-- Usage: psql postgres://127.0.0.1:5432/dbname -P pager=off -v ON_ERROR_STOP=on -f ./scripts/test-data-types.sql
 
 DROP TABLE IF EXISTS test_table;
 DROP TYPE IF EXISTS address;
@@ -16,6 +16,8 @@ CREATE TABLE test_table (
   int2_column INT2,
   int4_column INT4,
   int8_column INT8,
+  xid_column XID,
+  xid8_column XID8,
   float4_column FLOAT4,
   float8_column FLOAT8,
   numeric_column NUMERIC(10, 2),
@@ -49,6 +51,8 @@ INSERT INTO test_table (
   int2_column,
   int4_column,
   int8_column,
+  xid_column,
+  xid8_column,
   float4_column,
   float8_column,
   numeric_column,
@@ -80,6 +84,8 @@ INSERT INTO test_table (
   32767::INT2,                              -- int2_column
   2147483647::INT4,                         -- int4_column
   9223372036854775807::INT8,                -- int8_column
+  '4294967295'::XID,                        -- xid_column
+  '18446744073709551615'::XID8,             -- xid8_column
   3.14::FLOAT4,                             -- float4_column
   3.141592653589793::FLOAT8,                -- float8_column
   12345.67::NUMERIC(10, 2),                 -- numeric_column
@@ -111,6 +117,8 @@ INSERT INTO test_table (
   -32767::INT2,                             -- int2_column
   NULL,                                     -- int4_column
   -9223372036854775807::INT8,               -- int8_column
+  NULL,                                     -- xid_column
+  NULL,                                     -- xid8_column
   NULL,                                     -- float4_column
   -3.141592653589793::FLOAT8,               -- float8_column
   -12345.00::NUMERIC(10, 2),                -- numeric_column

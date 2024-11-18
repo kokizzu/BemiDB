@@ -237,42 +237,29 @@ See the [benchmark](/benchmark) directory for more details.
 
 Primitive data types are mapped as follows:
 
-| PostgreSQL              | Parquet                                           | Iceberg                          |
-|-------------------------|---------------------------------------------------|----------------------------------|
-| `bool`                  | `BOOLEAN`                                         | `boolean`                        |
-| `bpchar`                | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `varchar`               | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `text`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `int2`                  | `INT32`                                           | `int`                            |
-| `int4`                  | `INT32`                                           | `int`                            |
-| `int8`                  | `INT64`                                           | `long`                           |
-| `float4`                | `FLOAT`                                           | `float`                          |
-| `float8`                | `FLOAT`                                           | `float`                          |
-| `numeric`               | `FIXED_LEN_BYTE_ARRAY` (`DECIMAL`)                | `decimal(P, S)`                  |
-| `date`                  | `INT32` (`DATE`)                                  | `date`                           |
-| `time`                  | `INT64` (`TIME_MICROS` / `TIME_MILLIS`)           | `time`                           |
-| `timetz`                | `INT64` (`TIME_MICROS` / `TIME_MILLIS`)           | `time`                           |
-| `timestamp`             | `INT64` (`TIMESTAMP_MICROS` / `TIMESTAMP_MILLIS`) | `timestamp` / `timestamp_ns`     |
-| `timestamptz`           | `INT64` (`TIMESTAMP_MICROS` / `TIMESTAMP_MILLIS`) | `timestamptz` / `timestamptz_ns` |
-| `uuid`                  | `FIXED_LEN_BYTE_ARRAY`                            | `uuid`                           |
-| `bytea`                 | `BYTE_ARRAY` (`UTF8`)                             | `binary`                         |
-| `interval`              | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `point`                 | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `line`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `lseg`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `box`                   | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `path`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `polygon`               | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `circle`                | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `cidr`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `inet`                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `macaddr`               | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `macaddr8`              | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `tsvector`              | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `json`                  | `BYTE_ARRAY` (`UTF8`)                             | `string` (JSON logical type)     |
-| `jsonb`                 | `BYTE_ARRAY` (`UTF8`)                             | `string` (JSON logical type)     |
-| `_*` (array)            | `LIST` `*`                                        | `list`                           |
-| `*` (user-defined type) | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| PostgreSQL                                                  | Parquet                                           | Iceberg                          |
+|-------------------------------------------------------------|---------------------------------------------------|----------------------------------|
+| `bool`                                                      | `BOOLEAN`                                         | `boolean`                        |
+| `bpchar`, `varchar`, `text`                                 | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `int2`, `int4`                                              | `INT32`                                           | `int`                            |
+| `int8`                                                      | `INT64`                                           | `long`                           |
+| `xid`                                                       | `INT32` (`UINT_32`)                               | `int`                            |
+| `xid8`                                                      | `INT64` (`UINT_64`)                               | `long`                           |
+| `float4`, `float8`                                          | `FLOAT`                                           | `float`                          |
+| `numeric`                                                   | `FIXED_LEN_BYTE_ARRAY` (`DECIMAL`)                | `decimal(P, S)`                  |
+| `date`                                                      | `INT32` (`DATE`)                                  | `date`                           |
+| `time`, `timetz`                                            | `INT64` (`TIME_MICROS` / `TIME_MILLIS`)           | `time`                           |
+| `timestamp`                                                 | `INT64` (`TIMESTAMP_MICROS` / `TIMESTAMP_MILLIS`) | `timestamp` / `timestamp_ns`     |
+| `timestamptz`                                               | `INT64` (`TIMESTAMP_MICROS` / `TIMESTAMP_MILLIS`) | `timestamptz` / `timestamptz_ns` |
+| `uuid`                                                      | `FIXED_LEN_BYTE_ARRAY`                            | `uuid`                           |
+| `bytea`                                                     | `BYTE_ARRAY` (`UTF8`)                             | `binary`                         |
+| `interval`                                                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `point`, `line`, `lseg`, `box`, `path`, `polygon`, `circle` | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `cidr`, `inet`, `macaddr`, `macaddr8`                       | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `tsvector`                                                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `json`, `jsonb`                                             | `BYTE_ARRAY` (`UTF8`)                             | `string` (JSON logical type)     |
+| `_*` (array)                                                | `LIST` `*`                                        | `list`                           |
+| `*` (user-defined type)                                     | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 
 Note that Postgres `json` and `jsonb` types are implemented as JSON logical types and stored as strings (Parquet and Iceberg don't support unstructured data types).
 You can query JSON columns using standard operators, for example:

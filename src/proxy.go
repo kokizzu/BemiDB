@@ -53,6 +53,56 @@ func (nullDecimal NullDecimal) String() string {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+type NullUint32 struct {
+	Present bool
+	Value   uint32
+}
+
+func (nullUint32 *NullUint32) Scan(value interface{}) error {
+	if value == nil {
+		nullUint32.Present = false
+		return nil
+	}
+
+	nullUint32.Present = true
+	nullUint32.Value = value.(uint32)
+	return nil
+}
+
+func (nullUint32 NullUint32) String() string {
+	if nullUint32.Present {
+		return fmt.Sprintf("%v", nullUint32.Value)
+	}
+	return ""
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type NullUint64 struct {
+	Present bool
+	Value   uint64
+}
+
+func (nullUint64 *NullUint64) Scan(value interface{}) error {
+	if value == nil {
+		nullUint64.Present = false
+		return nil
+	}
+
+	nullUint64.Present = true
+	nullUint64.Value = value.(uint64)
+	return nil
+}
+
+func (nullUint64 NullUint64) String() string {
+	if nullUint64.Present {
+		return fmt.Sprintf("%v", nullUint64.Value)
+	}
+	return ""
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 type NullArray struct {
 	Present bool
 	Value   []interface{}
@@ -213,6 +263,12 @@ func (proxy *Proxy) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pg
 		case "int64", "*big.Int":
 			var value sql.NullInt64
 			valuePtrs[i] = &value
+		case "uint32": // xid
+			var value NullUint32
+			valuePtrs[i] = &value
+		case "uint64": // xid8
+			var value NullUint64
+			valuePtrs[i] = &value
 		case "float64", "float32":
 			var value sql.NullFloat64
 			valuePtrs[i] = &value
@@ -253,6 +309,18 @@ func (proxy *Proxy) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pg
 		case *sql.NullInt64:
 			if value.Valid {
 				values = append(values, []byte(strconv.Itoa(int(value.Int64))))
+			} else {
+				values = append(values, nil)
+			}
+		case *NullUint32:
+			if value.Present {
+				values = append(values, []byte(value.String()))
+			} else {
+				values = append(values, nil)
+			}
+		case *NullUint64:
+			if value.Present {
+				values = append(values, []byte(value.String()))
 			} else {
 				values = append(values, nil)
 			}

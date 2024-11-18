@@ -50,6 +50,16 @@ var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 		NumericScale:     "0",
 	},
 	{
+		ColumnName: "xid_column",
+		DataType:   "xid",
+		UdtName:    "xid",
+	},
+	{
+		ColumnName: "xid8_column",
+		DataType:   "xid8",
+		UdtName:    "xid8",
+	},
+	{
 		ColumnName:       "float4_column",
 		DataType:         "real",
 		UdtName:          "float4",
@@ -189,6 +199,8 @@ var TEST_LOADED_ROWS = [][]string{
 		"32767",                                // int2_column
 		"2147483647",                           // int4_column
 		"9223372036854775807",                  // int8_column
+		"4294967295",                           // xid_column
+		"18446744073709551615",                 // xid8_column
 		"3.14",                                 // float4_column
 		"3.141592653589793",                    // float8_column
 		"12345.67",                             // numeric_column
@@ -221,6 +233,8 @@ var TEST_LOADED_ROWS = [][]string{
 		"-32767",                        // int2_column
 		PG_NULL_STRING,                  // int4_column
 		"-9223372036854775807",          // int8_column
+		PG_NULL_STRING,                  // xid_column
+		PG_NULL_STRING,                  // xid8_column
 		PG_NULL_STRING,                  // float4_column
 		"-3.141592653589793",            // float8_column
 		"-12345.00",                     // numeric_column

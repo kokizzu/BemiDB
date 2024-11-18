@@ -119,6 +119,22 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"int8_column"},
 			"values":      {"-9223372036854775807"},
 		},
+		"SELECT xid_column FROM public.test_table WHERE xid_column IS NOT NULL": {
+			"description": {"xid_column"},
+			"values":      {"4294967295"},
+		},
+		"SELECT xid_column FROM public.test_table WHERE xid_column IS NULL": {
+			"description": {"xid_column"},
+			"values":      {""},
+		},
+		"SELECT xid8_column FROM public.test_table WHERE xid8_column IS NOT NULL": {
+			"description": {"xid8_column"},
+			"values":      {"18446744073709551615"},
+		},
+		"SELECT xid8_column FROM public.test_table WHERE xid8_column IS NULL": {
+			"description": {"xid8_column"},
+			"values":      {""},
+		},
 		"SELECT float4_column FROM public.test_table WHERE float4_column IS NOT NULL": {
 			"description": {"float4_column"},
 			"values":      {"3.14"},
