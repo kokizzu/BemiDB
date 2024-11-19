@@ -19,7 +19,7 @@ const (
 )
 
 var REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME = map[string]string{
-	"version":                            "PostgreSQL 17.0, compiled by Bemi",
+	"version":                            "PostgreSQL " + PG_VERSION + ", compiled by Bemi",
 	"pg_get_userbyid":                    "bemidb",
 	"pg_get_function_identity_arguments": "",
 	"pg_total_relation_size":             "0",
@@ -32,7 +32,7 @@ type SelectRemapper struct {
 	config        *Config
 }
 
-func (selectRemapper *SelectRemapper) RemapQueryTree(queryTree *pgQuery.ParseResult) *pgQuery.ParseResult {
+func (selectRemapper *SelectRemapper) RemapQueryTreeWithSelect(queryTree *pgQuery.ParseResult) *pgQuery.ParseResult {
 	selectStatement := queryTree.Stmts[0].Stmt.GetSelectStmt()
 	selectStatement = selectRemapper.remapSelectStatement(selectStatement, 0)
 

@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	FALLBACK_QUERY = "SELECT 1"
+	FALLBACK_SQL_QUERY = "SELECT 1"
 )
 
 type Proxy struct {
@@ -191,7 +191,7 @@ func (proxy *Proxy) HandleQuery(originalQuery string) ([]pgproto3.Message, error
 
 		if err.Error() == "Binder Error: UNNEST requires a single list as input" {
 			// https://github.com/duckdb/duckdb/issues/11693
-			return proxy.HandleQuery(FALLBACK_QUERY)
+			return proxy.HandleQuery(FALLBACK_SQL_QUERY)
 		}
 
 		return nil, err
@@ -214,7 +214,7 @@ func (proxy *Proxy) HandleQuery(originalQuery string) ([]pgproto3.Message, error
 		}
 		messages = append(messages, dataRow)
 	}
-	messages = append(messages, &pgproto3.CommandComplete{CommandTag: []byte(FALLBACK_QUERY)})
+	messages = append(messages, &pgproto3.CommandComplete{CommandTag: []byte(FALLBACK_SQL_QUERY)})
 	messages = append(messages, &pgproto3.ReadyForQuery{TxStatus: 'I'})
 	return messages, nil
 }
@@ -226,9 +226,13 @@ func (proxy *Proxy) remapQuery(query string) (string, error) {
 		return "", err
 	}
 
-	selectStatement := queryTree.Stmts[0].Stmt.GetSelectStmt()
-	if selectStatement != nil {
-		queryTree = proxy.selectRemapper.RemapQueryTree(queryTree)
+	var statementNode *pgQuery.Node
+	if len(queryTree.Stmts) > 0 {
+		statementNode = queryTree.Stmts[0].Stmt
+	}
+
+	if statementNode != nil && statementNode.GetSelectStmt() != nil {
+		queryTree = proxy.selectRemapper.RemapQueryTreeWithSelect(queryTree)
 		return pgQuery.Deparse(queryTree)
 	}
 

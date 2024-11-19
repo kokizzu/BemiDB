@@ -7,6 +7,11 @@ import (
 	"github.com/jackc/pgx/v5/pgproto3"
 )
 
+const (
+	PG_VERSION  = "17.0"
+	PG_ENCODING = "UTF8"
+)
+
 type Postgres struct {
 	backend *pgproto3.Backend
 	conn    *net.Conn
@@ -95,6 +100,8 @@ func (postgres *Postgres) handleStartup() {
 
 		postgres.writeMessages(
 			&pgproto3.AuthenticationOk{},
+			&pgproto3.ParameterStatus{Name: "client_encoding", Value: PG_ENCODING},
+			&pgproto3.ParameterStatus{Name: "server_version", Value: PG_VERSION},
 			&pgproto3.ReadyForQuery{TxStatus: 'I'},
 		)
 	case *pgproto3.SSLRequest:
