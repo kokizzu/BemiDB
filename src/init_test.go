@@ -154,6 +154,11 @@ var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 		UdtName:    "tsvector",
 	},
 	{
+		ColumnName: "pg_snapshot_column",
+		DataType:   "pg_snapshot",
+		UdtName:    "pg_snapshot",
+	},
+	{
 		ColumnName: "point_column",
 		DataType:   "point",
 		UdtName:    "point",
@@ -217,6 +222,7 @@ var TEST_LOADED_ROWS = [][]string{
 		"\\x1234",                              // bytea_column
 		"1 mon 2 days 01:00:01.000001",         // interval_column
 		"'sampl':1 'text':2 'tsvector':4",      // tsvector_column
+		"2784:2784:",                           // pg_snapshot_column
 		"(37.347301483154,45.002101898193)",    // point_column
 		"192.168.0.1",                          // inet_column
 		"{\"key\": \"value\"}",                 // json_column
@@ -251,6 +257,7 @@ var TEST_LOADED_ROWS = [][]string{
 		PG_NULL_STRING,                  // bytea_column
 		PG_NULL_STRING,                  // interval_column
 		PG_NULL_STRING,                  // tsvector_column
+		PG_NULL_STRING,                  // pg_snapshot_column
 		PG_NULL_STRING,                  // point_column
 		PG_NULL_STRING,                  // inet_column
 		PG_NULL_STRING,                  // json_column

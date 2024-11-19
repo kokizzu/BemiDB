@@ -275,6 +275,14 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"tsvector_column"},
 			"values":      {""},
 		},
+		"SELECT pg_snapshot_column FROM public.test_table WHERE pg_snapshot_column IS NOT NULL": {
+			"description": {"pg_snapshot_column"},
+			"values":      {"2784:2784:"},
+		},
+		"SELECT pg_snapshot_column FROM public.test_table WHERE pg_snapshot_column IS NULL": {
+			"description": {"pg_snapshot_column"},
+			"values":      {""},
+		},
 		"SELECT point_column FROM public.test_table WHERE point_column IS NOT NULL": {
 			"description": {"point_column"},
 			"values":      {"(37.347301483154,45.002101898193)"},

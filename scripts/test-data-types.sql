@@ -38,6 +38,7 @@ CREATE TABLE test_table (
   json_column JSON,
   jsonb_column JSONB,
   tsvector_column TSVECTOR,
+  pg_snapshot_column PG_SNAPSHOT,
   array_text_column TEXT[],
   array_int_column INT[],
   user_defined_column address
@@ -73,6 +74,7 @@ INSERT INTO test_table (
   json_column,
   jsonb_column,
   tsvector_column,
+  pg_snapshot_column,
   array_text_column,
   array_int_column,
   user_defined_column
@@ -106,6 +108,7 @@ INSERT INTO test_table (
   '{"key": "value"}'::JSON,                 -- json_column
   '{"key": "value"}'::JSONB,                -- jsonb_column
   to_tsvector('Sample text for tsvector'),  -- tsvector_column
+  pg_current_snapshot(),                    -- pg_snapshot_column
   '{"one", "two", "three"}',                -- array_text_column
   '{1, 2, 3}',                              -- array_int_column
   ROW('Toronto')                            -- user_defined_column
@@ -139,6 +142,7 @@ INSERT INTO test_table (
   NULL,                                     -- json_column
   '{}'::JSONB,                              -- jsonb_column
   NULL,                                     -- tsvector_column
+  NULL,                                     -- pg_snapshot_column
   NULL,                                     -- array_text_column
   '{}',                                     -- array_int_column
   NULL                                      -- user_defined_column

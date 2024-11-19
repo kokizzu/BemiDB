@@ -1,5 +1,9 @@
 # Changelog
 
+#### [v0.12.0](https://github.com/BemiHQ/BemiDB/compare/v0.11.0...v0.12.0) - 2024-11-19
+
+- Add support for Postgres `pg_snapshot` type
+
 #### [v0.11.0](https://github.com/BemiHQ/BemiDB/compare/v0.10.0...v0.11.0) - 2024-11-18
 
 - Add support for Postgres `xid` and `xid8` types
