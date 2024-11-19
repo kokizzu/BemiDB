@@ -236,6 +236,11 @@ func (proxy *Proxy) remapQuery(query string) (string, error) {
 		return pgQuery.Deparse(queryTree)
 	}
 
+	if statementNode != nil && statementNode.GetVariableSetStmt() != nil {
+		queryTree = proxy.selectRemapper.RemapQueryTreeWithSet(queryTree)
+		return pgQuery.Deparse(queryTree)
+	}
+
 	LogDebug(proxy.config, queryTree)
 	return "", errors.New("Unsupported query type")
 }

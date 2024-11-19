@@ -54,6 +54,11 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"table_catalog", "table_schema", "table"},
 			"values":      {"bemidb", "public", "test_table"},
 		},
+		// SET
+		"SET client_encoding TO 'UTF8'": {
+			"description": {"Success"},
+			"values":      {},
+		},
 		// Iceberg data
 		"SELECT COUNT(*) AS count FROM public.test_table": {
 			"description": {"count"},

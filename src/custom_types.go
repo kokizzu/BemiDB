@@ -56,6 +56,33 @@ func (orderedMap *OrderedMap) Values() []string {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+type Set struct {
+	valueByItem map[string]bool
+}
+
+func NewSet(items []string) *Set {
+	set := &Set{
+		valueByItem: make(map[string]bool),
+	}
+
+	for _, item := range items {
+		set.Add(item)
+	}
+
+	return set
+}
+
+func (set *Set) Add(item string) {
+	set.valueByItem[item] = true
+}
+
+func (set *Set) Contains(item string) bool {
+	_, ok := set.valueByItem[item]
+	return ok
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 type SchemaTable struct {
 	Schema string
 	Table  string

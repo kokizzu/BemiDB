@@ -1,12 +1,10 @@
 package main
 
 import (
-	"slices"
-
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
-var PG_SYSTEM_TABLES = []string{
+var PG_SYSTEM_TABLES = NewSet([]string{
 	"pg_aggregate",
 	"pg_am",
 	"pg_amop",
@@ -71,9 +69,9 @@ var PG_SYSTEM_TABLES = []string{
 	"pg_ts_template",
 	"pg_type",
 	"pg_user_mapping",
-}
+})
 
-var PG_SYSTEM_VIEWS = []string{
+var PG_SYSTEM_VIEWS = NewSet([]string{
 	"pg_stat_activity",
 	"pg_stat_replication",
 	"pg_stat_wal_receiver",
@@ -117,7 +115,7 @@ var PG_SYSTEM_VIEWS = []string{
 	"pg_statio_all_sequences",
 	"pg_statio_sys_sequences",
 	"pg_statio_user_sequences",
-}
+})
 
 var PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 	{"table_catalog", "bemidb"},
@@ -149,7 +147,7 @@ var PG_STATIO_USER_TABLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 })
 
 func IsSystemTable(table string) bool {
-	return slices.Contains(PG_SYSTEM_TABLES, table) || slices.Contains(PG_SYSTEM_VIEWS, table)
+	return PG_SYSTEM_TABLES.Contains(table) || PG_SYSTEM_VIEWS.Contains(table)
 }
 
 func RawSelectColumns(selectStatement *pgQuery.SelectStmt) []string {

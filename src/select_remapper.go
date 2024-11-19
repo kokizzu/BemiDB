@@ -27,6 +27,13 @@ var REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME = map[string]string{
 	"pg_indexes_size":                    "0",
 }
 
+var KNOWN_SET_STATEMENTS = NewSet([]string{
+	"client_encoding",             // SET client_encoding TO 'UTF8'
+	"client_min_messages",         // SET client_min_messages TO 'warning'
+	"standard_conforming_strings", // SET standard_conforming_strings = on
+	"intervalstyle",               // SET intervalstyle = iso_8601
+})
+
 type SelectRemapper struct {
 	icebergReader *IcebergReader
 	config        *Config
@@ -35,6 +42,22 @@ type SelectRemapper struct {
 func (selectRemapper *SelectRemapper) RemapQueryTreeWithSelect(queryTree *pgQuery.ParseResult) *pgQuery.ParseResult {
 	selectStatement := queryTree.Stmts[0].Stmt.GetSelectStmt()
 	selectStatement = selectRemapper.remapSelectStatement(selectStatement, 0)
+
+	return queryTree
+}
+
+// No-op
+func (selectRemapper *SelectRemapper) RemapQueryTreeWithSet(queryTree *pgQuery.ParseResult) *pgQuery.ParseResult {
+	setStatement := queryTree.Stmts[0].Stmt.GetVariableSetStmt()
+
+	if !KNOWN_SET_STATEMENTS.Contains(setStatement.Name) {
+		LogError(selectRemapper.config, "Unsupported SET ", setStatement.Name, ":", setStatement)
+	}
+
+	queryTree.Stmts[0].Stmt.GetVariableSetStmt().Name = "schema"
+	queryTree.Stmts[0].Stmt.GetVariableSetStmt().Args = []*pgQuery.Node{
+		pgQuery.MakeAConstStrNode("main", 0),
+	}
 
 	return queryTree
 }
