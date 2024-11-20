@@ -296,6 +296,8 @@ func loadTestConfig() *Config {
 	setTestArgs([]string{})
 
 	config := LoadConfig(true)
+	config.User = "bemidb"
+	config.EncryptedPassword = "bemidb-encrypted"
 	config.StorageType = STORAGE_TYPE_LOCAL
 	config.StoragePath = "../iceberg-test"
 	config.LogLevel = "ERROR"

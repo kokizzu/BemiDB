@@ -59,6 +59,11 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"Success"},
 			"values":      {},
 		},
+		// DISCARD
+		"DISCARD ALL": {
+			"description": {"1"},
+			"values":      {"1"},
+		},
 		// Iceberg data
 		"SELECT COUNT(*) AS count FROM public.test_table": {
 			"description": {"count"},
@@ -332,18 +337,11 @@ func TestHandleQuery(t *testing.T) {
 
 	for query, responses := range responsesByQuery {
 		t.Run(query, func(t *testing.T) {
-			config := loadTestConfig()
-			duckdb := NewDuckdb(config)
-			icebergReader := NewIcebergReader(config)
-			queryHandler := NewQueryHandler(config, duckdb, icebergReader)
+			queryHandler := initQueryHandler()
 
 			messages, err := queryHandler.HandleQuery(query)
 
-			if err != nil {
-				t.Errorf("Expected no error, got %v", err)
-				return
-			}
-
+			testNoError(t, err)
 			testRowDescription(t, messages[0], responses["description"])
 
 			if len(responses["values"]) > 0 {
@@ -361,6 +359,111 @@ func TestHandleQuery(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+func TestHandleParseQuery(t *testing.T) {
+	t.Run("Handles PARSE extended query", func(t *testing.T) {
+		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
+		queryHandler := initQueryHandler()
+		message := &pgproto3.Parse{Query: query}
+
+		messages, preparedStatement, err := queryHandler.HandleParseQuery(message)
+
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.ParseComplete{},
+		})
+
+		remappedQuery := "SELECT usename, passwd FROM (VALUES ('bemidb', '10', 'FALSE', 'FALSE', 'TRUE', 'FALSE', 'bemidb-encrypted', 'NULL', 'NULL')) t(usename, usesysid, usecreatedb, usesuper, userepl, usebypassrls, passwd, valuntil, useconfig) WHERE usename = $1"
+		if preparedStatement.Query != remappedQuery {
+			t.Errorf("Expected the prepared statement query to be %v, got %v", remappedQuery, preparedStatement.Query)
+		}
+		if preparedStatement.Statement == nil {
+			t.Errorf("Expected the prepared statement to have a statement")
+		}
+	})
+}
+
+func TestHandleBindQuery(t *testing.T) {
+	t.Run("Handles BIND extended query", func(t *testing.T) {
+		queryHandler := initQueryHandler()
+		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
+		parseMessage := &pgproto3.Parse{Query: query}
+		messages, preparedStatement, err := queryHandler.HandleParseQuery(parseMessage)
+		message := &pgproto3.Bind{Parameters: [][]byte{[]byte("bemidb")}}
+
+		messages, preparedStatement, err = queryHandler.HandleBindQuery(message, preparedStatement)
+
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.BindComplete{},
+		})
+		if len(preparedStatement.Variables) != 1 {
+			t.Errorf("Expected the prepared statement to have 1 variable, got %v", len(preparedStatement.Variables))
+		}
+		if preparedStatement.Variables[0] != "bemidb" {
+			t.Errorf("Expected the prepared statement variables to be %v, got %v", "", preparedStatement.Variables[0])
+		}
+	})
+}
+
+func TestHandleDescribeQuery(t *testing.T) {
+	t.Run("Handles DESCRIBE extended query", func(t *testing.T) {
+		queryHandler := initQueryHandler()
+		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
+		parseMessage := &pgproto3.Parse{Query: query}
+		messages, preparedStatement, err := queryHandler.HandleParseQuery(parseMessage)
+		bindMessage := &pgproto3.Bind{Parameters: [][]byte{[]byte("bemidb")}}
+		messages, preparedStatement, err = queryHandler.HandleBindQuery(bindMessage, preparedStatement)
+		message := &pgproto3.Describe{ObjectType: 'P'}
+
+		messages, preparedStatement, err = queryHandler.HandleDescribeQuery(message, preparedStatement)
+
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.RowDescription{},
+		})
+		testRowDescription(t, messages[0], []string{"usename", "passwd"})
+		if preparedStatement.Rows == nil {
+			t.Errorf("Expected the prepared statement to have rows")
+		}
+	})
+}
+
+func TestHandleExecuteQuery(t *testing.T) {
+	t.Run("Handles EXECUTE extended query", func(t *testing.T) {
+		queryHandler := initQueryHandler()
+		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
+		parseMessage := &pgproto3.Parse{Query: query}
+		messages, preparedStatement, err := queryHandler.HandleParseQuery(parseMessage)
+		bindMessage := &pgproto3.Bind{Parameters: [][]byte{[]byte("bemidb")}}
+		messages, preparedStatement, err = queryHandler.HandleBindQuery(bindMessage, preparedStatement)
+		describeMessage := &pgproto3.Describe{ObjectType: 'P'}
+		messages, preparedStatement, err = queryHandler.HandleDescribeQuery(describeMessage, preparedStatement)
+		message := &pgproto3.Execute{}
+
+		messages, err = queryHandler.HandleExecuteQuery(message, preparedStatement)
+
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.DataRow{},
+			&pgproto3.CommandComplete{},
+		})
+		testDataRowValues(t, messages[0], []string{"bemidb", "bemidb-encrypted"})
+	})
+}
+
+func initQueryHandler() *QueryHandler {
+	config := loadTestConfig()
+	duckdb := NewDuckdb(config)
+	icebergReader := NewIcebergReader(config)
+	return NewQueryHandler(config, duckdb, icebergReader)
+}
+
+func testNoError(t *testing.T, err error) {
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
 	}
 }
 

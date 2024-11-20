@@ -29,14 +29,12 @@ type QueryHandler struct {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type PreparedStatement struct {
-	Name          string
-	OriginalQuery string
-	Query         string
-	Statement     *sql.Stmt
-	ParameterOIDs []uint32
-	Variables     []interface{}
-	Portal        string
-	Rows          *sql.Rows
+	Name      string
+	Query     string
+	Statement *sql.Stmt
+	Variables []interface{}
+	Portal    string
+	Rows      *sql.Rows
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -240,11 +238,9 @@ func (queryHandler *QueryHandler) HandleParseQuery(message *pgproto3.Parse) ([]p
 	}
 
 	preparedStatement := &PreparedStatement{
-		Name:          message.Name,
-		OriginalQuery: originalQuery,
-		Query:         query,
-		Statement:     statement,
-		ParameterOIDs: message.ParameterOIDs,
+		Name:      message.Name,
+		Query:     query,
+		Statement: statement,
 	}
 
 	messages := []pgproto3.Message{&pgproto3.ParseComplete{}}
