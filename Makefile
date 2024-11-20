@@ -33,7 +33,10 @@ benchmark:
 	devbox run "time psql postgres://127.0.0.1:54321/bemidb < ./benchmark/queries.sql"
 
 pg-init:
-	devbox run initdb
+	devbox run initdb &&
+		sed -i "s/#log_statement = 'none'/log_statement = 'all'/g" ./.devbox/virtenv/postgresql/data/postgresql.conf && \
+		sed -i "s/#logging_collector = off/logging_collector = on/g" ./.devbox/virtenv/postgresql/data/postgresql.conf && \
+		sed -i "s/#log_directory = 'log'/log_directory = 'log'/g" ./.devbox/virtenv/postgresql/data/postgresql.conf
 
 pg-up:
 	devbox services start postgresql
@@ -53,6 +56,12 @@ pg-benchmark:
 pg-down:
 	devbox services stop postgresql
 
+pg-logs:
+	tail -f .devbox/virtenv/postgresql/data/log/postgresql-*.log
+
+pg-sniff:
+	sudo tshark -i lo0 -f 'tcp port 5432' -d tcp.port==5432,pgsql -O pgsql
+
 tpch-install:
 	devbox run "cd benchmark && \
 		git clone https://github.com/gregrahn/tpch-kit.git
@@ -61,3 +70,6 @@ tpch-install:
 
 tpch-generate:
 	devbox run "./benchmark/scripts/generate-data.sh"
+
+sniff:
+	sudo tshark -i lo0 -f 'tcp port 54321' -d tcp.port==54321,pgsql -O pgsql

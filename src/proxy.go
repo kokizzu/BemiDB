@@ -28,6 +28,19 @@ type Proxy struct {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+type PreparedStatement struct {
+	Name          string
+	OriginalQuery string
+	Query         string
+	Statement     *sql.Stmt
+	ParameterOIDs []uint32
+	Variables     []interface{}
+	Portal        string
+	Rows          *sql.Rows
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 type NullDecimal struct {
 	Present bool
 	Value   duckDb.Decimal
@@ -178,7 +191,6 @@ func NewProxy(config *Config, duckdb *Duckdb, icebergReader *IcebergReader) *Pro
 }
 
 func (proxy *Proxy) HandleQuery(originalQuery string) ([]pgproto3.Message, error) {
-	LogDebug(proxy.config, "Original query:", originalQuery)
 	query, err := proxy.remapQuery(originalQuery)
 	if err != nil {
 		LogError(proxy.config, "Couldn't map query:", originalQuery+"\n"+err.Error())
@@ -198,6 +210,114 @@ func (proxy *Proxy) HandleQuery(originalQuery string) ([]pgproto3.Message, error
 	}
 	defer rows.Close()
 
+	var messages []pgproto3.Message
+	descriptionMessages, err := proxy.rowsToDescriptionMessages(rows, query)
+	if err != nil {
+		return nil, err
+	}
+	messages = append(messages, descriptionMessages...)
+	dataMessages, err := proxy.rowsToDataMessages(rows, query)
+	if err != nil {
+		return nil, err
+	}
+	messages = append(messages, dataMessages...)
+	return messages, nil
+}
+
+func (proxy *Proxy) HandleParseQuery(message *pgproto3.Parse) ([]pgproto3.Message, *PreparedStatement, error) {
+	ctx := context.Background()
+	originalQuery := string(message.Query)
+	query, err := proxy.remapQuery(originalQuery)
+	if err != nil {
+		LogError(proxy.config, "Couldn't map query:", originalQuery+"\n"+err.Error())
+		return nil, nil, err
+	}
+
+	statement, err := proxy.duckdb.PrepareContext(ctx, query)
+	if err != nil {
+		LogError(proxy.config, "Couldn't prepare query via DuckDB:", query+"\n"+err.Error())
+		return nil, nil, err
+	}
+
+	preparedStatement := &PreparedStatement{
+		Name:          message.Name,
+		OriginalQuery: originalQuery,
+		Query:         query,
+		Statement:     statement,
+		ParameterOIDs: message.ParameterOIDs,
+	}
+
+	messages := []pgproto3.Message{&pgproto3.ParseComplete{}}
+
+	return messages, preparedStatement, nil
+}
+
+func (proxy *Proxy) HandleBindQuery(message *pgproto3.Bind, preparedStatement *PreparedStatement) ([]pgproto3.Message, *PreparedStatement, error) {
+	if message.PreparedStatement != preparedStatement.Name {
+		LogError(proxy.config, "Prepared statement mismatch:", message.PreparedStatement, "instead of", preparedStatement.Name)
+		return nil, nil, errors.New("Prepared statement mismatch")
+	}
+
+	var variables []interface{}
+	for _, parameter := range message.Parameters {
+		variables = append(variables, string(parameter))
+	}
+
+	preparedStatement.Variables = variables
+	preparedStatement.Portal = message.DestinationPortal
+
+	messages := []pgproto3.Message{&pgproto3.BindComplete{}}
+
+	return messages, preparedStatement, nil
+}
+
+func (proxy *Proxy) HandleDescribeQuery(message *pgproto3.Describe, preparedStatement *PreparedStatement) ([]pgproto3.Message, *PreparedStatement, error) {
+	switch message.ObjectType {
+	case 'S': // Statement
+		if message.Name != preparedStatement.Query {
+			LogError(proxy.config, "Statement mismatch:", message.Name, "instead of", preparedStatement.Query)
+			return nil, nil, errors.New("Statement mismatch")
+		}
+	case 'P': // Portal
+		if message.Name != preparedStatement.Portal {
+			LogError(proxy.config, "Portal mismatch:", message.Name, "instead of", preparedStatement.Portal)
+			return nil, nil, errors.New("Portal mismatch")
+		}
+	}
+
+	rows, err := preparedStatement.Statement.QueryContext(context.Background(), preparedStatement.Variables...)
+	if err != nil {
+		LogError(proxy.config, "Couldn't execute prepared statement via DuckDB:", preparedStatement.Query+"\n"+err.Error())
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	preparedStatement.Rows = rows
+
+	messages, err := proxy.rowsToDescriptionMessages(rows, preparedStatement.Query)
+	if err != nil {
+		return nil, nil, err
+	}
+	return messages, preparedStatement, nil
+}
+
+func (proxy *Proxy) HandleExecuteQuery(message *pgproto3.Execute, preparedStatement *PreparedStatement) ([]pgproto3.Message, error) {
+	if message.Portal != preparedStatement.Portal {
+		LogError(proxy.config, "Portal mismatch:", message.Portal, "instead of", preparedStatement.Portal)
+		return nil, errors.New("Portal mismatch")
+	}
+
+	rows, err := preparedStatement.Statement.QueryContext(context.Background(), preparedStatement.Variables...)
+	if err != nil {
+		LogError(proxy.config, "Couldn't execute prepared statement via DuckDB:", preparedStatement.Query+"\n"+err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+
+	return proxy.rowsToDataMessages(rows, preparedStatement.Query)
+}
+
+func (proxy *Proxy) rowsToDescriptionMessages(rows *sql.Rows, query string) ([]pgproto3.Message, error) {
 	cols, err := rows.ColumnTypes()
 	if err != nil {
 		LogError(proxy.config, "Couldn't get column types", query+"\n"+err.Error())
@@ -206,6 +326,17 @@ func (proxy *Proxy) HandleQuery(originalQuery string) ([]pgproto3.Message, error
 
 	var messages []pgproto3.Message
 	messages = append(messages, proxy.generateRowDescription(cols))
+	return messages, nil
+}
+
+func (proxy *Proxy) rowsToDataMessages(rows *sql.Rows, query string) ([]pgproto3.Message, error) {
+	cols, err := rows.ColumnTypes()
+	if err != nil {
+		LogError(proxy.config, "Couldn't get column types", query+"\n"+err.Error())
+		return nil, err
+	}
+
+	var messages []pgproto3.Message
 	for rows.Next() {
 		dataRow, err := proxy.generateDataRow(rows, cols)
 		if err != nil {
@@ -215,7 +346,6 @@ func (proxy *Proxy) HandleQuery(originalQuery string) ([]pgproto3.Message, error
 		messages = append(messages, dataRow)
 	}
 	messages = append(messages, &pgproto3.CommandComplete{CommandTag: []byte(FALLBACK_SQL_QUERY)})
-	messages = append(messages, &pgproto3.ReadyForQuery{TxStatus: 'I'})
 	return messages, nil
 }
 

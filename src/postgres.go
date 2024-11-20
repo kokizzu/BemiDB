@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	PG_VERSION  = "17.0"
-	PG_ENCODING = "UTF8"
+	PG_VERSION        = "17.0"
+	PG_ENCODING       = "UTF8"
+	PG_TX_STATUS_IDLE = 'I'
 )
 
 type Postgres struct {
@@ -42,23 +43,85 @@ func (postgres *Postgres) Run(proxy *Proxy) {
 	postgres.handleStartup()
 
 	for {
-		msg, err := postgres.backend.Receive()
+		message, err := postgres.backend.Receive()
 		if err != nil {
 			return
 		}
 
-		switch msg.(type) {
+		switch message.(type) {
 		case *pgproto3.Query:
-			query := msg.(*pgproto3.Query).String
+			query := message.(*pgproto3.Query).String
+			LogDebug(postgres.config, "Received query:", query)
 			messages, err := proxy.HandleQuery(query)
 			if err != nil {
 				postgres.writeError("Internal error")
+				continue
+			}
+			messages = append(messages, &pgproto3.ReadyForQuery{TxStatus: PG_TX_STATUS_IDLE})
+			postgres.writeMessages(messages...)
+		case *pgproto3.Parse: // Extended query protocol
+			message := message.(*pgproto3.Parse)
+			LogDebug(postgres.config, "Parsing query", message.Query)
+			messages, preparedStatement, err := proxy.HandleParseQuery(message)
+			if err != nil {
+				postgres.writeError("Failed to parse query")
+				continue
 			}
 			postgres.writeMessages(messages...)
+
+			for {
+				message, err := postgres.backend.Receive()
+				if err != nil {
+					return
+				}
+				synced := false
+
+				switch message.(type) {
+				case *pgproto3.Bind:
+					message := message.(*pgproto3.Bind)
+					LogDebug(postgres.config, "Binding query", message.PreparedStatement)
+					messages, preparedStatement, err = proxy.HandleBindQuery(message, preparedStatement)
+					if err != nil {
+						postgres.writeError("Failed to bind query")
+						continue
+					}
+					postgres.writeMessages(messages...)
+				case *pgproto3.Describe:
+					message := message.(*pgproto3.Describe)
+					LogDebug(postgres.config, "Describing query", message.Name, "("+string(message.ObjectType)+")")
+					var messages []pgproto3.Message
+					messages, preparedStatement, err = proxy.HandleDescribeQuery(message, preparedStatement)
+					if err != nil {
+						postgres.writeError("Failed to describe query")
+						continue
+					}
+					postgres.writeMessages(messages...)
+				case *pgproto3.Execute:
+					message := message.(*pgproto3.Execute)
+					LogDebug(postgres.config, "Executing query", message.Portal)
+					messages, err := proxy.HandleExecuteQuery(message, preparedStatement)
+					if err != nil {
+						postgres.writeError("Failed to execute query")
+						continue
+					}
+					postgres.writeMessages(messages...)
+				case *pgproto3.Sync:
+					LogDebug(postgres.config, "Syncing query")
+					postgres.writeMessages(
+						&pgproto3.ReadyForQuery{TxStatus: PG_TX_STATUS_IDLE},
+					)
+					synced = true
+				}
+
+				if synced {
+					break
+				}
+			}
 		case *pgproto3.Terminate:
+			LogDebug(postgres.config, "Client terminated connection")
 			return
 		default:
-			PanicIfError(fmt.Errorf("Received message other than Query from client: %#v", msg))
+			PanicIfError(fmt.Errorf("Received message other than Query from client: %#v", message))
 		}
 	}
 }
@@ -81,7 +144,7 @@ func (postgres *Postgres) writeMessages(messages ...pgproto3.Message) {
 func (postgres *Postgres) writeError(message string) {
 	postgres.writeMessages(
 		&pgproto3.ErrorResponse{Message: message},
-		&pgproto3.ReadyForQuery{TxStatus: 'I'},
+		&pgproto3.ReadyForQuery{TxStatus: PG_TX_STATUS_IDLE},
 	)
 }
 
@@ -92,6 +155,7 @@ func (postgres *Postgres) handleStartup() {
 	switch startupMessage.(type) {
 	case *pgproto3.StartupMessage:
 		params := startupMessage.(*pgproto3.StartupMessage).Parameters
+		LogDebug(postgres.config, "BemiDB: startup message", params)
 
 		if params["database"] != postgres.config.Database {
 			postgres.writeError("database " + params["database"] + " does not exist")
@@ -102,7 +166,7 @@ func (postgres *Postgres) handleStartup() {
 			&pgproto3.AuthenticationOk{},
 			&pgproto3.ParameterStatus{Name: "client_encoding", Value: PG_ENCODING},
 			&pgproto3.ParameterStatus{Name: "server_version", Value: PG_VERSION},
-			&pgproto3.ReadyForQuery{TxStatus: 'I'},
+			&pgproto3.ReadyForQuery{TxStatus: PG_TX_STATUS_IDLE},
 		)
 	case *pgproto3.SSLRequest:
 		_, err = (*postgres.conn).Write([]byte("N"))

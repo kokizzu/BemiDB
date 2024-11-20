@@ -351,14 +351,12 @@ func TestHandleQuery(t *testing.T) {
 					&pgproto3.RowDescription{},
 					&pgproto3.DataRow{},
 					&pgproto3.CommandComplete{},
-					&pgproto3.ReadyForQuery{},
 				})
 				testDataRowValues(t, messages[1], responses["values"])
 			} else {
 				testMessageTypes(t, messages, []pgproto3.Message{
 					&pgproto3.RowDescription{},
 					&pgproto3.CommandComplete{},
-					&pgproto3.ReadyForQuery{},
 				})
 			}
 

@@ -68,6 +68,11 @@ func (duckdb *Duckdb) QueryContext(ctx context.Context, query string) (*sql.Rows
 	return duckdb.db.QueryContext(ctx, query)
 }
 
+func (duckdb *Duckdb) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+	LogDebug(duckdb.config, "Preparing DuckDB statement:", query)
+	return duckdb.db.PrepareContext(ctx, query)
+}
+
 func (duckdb *Duckdb) Close() {
 	duckdb.db.Close()
 }
