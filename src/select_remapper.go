@@ -32,6 +32,7 @@ var KNOWN_SET_STATEMENTS = NewSet([]string{
 	"client_min_messages",         // SET client_min_messages TO 'warning'
 	"standard_conforming_strings", // SET standard_conforming_strings = on
 	"intervalstyle",               // SET intervalstyle = iso_8601
+	"timezone",                    // SET SESSION timezone TO 'UTC'
 })
 
 type SelectRemapper struct {
