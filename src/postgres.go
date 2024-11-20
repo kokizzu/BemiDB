@@ -39,7 +39,7 @@ func AcceptConnection(listener net.Listener) net.Conn {
 	return conn
 }
 
-func (postgres *Postgres) Run(proxy *Proxy) {
+func (postgres *Postgres) Run(queryHandler *QueryHandler) {
 	postgres.handleStartup()
 
 	for {
@@ -50,9 +50,9 @@ func (postgres *Postgres) Run(proxy *Proxy) {
 
 		switch message.(type) {
 		case *pgproto3.Query:
-			postgres.handleSimpleQuery(proxy, message.(*pgproto3.Query))
+			postgres.handleSimpleQuery(queryHandler, message.(*pgproto3.Query))
 		case *pgproto3.Parse:
-			err = postgres.handleExtendedQuery(proxy, message.(*pgproto3.Parse))
+			err = postgres.handleExtendedQuery(queryHandler, message.(*pgproto3.Parse))
 			if err != nil {
 				return // Terminate connection
 			}
@@ -69,9 +69,9 @@ func (postgres *Postgres) Close() error {
 	return (*postgres.conn).Close()
 }
 
-func (postgres *Postgres) handleSimpleQuery(proxy *Proxy, queryMessage *pgproto3.Query) {
+func (postgres *Postgres) handleSimpleQuery(queryHandler *QueryHandler, queryMessage *pgproto3.Query) {
 	LogDebug(postgres.config, "Received query:", queryMessage.String)
-	messages, err := proxy.HandleQuery(queryMessage.String)
+	messages, err := queryHandler.HandleQuery(queryMessage.String)
 	if err != nil {
 		postgres.writeError("Internal error")
 		return
@@ -80,9 +80,9 @@ func (postgres *Postgres) handleSimpleQuery(proxy *Proxy, queryMessage *pgproto3
 	postgres.writeMessages(messages...)
 }
 
-func (postgres *Postgres) handleExtendedQuery(proxy *Proxy, parseMessage *pgproto3.Parse) error {
+func (postgres *Postgres) handleExtendedQuery(queryHandler *QueryHandler, parseMessage *pgproto3.Parse) error {
 	LogDebug(postgres.config, "Parsing query", parseMessage.Query)
-	messages, preparedStatement, err := proxy.HandleParseQuery(parseMessage)
+	messages, preparedStatement, err := queryHandler.HandleParseQuery(parseMessage)
 	if err != nil {
 		postgres.writeError("Failed to parse query")
 		return nil
@@ -99,7 +99,7 @@ func (postgres *Postgres) handleExtendedQuery(proxy *Proxy, parseMessage *pgprot
 		case *pgproto3.Bind:
 			message := message.(*pgproto3.Bind)
 			LogDebug(postgres.config, "Binding query", message.PreparedStatement)
-			messages, preparedStatement, err = proxy.HandleBindQuery(message, preparedStatement)
+			messages, preparedStatement, err = queryHandler.HandleBindQuery(message, preparedStatement)
 			if err != nil {
 				postgres.writeError("Failed to bind query")
 				continue
@@ -109,7 +109,7 @@ func (postgres *Postgres) handleExtendedQuery(proxy *Proxy, parseMessage *pgprot
 			message := message.(*pgproto3.Describe)
 			LogDebug(postgres.config, "Describing query", message.Name, "("+string(message.ObjectType)+")")
 			var messages []pgproto3.Message
-			messages, preparedStatement, err = proxy.HandleDescribeQuery(message, preparedStatement)
+			messages, preparedStatement, err = queryHandler.HandleDescribeQuery(message, preparedStatement)
 			if err != nil {
 				postgres.writeError("Failed to describe query")
 				continue
@@ -118,7 +118,7 @@ func (postgres *Postgres) handleExtendedQuery(proxy *Proxy, parseMessage *pgprot
 		case *pgproto3.Execute:
 			message := message.(*pgproto3.Execute)
 			LogDebug(postgres.config, "Executing query", message.Portal)
-			messages, err := proxy.HandleExecuteQuery(message, preparedStatement)
+			messages, err := queryHandler.HandleExecuteQuery(message, preparedStatement)
 			if err != nil {
 				postgres.writeError("Failed to execute query")
 				continue

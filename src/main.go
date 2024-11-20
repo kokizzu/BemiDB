@@ -59,10 +59,10 @@ func start(config *Config) {
 		LogInfo(config, "BemiDB: Accepted connection from", conn.RemoteAddr())
 
 		postgres := NewPostgres(config, &conn)
-		proxy := NewProxy(config, duckdb, icebergReader)
+		queryHandler := NewQueryHandler(config, duckdb, icebergReader)
 
 		go func() {
-			postgres.Run(proxy)
+			postgres.Run(queryHandler)
 			defer postgres.Close()
 			LogInfo(config, "BemiDB: Closed connection from", conn.RemoteAddr())
 		}()

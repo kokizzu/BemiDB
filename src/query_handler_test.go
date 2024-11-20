@@ -335,9 +335,9 @@ func TestHandleQuery(t *testing.T) {
 			config := loadTestConfig()
 			duckdb := NewDuckdb(config)
 			icebergReader := NewIcebergReader(config)
-			proxy := NewProxy(config, duckdb, icebergReader)
+			queryHandler := NewQueryHandler(config, duckdb, icebergReader)
 
-			messages, err := proxy.HandleQuery(query)
+			messages, err := queryHandler.HandleQuery(query)
 
 			if err != nil {
 				t.Errorf("Expected no error, got %v", err)

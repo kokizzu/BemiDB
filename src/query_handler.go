@@ -20,7 +20,7 @@ const (
 	FALLBACK_SQL_QUERY = "SELECT 1"
 )
 
-type Proxy struct {
+type QueryHandler struct {
 	duckdb         *Duckdb
 	selectRemapper *SelectRemapper
 	config         *Config
@@ -157,7 +157,7 @@ func (nullArray NullArray) String() string {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-func NewProxy(config *Config, duckdb *Duckdb, icebergReader *IcebergReader) *Proxy {
+func NewQueryHandler(config *Config, duckdb *Duckdb, icebergReader *IcebergReader) *QueryHandler {
 	ctx := context.Background()
 
 	schemas, err := icebergReader.Schemas()
@@ -183,27 +183,27 @@ func NewProxy(config *Config, duckdb *Duckdb, icebergReader *IcebergReader) *Pro
 		PanicIfError(err)
 	}
 
-	return &Proxy{
+	return &QueryHandler{
 		duckdb:         duckdb,
 		selectRemapper: &SelectRemapper{config: config, icebergReader: icebergReader},
 		config:         config,
 	}
 }
 
-func (proxy *Proxy) HandleQuery(originalQuery string) ([]pgproto3.Message, error) {
-	query, err := proxy.remapQuery(originalQuery)
+func (queryHandler *QueryHandler) HandleQuery(originalQuery string) ([]pgproto3.Message, error) {
+	query, err := queryHandler.remapQuery(originalQuery)
 	if err != nil {
-		LogError(proxy.config, "Couldn't map query:", originalQuery+"\n"+err.Error())
+		LogError(queryHandler.config, "Couldn't map query:", originalQuery+"\n"+err.Error())
 		return nil, err
 	}
 
-	rows, err := proxy.duckdb.QueryContext(context.Background(), query)
+	rows, err := queryHandler.duckdb.QueryContext(context.Background(), query)
 	if err != nil {
-		LogError(proxy.config, "Couldn't handle query via DuckDB:", query+"\n"+err.Error())
+		LogError(queryHandler.config, "Couldn't handle query via DuckDB:", query+"\n"+err.Error())
 
 		if err.Error() == "Binder Error: UNNEST requires a single list as input" {
 			// https://github.com/duckdb/duckdb/issues/11693
-			return proxy.HandleQuery(FALLBACK_SQL_QUERY)
+			return queryHandler.HandleQuery(FALLBACK_SQL_QUERY)
 		}
 
 		return nil, err
@@ -211,12 +211,12 @@ func (proxy *Proxy) HandleQuery(originalQuery string) ([]pgproto3.Message, error
 	defer rows.Close()
 
 	var messages []pgproto3.Message
-	descriptionMessages, err := proxy.rowsToDescriptionMessages(rows, query)
+	descriptionMessages, err := queryHandler.rowsToDescriptionMessages(rows, query)
 	if err != nil {
 		return nil, err
 	}
 	messages = append(messages, descriptionMessages...)
-	dataMessages, err := proxy.rowsToDataMessages(rows, query)
+	dataMessages, err := queryHandler.rowsToDataMessages(rows, query)
 	if err != nil {
 		return nil, err
 	}
@@ -224,18 +224,18 @@ func (proxy *Proxy) HandleQuery(originalQuery string) ([]pgproto3.Message, error
 	return messages, nil
 }
 
-func (proxy *Proxy) HandleParseQuery(message *pgproto3.Parse) ([]pgproto3.Message, *PreparedStatement, error) {
+func (queryHandler *QueryHandler) HandleParseQuery(message *pgproto3.Parse) ([]pgproto3.Message, *PreparedStatement, error) {
 	ctx := context.Background()
 	originalQuery := string(message.Query)
-	query, err := proxy.remapQuery(originalQuery)
+	query, err := queryHandler.remapQuery(originalQuery)
 	if err != nil {
-		LogError(proxy.config, "Couldn't map query:", originalQuery+"\n"+err.Error())
+		LogError(queryHandler.config, "Couldn't map query:", originalQuery+"\n"+err.Error())
 		return nil, nil, err
 	}
 
-	statement, err := proxy.duckdb.PrepareContext(ctx, query)
+	statement, err := queryHandler.duckdb.PrepareContext(ctx, query)
 	if err != nil {
-		LogError(proxy.config, "Couldn't prepare query via DuckDB:", query+"\n"+err.Error())
+		LogError(queryHandler.config, "Couldn't prepare query via DuckDB:", query+"\n"+err.Error())
 		return nil, nil, err
 	}
 
@@ -252,9 +252,9 @@ func (proxy *Proxy) HandleParseQuery(message *pgproto3.Parse) ([]pgproto3.Messag
 	return messages, preparedStatement, nil
 }
 
-func (proxy *Proxy) HandleBindQuery(message *pgproto3.Bind, preparedStatement *PreparedStatement) ([]pgproto3.Message, *PreparedStatement, error) {
+func (queryHandler *QueryHandler) HandleBindQuery(message *pgproto3.Bind, preparedStatement *PreparedStatement) ([]pgproto3.Message, *PreparedStatement, error) {
 	if message.PreparedStatement != preparedStatement.Name {
-		LogError(proxy.config, "Prepared statement mismatch:", message.PreparedStatement, "instead of", preparedStatement.Name)
+		LogError(queryHandler.config, "Prepared statement mismatch:", message.PreparedStatement, "instead of", preparedStatement.Name)
 		return nil, nil, errors.New("Prepared statement mismatch")
 	}
 
@@ -271,44 +271,44 @@ func (proxy *Proxy) HandleBindQuery(message *pgproto3.Bind, preparedStatement *P
 	return messages, preparedStatement, nil
 }
 
-func (proxy *Proxy) HandleDescribeQuery(message *pgproto3.Describe, preparedStatement *PreparedStatement) ([]pgproto3.Message, *PreparedStatement, error) {
+func (queryHandler *QueryHandler) HandleDescribeQuery(message *pgproto3.Describe, preparedStatement *PreparedStatement) ([]pgproto3.Message, *PreparedStatement, error) {
 	switch message.ObjectType {
 	case 'S': // Statement
 		if message.Name != preparedStatement.Query {
-			LogError(proxy.config, "Statement mismatch:", message.Name, "instead of", preparedStatement.Query)
+			LogError(queryHandler.config, "Statement mismatch:", message.Name, "instead of", preparedStatement.Query)
 			return nil, nil, errors.New("Statement mismatch")
 		}
 	case 'P': // Portal
 		if message.Name != preparedStatement.Portal {
-			LogError(proxy.config, "Portal mismatch:", message.Name, "instead of", preparedStatement.Portal)
+			LogError(queryHandler.config, "Portal mismatch:", message.Name, "instead of", preparedStatement.Portal)
 			return nil, nil, errors.New("Portal mismatch")
 		}
 	}
 
 	rows, err := preparedStatement.Statement.QueryContext(context.Background(), preparedStatement.Variables...)
 	if err != nil {
-		LogError(proxy.config, "Couldn't execute prepared statement via DuckDB:", preparedStatement.Query+"\n"+err.Error())
+		LogError(queryHandler.config, "Couldn't execute prepared statement via DuckDB:", preparedStatement.Query+"\n"+err.Error())
 		return nil, nil, err
 	}
 	preparedStatement.Rows = rows
 
-	messages, err := proxy.rowsToDescriptionMessages(preparedStatement.Rows, preparedStatement.Query)
+	messages, err := queryHandler.rowsToDescriptionMessages(preparedStatement.Rows, preparedStatement.Query)
 	if err != nil {
 		return nil, nil, err
 	}
 	return messages, preparedStatement, nil
 }
 
-func (proxy *Proxy) HandleExecuteQuery(message *pgproto3.Execute, preparedStatement *PreparedStatement) ([]pgproto3.Message, error) {
+func (queryHandler *QueryHandler) HandleExecuteQuery(message *pgproto3.Execute, preparedStatement *PreparedStatement) ([]pgproto3.Message, error) {
 	if message.Portal != preparedStatement.Portal {
-		LogError(proxy.config, "Portal mismatch:", message.Portal, "instead of", preparedStatement.Portal)
+		LogError(queryHandler.config, "Portal mismatch:", message.Portal, "instead of", preparedStatement.Portal)
 		return nil, errors.New("Portal mismatch")
 	}
 
 	if preparedStatement.Rows == nil {
 		rows, err := preparedStatement.Statement.QueryContext(context.Background(), preparedStatement.Variables...)
 		if err != nil {
-			LogError(proxy.config, "Couldn't execute prepared statement via DuckDB:", preparedStatement.Query+"\n"+err.Error())
+			LogError(queryHandler.config, "Couldn't execute prepared statement via DuckDB:", preparedStatement.Query+"\n"+err.Error())
 			return nil, err
 		}
 		preparedStatement.Rows = rows
@@ -316,33 +316,33 @@ func (proxy *Proxy) HandleExecuteQuery(message *pgproto3.Execute, preparedStatem
 
 	defer preparedStatement.Rows.Close()
 
-	return proxy.rowsToDataMessages(preparedStatement.Rows, preparedStatement.Query)
+	return queryHandler.rowsToDataMessages(preparedStatement.Rows, preparedStatement.Query)
 }
 
-func (proxy *Proxy) rowsToDescriptionMessages(rows *sql.Rows, query string) ([]pgproto3.Message, error) {
+func (queryHandler *QueryHandler) rowsToDescriptionMessages(rows *sql.Rows, query string) ([]pgproto3.Message, error) {
 	cols, err := rows.ColumnTypes()
 	if err != nil {
-		LogError(proxy.config, "Couldn't get column types", query+"\n"+err.Error())
+		LogError(queryHandler.config, "Couldn't get column types", query+"\n"+err.Error())
 		return nil, err
 	}
 
 	var messages []pgproto3.Message
-	messages = append(messages, proxy.generateRowDescription(cols))
+	messages = append(messages, queryHandler.generateRowDescription(cols))
 	return messages, nil
 }
 
-func (proxy *Proxy) rowsToDataMessages(rows *sql.Rows, query string) ([]pgproto3.Message, error) {
+func (queryHandler *QueryHandler) rowsToDataMessages(rows *sql.Rows, query string) ([]pgproto3.Message, error) {
 	cols, err := rows.ColumnTypes()
 	if err != nil {
-		LogError(proxy.config, "Couldn't get column types", query+"\n"+err.Error())
+		LogError(queryHandler.config, "Couldn't get column types", query+"\n"+err.Error())
 		return nil, err
 	}
 
 	var messages []pgproto3.Message
 	for rows.Next() {
-		dataRow, err := proxy.generateDataRow(rows, cols)
+		dataRow, err := queryHandler.generateDataRow(rows, cols)
 		if err != nil {
-			LogError(proxy.config, "Couldn't get data row", query+"\n"+err.Error())
+			LogError(queryHandler.config, "Couldn't get data row", query+"\n"+err.Error())
 			return nil, err
 		}
 		messages = append(messages, dataRow)
@@ -351,10 +351,10 @@ func (proxy *Proxy) rowsToDataMessages(rows *sql.Rows, query string) ([]pgproto3
 	return messages, nil
 }
 
-func (proxy *Proxy) remapQuery(query string) (string, error) {
+func (queryHandler *QueryHandler) remapQuery(query string) (string, error) {
 	queryTree, err := pgQuery.Parse(query)
 	if err != nil {
-		LogError(proxy.config, "Error parsing query:", query+"\n"+err.Error())
+		LogError(queryHandler.config, "Error parsing query:", query+"\n"+err.Error())
 		return "", err
 	}
 
@@ -364,12 +364,12 @@ func (proxy *Proxy) remapQuery(query string) (string, error) {
 	}
 
 	if statementNode != nil && statementNode.GetSelectStmt() != nil {
-		queryTree = proxy.selectRemapper.RemapQueryTreeWithSelect(queryTree)
+		queryTree = queryHandler.selectRemapper.RemapQueryTreeWithSelect(queryTree)
 		return pgQuery.Deparse(queryTree)
 	}
 
 	if statementNode != nil && statementNode.GetVariableSetStmt() != nil {
-		queryTree = proxy.selectRemapper.RemapQueryTreeWithSet(queryTree)
+		queryTree = queryHandler.selectRemapper.RemapQueryTreeWithSet(queryTree)
 		return pgQuery.Deparse(queryTree)
 	}
 
@@ -377,11 +377,11 @@ func (proxy *Proxy) remapQuery(query string) (string, error) {
 		return FALLBACK_SQL_QUERY, nil
 	}
 
-	LogDebug(proxy.config, queryTree)
+	LogDebug(queryHandler.config, queryTree)
 	return "", errors.New("Unsupported query type")
 }
 
-func (proxy *Proxy) generateRowDescription(cols []*sql.ColumnType) *pgproto3.RowDescription {
+func (queryHandler *QueryHandler) generateRowDescription(cols []*sql.ColumnType) *pgproto3.RowDescription {
 	description := pgproto3.RowDescription{Fields: []pgproto3.FieldDescription{}}
 
 	for _, col := range cols {
@@ -398,7 +398,7 @@ func (proxy *Proxy) generateRowDescription(cols []*sql.ColumnType) *pgproto3.Row
 	return &description
 }
 
-func (proxy *Proxy) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pgproto3.DataRow, error) {
+func (queryHandler *QueryHandler) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pgproto3.DataRow, error) {
 	valuePtrs := make([]interface{}, len(cols))
 	for i, col := range cols {
 		switch col.ScanType().String() {

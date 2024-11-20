@@ -78,6 +78,8 @@ Here is an example of running BemiDB with default settings and storing data in a
 ./bemidb \
   --port 54321 \
   --database bemidb \
+  --user= \ # Allow any credentials
+  --password= \
   --storage-type LOCAL \
   --storage-path ./iceberg \ # $PWD/iceberg/*
   --init-sql ./init.sql \
@@ -91,6 +93,8 @@ To run BemiDB with environment variables:
 # Default settings
 export BEMIDB_PORT=54321
 export BEMIDB_DATABASE=bemidb
+export BEMIDB_USER=
+export BEMIDB_PASSWORD=
 export BEMIDB_STORAGE_TYPE=LOCAL
 export BEMIDB_STORAGE_PATH=./iceberg
 export BEMIDB_INIT_SQL=./init.sql
@@ -271,12 +275,12 @@ SELECT * FROM [TABLE] WHERE [JSON_COLUMN]->>'[JSON_KEY]' = '[JSON_VALUE]';
 ## Future roadmap
 
 - [ ] Incremental data synchronization into Iceberg tables.
-- [ ] Direct Postgres-compatible write operations.
 - [ ] Real-time replication from Postgres using CDC.
-- [ ] TLS and authentication support for Postgres connections.
+- [ ] Direct Postgres-compatible write operations.
 - [ ] Iceberg table compaction and partitioning.
 - [ ] Cache layer for frequently accessed data.
-- [ ] Add support for materialized views.
+- [ ] Materialized views.
+- [ ] Support for custom S3-compatible endpoints.
 
 ## Alternatives
 
