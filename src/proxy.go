@@ -373,6 +373,10 @@ func (proxy *Proxy) remapQuery(query string) (string, error) {
 		return pgQuery.Deparse(queryTree)
 	}
 
+	if statementNode != nil && statementNode.GetDiscardStmt() != nil {
+		return FALLBACK_SQL_QUERY, nil
+	}
+
 	LogDebug(proxy.config, queryTree)
 	return "", errors.New("Unsupported query type")
 }

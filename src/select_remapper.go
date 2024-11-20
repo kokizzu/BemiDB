@@ -14,6 +14,7 @@ const (
 	INFORMATION_SCHEMA_TABLES = "tables"
 	PG_NAMESPACE              = "pg_namespace"
 	PG_STATIO_USER_TABLES     = "pg_statio_user_tables"
+	PG_SHADOW                 = "pg_shadow"
 
 	PG_QUOTE_INDENT_FUNCTION_NAME = "quote_ident"
 )
@@ -166,6 +167,10 @@ func (selectRemapper *SelectRemapper) remapTable(node *pgQuery.Node) *pgQuery.No
 		case PG_STATIO_USER_TABLES:
 			// FROM pg_catalog.pg_statio_user_tables -> return nothing
 			tableNode := MakePgStatioUserTablesNode()
+			return selectRemapper.overrideTable(node, tableNode)
+		case PG_SHADOW:
+			// FROM pg_shadow -> return hard-coded credentials
+			tableNode := MakePgShadowNode(selectRemapper.config.User, selectRemapper.config.EncryptedPassword)
 			return selectRemapper.overrideTable(node, tableNode)
 		default:
 			// System pg_* tables

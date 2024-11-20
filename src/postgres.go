@@ -166,6 +166,11 @@ func (postgres *Postgres) handleStartup() {
 			return
 		}
 
+		if postgres.config.User != "" && params["user"] != postgres.config.User {
+			postgres.writeError("role \"" + params["user"] + "\" does not exist")
+			return
+		}
+
 		postgres.writeMessages(
 			&pgproto3.AuthenticationOk{},
 			&pgproto3.ParameterStatus{Name: "client_encoding", Value: PG_ENCODING},

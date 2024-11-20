@@ -51,6 +51,7 @@ var PG_SYSTEM_TABLES = NewSet([]string{
 	"pg_rewrite",
 	"pg_seclabel",
 	"pg_sequence",
+	"pg_shadow",
 	"pg_shdepend",
 	"pg_shdescription",
 	"pg_shseclabel",
@@ -146,6 +147,18 @@ var PG_STATIO_USER_TABLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 	{"tidx_blks_hit", "0"},
 })
 
+var PG_SHADOW_VALUE_BY_COLUMN = NewOrderedMap([][]string{
+	{"usename", "bemidb"},
+	{"usesysid", "10"},
+	{"usecreatedb", "FALSE"},
+	{"usesuper", "FALSE"},
+	{"userepl", "TRUE"},
+	{"usebypassrls", "FALSE"},
+	{"passwd", ""},
+	{"valuntil", "NULL"},
+	{"useconfig", "NULL"},
+})
+
 func IsSystemTable(table string) bool {
 	return PG_SYSTEM_TABLES.Contains(table) || PG_SYSTEM_VIEWS.Contains(table)
 }
@@ -201,6 +214,28 @@ func MakeInformationSchemaTablesNode(database string, schemaAndTables []SchemaTa
 
 		rowsValues = append(rowsValues, rowValues)
 	}
+
+	return makeSubselectNode(columns, rowsValues)
+}
+
+// FROM pg_shadow: VALUES(values...) t(columns...)
+func MakePgShadowNode(user string, encryptedPassword string) *pgQuery.Node {
+	columns := PG_SHADOW_VALUE_BY_COLUMN.Keys()
+	staticRowValues := PG_SHADOW_VALUE_BY_COLUMN.Values()
+
+	var rowsValues [][]string
+
+	rowValues := make([]string, len(staticRowValues))
+	copy(rowValues, staticRowValues)
+	for i, column := range columns {
+		switch column {
+		case "usename":
+			rowValues[i] = user
+		case "passwd":
+			rowValues[i] = encryptedPassword
+		}
+	}
+	rowsValues = append(rowsValues, rowValues)
 
 	return makeSubselectNode(columns, rowsValues)
 }

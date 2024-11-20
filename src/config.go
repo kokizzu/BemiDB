@@ -10,6 +10,8 @@ import (
 const (
 	ENV_PORT              = "BEMIDB_PORT"
 	ENV_DATABASE          = "BEMIDB_DATABASE"
+	ENV_USER              = "BEMIDB_USER"
+	ENV_PASSWORD          = "BEMIDB_PASSWORD"
 	ENV_INIT_SQL_FILEPATH = "BEMIDB_INIT_SQL"
 	ENV_STORAGE_PATH      = "BEMIDB_STORAGE_PATH"
 	ENV_LOG_LEVEL         = "BEMIDB_LOG_LEVEL"
@@ -26,6 +28,8 @@ const (
 
 	DEFAULT_PORT              = "54321"
 	DEFAULT_DATABASE          = "bemidb"
+	DEFAULT_USER              = ""
+	DEFAULT_PASSWORD          = ""
 	DEFAULT_INIT_SQL_FILEPATH = "./init.sql"
 	DEFAULT_STORAGE_PATH      = "iceberg"
 	DEFAULT_LOG_LEVEL         = "INFO"
@@ -49,14 +53,16 @@ type PgConfig struct {
 }
 
 type Config struct {
-	Port            string
-	Database        string
-	InitSqlFilepath string
-	LogLevel        string
-	StorageType     string
-	StoragePath     string
-	Aws             AwsConfig
-	Pg              PgConfig
+	Port              string
+	Database          string
+	User              string
+	EncryptedPassword string
+	InitSqlFilepath   string
+	LogLevel          string
+	StorageType       string
+	StoragePath       string
+	Aws               AwsConfig
+	Pg                PgConfig
 }
 
 var _config Config
@@ -74,6 +80,23 @@ func registerFlags() {
 	flag.StringVar(&_config.Database, "database", os.Getenv(ENV_DATABASE), "Database name (default: "+DEFAULT_DATABASE+")")
 	if _config.Database == "" {
 		_config.Database = DEFAULT_DATABASE
+	}
+
+	flag.StringVar(&_config.User, "user", os.Getenv(ENV_USER), "Database user (default: "+DEFAULT_USER+")")
+	if _config.User == "" {
+		_config.User = DEFAULT_USER
+	}
+
+	var password string
+	flag.StringVar(&password, "password", os.Getenv(ENV_PASSWORD), "Database password (default: "+DEFAULT_PASSWORD+")")
+	if password == "" {
+		password = DEFAULT_PASSWORD
+	}
+	if password != "" {
+		if _config.User == "" {
+			panic("Password is set without a user")
+		}
+		_config.EncryptedPassword = StringToScramSha256(password)
 	}
 
 	flag.StringVar(&_config.StoragePath, "storage-path", os.Getenv(ENV_STORAGE_PATH), "Path to the storage folder (default: "+DEFAULT_STORAGE_PATH+")")
