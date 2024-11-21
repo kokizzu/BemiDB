@@ -40,8 +40,7 @@ func (syncer *Syncer) SyncFromPostgres() {
 
 	pgSchemaTables := []SchemaTable{}
 	for _, schema := range syncer.listPgSchemas(conn) {
-		for _, table := range syncer.listPgTables(conn, schema) {
-			pgSchemaTable := SchemaTable{Schema: schema, Table: table}
+		for _, pgSchemaTable := range syncer.listPgSchemaTables(conn, schema) {
 			pgSchemaTables = append(pgSchemaTables, pgSchemaTable)
 			syncer.syncFromPgTable(conn, pgSchemaTable)
 		}
@@ -70,25 +69,32 @@ func (syncer *Syncer) listPgSchemas(conn *pgx.Conn) []string {
 	return schemas
 }
 
-func (syncer *Syncer) listPgTables(conn *pgx.Conn, schema string) []string {
-	var tables []string
+func (syncer *Syncer) listPgSchemaTables(conn *pgx.Conn, schema string) []SchemaTable {
+	var pgSchemaTables []SchemaTable
 
 	tablesRows, err := conn.Query(
 		context.Background(),
-		"SELECT table_name FROM information_schema.tables WHERE table_schema = $1 AND table_type = 'BASE TABLE'",
+		`
+		SELECT pg_class.relname AS table, COALESCE(parent.relname, '') AS parent_partitioned_table
+		FROM pg_class
+		JOIN pg_namespace ON pg_namespace.oid = pg_class.relnamespace
+		LEFT JOIN pg_inherits ON pg_inherits.inhrelid = pg_class.oid
+		LEFT JOIN pg_class AS parent ON pg_inherits.inhparent = parent.oid
+		WHERE pg_namespace.nspname = $1 AND pg_class.relkind = 'r';
+		`,
 		schema,
 	)
 	PanicIfError(err)
 	defer tablesRows.Close()
 
 	for tablesRows.Next() {
-		var table string
-		err = tablesRows.Scan(&table)
+		pgSchemaTable := SchemaTable{Schema: schema}
+		err = tablesRows.Scan(&pgSchemaTable.Table, &pgSchemaTable.ParentPartitionedTable)
 		PanicIfError(err)
-		tables = append(tables, table)
+		pgSchemaTables = append(pgSchemaTables, pgSchemaTable)
 	}
 
-	return tables
+	return pgSchemaTables
 }
 
 func (syncer *Syncer) syncFromPgTable(conn *pgx.Conn, pgSchemaTable SchemaTable) {

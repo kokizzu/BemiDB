@@ -84,8 +84,9 @@ func (set *Set) Contains(item string) bool {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type SchemaTable struct {
-	Schema string
-	Table  string
+	Schema                 string
+	Table                  string
+	ParentPartitionedTable string
 }
 
 func (schemaTable SchemaTable) String() string {

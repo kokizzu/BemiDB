@@ -275,6 +275,7 @@ SELECT * FROM [TABLE] WHERE [JSON_COLUMN]->>'[JSON_KEY]' = '[JSON_VALUE]';
 ## Future roadmap
 
 - [ ] Incremental data synchronization into Iceberg tables.
+- [ ] Support for parent partitioned tables.
 - [ ] Real-time replication from Postgres using CDC.
 - [ ] Direct Postgres-compatible write operations.
 - [ ] Iceberg table compaction and partitioning.
