@@ -357,6 +357,8 @@ func (queryHandler *QueryHandler) remapQuery(query string) (string, error) {
 	var statementNode *pgQuery.Node
 	if len(queryTree.Stmts) > 0 {
 		statementNode = queryTree.Stmts[0].Stmt
+	} else {
+		return FALLBACK_SQL_QUERY, nil
 	}
 
 	if statementNode != nil && statementNode.GetSelectStmt() != nil {
@@ -373,7 +375,7 @@ func (queryHandler *QueryHandler) remapQuery(query string) (string, error) {
 		return FALLBACK_SQL_QUERY, nil
 	}
 
-	LogDebug(queryHandler.config, queryTree)
+	LogDebug(queryHandler.config, "Query tree:", queryTree)
 	return "", errors.New("Unsupported query type")
 }
 

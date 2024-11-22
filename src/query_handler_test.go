@@ -59,6 +59,11 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"Success"},
 			"values":      {},
 		},
+		// Empty query
+		"-- ping": {
+			"description": {"1"},
+			"values":      {"1"},
+		},
 		// DISCARD
 		"DISCARD ALL": {
 			"description": {"1"},
