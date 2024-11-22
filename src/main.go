@@ -53,13 +53,12 @@ func start(config *Config) {
 	defer duckdb.Close()
 
 	icebergReader := NewIcebergReader(config)
+	queryHandler := NewQueryHandler(config, duckdb, icebergReader)
 
 	for {
 		conn := AcceptConnection(tcpListener)
 		LogInfo(config, "BemiDB: Accepted connection from", conn.RemoteAddr())
-
 		postgres := NewPostgres(config, &conn)
-		queryHandler := NewQueryHandler(config, duckdb, icebergReader)
 
 		go func() {
 			postgres.Run(queryHandler)
