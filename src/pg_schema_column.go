@@ -205,7 +205,7 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interf
 	case "varchar", "char", "text", "bytea", "jsonb", "json", "numeric", "uuid", "interval",
 		"point", "line", "lseg", "box", "path", "polygon", "circle",
 		"cidr", "inet", "macaddr", "macaddr8",
-		"tsvector", "pg_snapshot":
+		"tsvector", "ltree", "pg_snapshot":
 		return value
 	case "bpchar":
 		trimmedValue := strings.TrimRight(value, " ")
@@ -296,7 +296,7 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveTypes() (primitiveType str
 	case "varchar", "char", "text", "bpchar", "bytea", "interval", "jsonb", "json",
 		"point", "line", "lseg", "box", "path", "polygon", "circle",
 		"cidr", "inet", "macaddr", "macaddr8",
-		"tsvector", "pg_snapshot":
+		"tsvector", "ltree", "pg_snapshot":
 		return "BYTE_ARRAY", "UTF8"
 	case "date":
 		return "INT32", "DATE"
@@ -344,7 +344,7 @@ func (pgSchemaColumn *PgSchemaColumn) icebergPrimitiveType() string {
 	case "varchar", "char", "text", "interval", "jsonb", "json", "bpchar",
 		"point", "line", "lseg", "box", "path", "polygon", "circle",
 		"cidr", "inet", "macaddr", "macaddr8",
-		"tsvector", "pg_snapshot":
+		"tsvector", "ltree", "pg_snapshot":
 		return "string"
 	case "uuid":
 		return "uuid"

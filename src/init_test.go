@@ -189,6 +189,11 @@ var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 		UdtName:    "_int4",
 	},
 	{
+		ColumnName: "array_ltree_column",
+		DataType:   "ARRAY",
+		UdtName:    "_ltree",
+	},
+	{
 		ColumnName: "user_defined_column",
 		DataType:   "USER-DEFINED",
 		UdtName:    "address",
@@ -229,6 +234,7 @@ var TEST_LOADED_ROWS = [][]string{
 		"{\"key\": \"value\"}",                 // jsonb_column
 		"{one,two,three}",                      // array_text_column
 		"{1,2,3}",                              // array_int_column
+		"{\"a.b\",\"c.d\"}",                    // array_ltree_column
 		"(Toronto)",                            // user_defined_column
 	},
 	{
@@ -264,6 +270,7 @@ var TEST_LOADED_ROWS = [][]string{
 		"{}",                            // jsonb_column
 		PG_NULL_STRING,                  // array_text_column
 		"{}",                            // array_int_column
+		PG_NULL_STRING,                  // array_ltree_column
 		PG_NULL_STRING,                  // user_defined_column
 	},
 }

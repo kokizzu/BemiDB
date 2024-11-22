@@ -260,7 +260,7 @@ Primitive data types are mapped as follows:
 | `interval`                                                  | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `point`, `line`, `lseg`, `box`, `path`, `polygon`, `circle` | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `cidr`, `inet`, `macaddr`, `macaddr8`                       | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
-| `tsvector`, `pg_snapshot`                                   | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `tsvector`, `ltree`, `pg_snapshot`                          | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `json`, `jsonb`                                             | `BYTE_ARRAY` (`UTF8`)                             | `string` (JSON logical type)     |
 | `_*` (array)                                                | `LIST` `*`                                        | `list`                           |
 | `*` (user-defined type)                                     | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |

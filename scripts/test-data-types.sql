@@ -3,6 +3,8 @@
 DROP TABLE IF EXISTS test_table;
 DROP TYPE IF EXISTS address;
 
+CREATE EXTENSION IF NOT EXISTS ltree;
+
 CREATE TYPE address AS (
   city VARCHAR(50)
 );
@@ -41,6 +43,7 @@ CREATE TABLE test_table (
   pg_snapshot_column PG_SNAPSHOT,
   array_text_column TEXT[],
   array_int_column INT[],
+  array_ltree_column LTREE[],
   user_defined_column address
 );
 
@@ -77,6 +80,7 @@ INSERT INTO test_table (
   pg_snapshot_column,
   array_text_column,
   array_int_column,
+  array_ltree_column,
   user_defined_column
 ) VALUES (
   TRUE,                                     -- bool_column
@@ -111,6 +115,7 @@ INSERT INTO test_table (
   pg_current_snapshot(),                    -- pg_snapshot_column
   '{"one", "two", "three"}',                -- array_text_column
   '{1, 2, 3}',                              -- array_int_column
+  '{"a.b", "c.d"}'::LTREE[],                -- array_ltree_column
   ROW('Toronto')                            -- user_defined_column
 ), (
   FALSE,                                    -- bool_column
@@ -145,6 +150,7 @@ INSERT INTO test_table (
   NULL,                                     -- pg_snapshot_column
   NULL,                                     -- array_text_column
   '{}',                                     -- array_int_column
+  NULL,                                     -- array_ltree_column
   NULL                                      -- user_defined_column
 );
 

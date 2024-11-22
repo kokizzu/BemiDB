@@ -330,6 +330,14 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"array_int_column"},
 			"values":      {""},
 		},
+		"SELECT array_ltree_column FROM public.test_table WHERE array_ltree_column IS NOT NULL": {
+			"description": {"array_ltree_column"},
+			"values":      {"{a.b,c.d}"},
+		},
+		"SELECT array_ltree_column FROM public.test_table WHERE array_ltree_column IS NULL": {
+			"description": {"array_ltree_column"},
+			"values":      {""},
+		},
 		"SELECT user_defined_column FROM public.test_table WHERE user_defined_column IS NOT NULL": {
 			"description": {"user_defined_column"},
 			"values":      {"(Toronto)"},
