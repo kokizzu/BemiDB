@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"net"
 
 	"github.com/jackc/pgx/v5/pgproto3"
@@ -40,7 +40,11 @@ func AcceptConnection(listener net.Listener) net.Conn {
 }
 
 func (postgres *Postgres) Run(queryHandler *QueryHandler) {
-	postgres.handleStartup()
+	err := postgres.handleStartup()
+	if err != nil {
+		LogError(postgres.config, "Error handling startup:", err)
+		return // Terminate connection
+	}
 
 	for {
 		message, err := postgres.backend.Receive()
@@ -60,7 +64,8 @@ func (postgres *Postgres) Run(queryHandler *QueryHandler) {
 			LogDebug(postgres.config, "Client terminated connection")
 			return
 		default:
-			PanicIfError(fmt.Errorf("Received message other than Query from client: %#v", message))
+			LogError(postgres.config, "Received message other than Query from client:", message)
+			return // Terminate connection
 		}
 	}
 }
@@ -152,9 +157,11 @@ func (postgres *Postgres) writeError(message string) {
 	)
 }
 
-func (postgres *Postgres) handleStartup() {
+func (postgres *Postgres) handleStartup() error {
 	startupMessage, err := postgres.backend.ReceiveStartupMessage()
-	PanicIfError(err, "Error receiving startup message")
+	if err != nil {
+		return err
+	}
 
 	switch startupMessage.(type) {
 	case *pgproto3.StartupMessage:
@@ -163,12 +170,12 @@ func (postgres *Postgres) handleStartup() {
 
 		if params["database"] != postgres.config.Database {
 			postgres.writeError("database " + params["database"] + " does not exist")
-			return
+			return errors.New("Database does not exist")
 		}
 
 		if postgres.config.User != "" && params["user"] != postgres.config.User {
 			postgres.writeError("role \"" + params["user"] + "\" does not exist")
-			return
+			return errors.New("Role does not exist")
 		}
 
 		postgres.writeMessages(
@@ -177,11 +184,15 @@ func (postgres *Postgres) handleStartup() {
 			&pgproto3.ParameterStatus{Name: "server_version", Value: PG_VERSION},
 			&pgproto3.ReadyForQuery{TxStatus: PG_TX_STATUS_IDLE},
 		)
+		return nil
 	case *pgproto3.SSLRequest:
 		_, err = (*postgres.conn).Write([]byte("N"))
-		PanicIfError(err, "Error sending deny SSL request")
+		if err != nil {
+			return err
+		}
 		postgres.handleStartup()
+		return nil
 	default:
-		PanicIfError(fmt.Errorf("Unknown startup message: %#v", startupMessage))
+		return errors.New("Unknown startup message")
 	}
 }
