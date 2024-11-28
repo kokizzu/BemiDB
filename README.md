@@ -172,16 +172,44 @@ Sync data periodically from a Postgres database:
   sync
 ```
 
-Alternatively, you can set the interval using environment variables:
+Note that incremental real-time replication is not supported yet (WIP). Please see the [Future roadmap](#future-roadmap).
+
+### Syncing from selective tables
+
+You can sync only specific tables from your Postgres database using the `--include-tables` or `--exclude-tables` options.
+
+To include specific tables during the sync:
+
+```sh
+./bemidb \
+  --pg-sync-interval 1h \
+  --pg-database-url postgres://postgres:postgres@localhost:5432/dbname \
+  --include-tables schema.table1,public.users \
+  sync
+```
+
+To exclude specific tables during the sync:
+
+```sh
+./bemidb \
+  --pg-sync-interval 1h \
+  --pg-database-url postgres://postgres:postgres@localhost:5432/dbname \
+  --exclude-tables schema.table3,public.cache \
+  sync
+```
+
+Note: You cannot use `--include-tables` and `--exclude-tables` simultaneously.
+
+Alternatively, you can set the interval and table inclusion/exclusion using environment variables:
 
 ```sh
 export PG_SYNC_INTERVAL=1h
 export PG_DATABASE_URL=postgres://postgres:postgres@localhost:5432/dbname
+export PG_INCLUDE_TABLES=schema.table1,schema.table2
+export PG_EXCLUDE_TABLES=schema.table3,schema.table4
 
 ./bemidb sync
 ```
-
-Note that incremental real-time replication is not supported yet (WIP). Please see the [Future roadmap](#future-roadmap).
 
 ### Syncing from multiple Postgres databases
 

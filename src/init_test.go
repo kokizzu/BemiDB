@@ -313,6 +313,12 @@ func loadTestConfig() *Config {
 }
 
 func setTestArgs(args []string) {
+	// Reset state
+	_config = Config{}
+	_password = ""
+	_pgIncludeTables = ""
+	_pgExcludeTables = ""
+
 	os.Args = append([]string{"cmd"}, args...)
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	registerFlags()

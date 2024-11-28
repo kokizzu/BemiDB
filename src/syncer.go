@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/csv"
+	"fmt"
 	"os"
 
 	"github.com/jackc/pgx/v5"
@@ -41,12 +42,28 @@ func (syncer *Syncer) SyncFromPostgres() {
 	pgSchemaTables := []SchemaTable{}
 	for _, schema := range syncer.listPgSchemas(conn) {
 		for _, pgSchemaTable := range syncer.listPgSchemaTables(conn, schema) {
-			pgSchemaTables = append(pgSchemaTables, pgSchemaTable)
-			syncer.syncFromPgTable(conn, pgSchemaTable)
+			if syncer.shouldSyncTable(pgSchemaTable) {
+				pgSchemaTables = append(pgSchemaTables, pgSchemaTable)
+				syncer.syncFromPgTable(conn, pgSchemaTable)
+			}
 		}
 	}
 
 	syncer.deleteOldIcebergSchemaTables(pgSchemaTables)
+}
+
+func (syncer *Syncer) shouldSyncTable(schemaTable SchemaTable) bool {
+	tableId := fmt.Sprintf("%s.%s", schemaTable.Schema, schemaTable.Table)
+
+	if syncer.config.Pg.IncludeTables != nil {
+		return syncer.config.Pg.IncludeTables.Contains(tableId)
+	}
+
+	if syncer.config.Pg.ExcludeTables != nil {
+		return !syncer.config.Pg.ExcludeTables.Contains(tableId)
+	}
+
+	return true
 }
 
 func (syncer *Syncer) listPgSchemas(conn *pgx.Conn) []string {

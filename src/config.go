@@ -22,9 +22,11 @@ const (
 	ENV_AWS_ACCESS_KEY_ID     = "AWS_ACCESS_KEY_ID"
 	ENV_AWS_SECRET_ACCESS_KEY = "AWS_SECRET_ACCESS_KEY"
 
-	ENV_PG_DATABASE_URL  = "PG_DATABASE_URL"
-	ENV_PG_SYNC_INTERVAL = "PG_SYNC_INTERVAL"
-	ENV_PG_SCHEMA_PREFIX = "PG_SCHEMA_PREFIX"
+	ENV_PG_DATABASE_URL   = "PG_DATABASE_URL"
+	ENV_PG_SYNC_INTERVAL  = "PG_SYNC_INTERVAL"
+	ENV_PG_SCHEMA_PREFIX  = "PG_SCHEMA_PREFIX"
+	ENV_PG_INCLUDE_TABLES = "PG_INCLUDE_TABLES"
+	ENV_PG_EXCLUDE_TABLES = "PG_EXCLUDE_TABLES"
 
 	DEFAULT_PORT              = "54321"
 	DEFAULT_DATABASE          = "bemidb"
@@ -47,9 +49,11 @@ type AwsConfig struct {
 }
 
 type PgConfig struct {
-	DatabaseUrl  string
-	SyncInterval string // optional
-	SchemaPrefix string // optional
+	DatabaseUrl   string
+	SyncInterval  string // optional
+	SchemaPrefix  string // optional
+	IncludeTables *Set   // optional
+	ExcludeTables *Set   // optional
 }
 
 type Config struct {
@@ -67,6 +71,7 @@ type Config struct {
 
 var _config Config
 var _password string
+var _pgIncludeTables, _pgExcludeTables string
 
 func init() {
 	registerFlags()
@@ -83,6 +88,8 @@ func registerFlags() {
 	flag.StringVar(&_config.StorageType, "storage-type", os.Getenv(ENV_STORAGE_TYPE), "Storage type: \"LOCAL\", \"S3\". Default: \""+DEFAULT_DB_STORAGE_TYPE+"\"")
 	flag.StringVar(&_config.Pg.SchemaPrefix, "pg-schema-prefix", os.Getenv(ENV_PG_SCHEMA_PREFIX), "(Optional) Prefix for PostgreSQL schema names")
 	flag.StringVar(&_config.Pg.SyncInterval, "pg-sync-interval", os.Getenv(ENV_PG_SYNC_INTERVAL), "(Optional) Interval between syncs. Valid units: \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\"")
+	flag.StringVar(&_pgIncludeTables, "include-tables", os.Getenv(ENV_PG_INCLUDE_TABLES), "(Optional) Comma-separated list of tables to include in sync (format: schema.table)")
+	flag.StringVar(&_pgExcludeTables, "exclude-tables", os.Getenv(ENV_PG_EXCLUDE_TABLES), "(Optional) Comma-separated list of tables to exclude from sync (format: schema.table)")
 	flag.StringVar(&_config.Pg.DatabaseUrl, "pg-database-url", os.Getenv(ENV_PG_DATABASE_URL), "PostgreSQL database URL")
 	flag.StringVar(&_config.Aws.Region, "aws-region", os.Getenv(ENV_AWS_REGION), "AWS region")
 	flag.StringVar(&_config.Aws.S3Bucket, "aws-s3-bucket", os.Getenv(ENV_AWS_S3_BUCKET), "AWS S3 bucket name")
@@ -128,7 +135,6 @@ func parseFlags() {
 	} else if !slices.Contains(STORAGE_TYPES, _config.StorageType) {
 		panic("Invalid storage type " + _config.StorageType + ". Must be one of " + strings.Join(STORAGE_TYPES, ", "))
 	}
-
 	if _config.StorageType == STORAGE_TYPE_S3 {
 		if _config.Aws.Region == "" {
 			panic("AWS region is required")
@@ -142,6 +148,15 @@ func parseFlags() {
 		if _config.Aws.SecretAccessKey == "" {
 			panic("AWS secret access key is required")
 		}
+	}
+	if _pgIncludeTables != "" && _pgExcludeTables != "" {
+		panic("Cannot specify both --include-tables and --exclude-tables")
+	}
+	if _pgIncludeTables != "" {
+		_config.Pg.IncludeTables = NewSet(strings.Split(_pgIncludeTables, ","))
+	}
+	if _pgExcludeTables != "" {
+		_config.Pg.ExcludeTables = NewSet(strings.Split(_pgExcludeTables, ","))
 	}
 }
 
