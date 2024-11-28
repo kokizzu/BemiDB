@@ -1,5 +1,5 @@
 sh:
-	devbox shell
+	devbox --env-file .env shell
 
 install:
 	devbox run "cd src && go mod tidy"

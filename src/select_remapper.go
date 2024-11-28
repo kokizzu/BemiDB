@@ -53,7 +53,7 @@ func (selectRemapper *SelectRemapper) RemapQueryTreeWithSet(queryTree *pgQuery.P
 	setStatement := queryTree.Stmts[0].Stmt.GetVariableSetStmt()
 
 	if !KNOWN_SET_STATEMENTS.Contains(setStatement.Name) {
-		LogError(selectRemapper.config, "Unsupported SET ", setStatement.Name, ":", setStatement)
+		LogWarn(selectRemapper.config, "Unsupported SET ", setStatement.Name, ":", setStatement)
 	}
 
 	queryTree.Stmts[0].Stmt.GetVariableSetStmt().Name = "schema"
