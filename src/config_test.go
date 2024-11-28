@@ -138,7 +138,7 @@ func TestLoadConfig(t *testing.T) {
 			"--init-sql", "./init/duckdb.sql",
 			"--storage-path", "storage-path",
 			"--log-level", "ERROR",
-			"--storage-type", "local",
+			"--storage-type", "LOCAL",
 			"--pg-database-url", "postgres://user:password@localhost:5432/db",
 			"--pg-sync-interval", "2h30m",
 			"--pg-schema-prefix", "mydb_",
@@ -161,7 +161,7 @@ func TestLoadConfig(t *testing.T) {
 		if config.LogLevel != "ERROR" {
 			t.Errorf("Expected logLevel to be ERROR, got %s", config.LogLevel)
 		}
-		if config.StorageType != "local" {
+		if config.StorageType != "LOCAL" {
 			t.Errorf("Expected storageType to be local, got %s", config.StorageType)
 		}
 		if config.Pg.DatabaseUrl != "postgres://user:password@localhost:5432/db" {

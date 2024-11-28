@@ -316,5 +316,4 @@ func setTestArgs(args []string) {
 	os.Args = append([]string{"cmd"}, args...)
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	registerFlags()
-	flag.Parse()
 }
