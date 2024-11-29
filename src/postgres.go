@@ -175,7 +175,7 @@ func (postgres *Postgres) handleStartup() error {
 			return errors.New("Database does not exist")
 		}
 
-		if postgres.config.User == "" && params["user"] != postgres.config.User && params["user"] != SYSTEM_AUTH_USER {
+		if postgres.config.User != "" && params["user"] != postgres.config.User && params["user"] != SYSTEM_AUTH_USER {
 			postgres.writeError("role \"" + params["user"] + "\" does not exist")
 			return errors.New("Role does not exist")
 		}
