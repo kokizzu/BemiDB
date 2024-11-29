@@ -11,6 +11,8 @@ const (
 	PG_VERSION        = "17.0"
 	PG_ENCODING       = "UTF8"
 	PG_TX_STATUS_IDLE = 'I'
+
+	SYSTEM_AUTH_USER = "bemidb"
 )
 
 type Postgres struct {
@@ -173,7 +175,7 @@ func (postgres *Postgres) handleStartup() error {
 			return errors.New("Database does not exist")
 		}
 
-		if postgres.config.User != "" && params["user"] != postgres.config.User {
+		if postgres.config.User == "" && params["user"] != postgres.config.User && params["user"] != SYSTEM_AUTH_USER {
 			postgres.writeError("role \"" + params["user"] + "\" does not exist")
 			return errors.New("Role does not exist")
 		}

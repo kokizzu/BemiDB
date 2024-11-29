@@ -76,31 +76,9 @@ Here is an example of running BemiDB with default settings and storing data in a
 
 ```sh
 ./bemidb \
-  --port 54321 \
-  --database bemidb \
-  --user= \ # Allow any credentials
-  --password= \
   --storage-type LOCAL \
   --storage-path ./iceberg \ # $PWD/iceberg/*
-  --init-sql ./init.sql \
-  --log-level INFO \
   start
-```
-
-To run BemiDB with environment variables:
-
-```sh
-# Default settings
-export BEMIDB_PORT=54321
-export BEMIDB_DATABASE=bemidb
-export BEMIDB_USER=
-export BEMIDB_PASSWORD=
-export BEMIDB_STORAGE_TYPE=LOCAL
-export BEMIDB_STORAGE_PATH=./iceberg
-export BEMIDB_INIT_SQL=./init.sql
-export BEMIDB_LOG_LEVEL=INFO
-
-./bemidb start
 ```
 
 ### S3 block storage
@@ -109,8 +87,6 @@ BemiDB natively supports S3 storage. You can specify the S3 settings using the f
 
 ```sh
 ./bemidb \
-  --port 54321 \
-  --database bemidb \
   --storage-type S3 \
   --storage-path iceberg \ # s3://[AWS_S3_BUCKET]/iceberg/*
   --aws-region [AWS_REGION] \
@@ -119,23 +95,6 @@ BemiDB natively supports S3 storage. You can specify the S3 settings using the f
   --aws-secret-access-key [AWS_SECRET_ACCESS_KEY] \
   start
 ```
-
-To run BemiDB with environment variables:
-
-```sh
-export BEMIDB_PORT=54321
-export BEMIDB_DATABASE=bemidb
-export BEMIDB_STORAGE_TYPE=S3
-export BEMIDB_STORAGE_PATH=iceberg
-export AWS_REGION=[AWS_REGION]
-export AWS_S3_BUCKET=[AWS_S3_BUCKET]
-export AWS_ACCESS_KEY_ID=[AWS_ACCESS_KEY_ID]
-export AWS_SECRET_ACCESS_KEY=[AWS_SECRET_ACCESS_KEY]
-
-./bemidb start
-```
-
-CLI arguments take precedence over environment variables. I.e. you can override the environment variables with CLI arguments.
 
 Here is the minimal IAM policy required for BemiDB to work with S3:
 
@@ -176,15 +135,12 @@ Note that incremental real-time replication is not supported yet (WIP). Please s
 
 ### Syncing from selective tables
 
-You can sync only specific tables from your Postgres database using the `--include-tables` or `--exclude-tables` options.
-
-To include specific tables during the sync:
+You can sync only specific tables from your Postgres database. To include specific tables during the sync:
 
 ```sh
 ./bemidb \
-  --pg-sync-interval 1h \
+  --include-tables public.users,public.transactions \
   --pg-database-url postgres://postgres:postgres@localhost:5432/dbname \
-  --include-tables schema.table1,public.users \
   sync
 ```
 
@@ -192,24 +148,12 @@ To exclude specific tables during the sync:
 
 ```sh
 ./bemidb \
-  --pg-sync-interval 1h \
+  --exclude-tables public.cache,public.logs \
   --pg-database-url postgres://postgres:postgres@localhost:5432/dbname \
-  --exclude-tables schema.table3,public.cache \
   sync
 ```
 
 Note: You cannot use `--include-tables` and `--exclude-tables` simultaneously.
-
-Alternatively, you can set the interval and table inclusion/exclusion using environment variables:
-
-```sh
-export PG_SYNC_INTERVAL=1h
-export PG_DATABASE_URL=postgres://postgres:postgres@localhost:5432/dbname
-export PG_INCLUDE_TABLES=schema.table1,schema.table2
-export PG_EXCLUDE_TABLES=schema.table3,schema.table4
-
-./bemidb sync
-```
 
 ### Syncing from multiple Postgres databases
 
@@ -219,12 +163,12 @@ For example, if two Postgres databases `db1` and `db2` contain `public` schemas,
 
 ```sh
 ./bemidb \
-  --pg-schema-prefix db1_ \ # or PG_SCHEMA_PREFIX=db1_ using an env variable
+  --pg-schema-prefix db1_ \
   --pg-database-url postgres://postgres:postgres@localhost:5432/db1 \
   sync
 
 ./bemidb \
-  --pg-schema-prefix db2_ \ # or PG_SCHEMA_PREFIX=db2_ using an env variable
+  --pg-schema-prefix db2_ \
   --pg-database-url postgres://postgres:postgres@localhost:5432/db2 \
   sync
 ```
@@ -234,8 +178,33 @@ Then you can query and join tables from both Postgres databases in the same Bemi
 ```sh
 ./bemidb start
 
-psql postgres://localhost:54321/bemidb -c "SELECT * FROM db1_public.[TABLE] JOIN db2_public.[TABLE] ON ..."
+psql postgres://localhost:54321/bemidb -c \
+  "SELECT * FROM db1_public.[TABLE] JOIN db2_public.[TABLE] ON ..."
 ```
+
+### Configuration options
+
+| CLI argument              | Environment variable    | Default value  | Description                                                               |
+|---------------------------|-------------------------|----------------|---------------------------------------------------------------------------|
+| `--port`                  | `BEMIDB_PORT`           | `54321`        | Port for BemiDB to listen on                                              |
+| `--database`              | `BEMIDB_DATABASE`       | `bemidb`       | Database name                                                             |
+| `--storage-type`          | `BEMIDB_STORAGE_TYPE`   | `LOCAL`        | Storage type: `LOCAL` or `S3`                                             |
+| `--storage-path`          | `BEMIDB_STORAGE_PATH`   | `iceberg`      | Path to the storage folder                                                |
+| `--log-level`             | `BEMIDB_LOG_LEVEL`      | `INFO`         | Log level: `DEBUG`, `INFO`, `WARN`, or `ERROR`                            |
+| `--init-sql `             | `BEMIDB_INIT_SQL`       | `./init.sql`   | Path to the initialization SQL file                                       |
+| `--user`                  | `BEMIDB_USER`           |                | Database user. Allows any if empty                                        |
+| `--password`              | `BEMIDB_PASSWORD`       |                | Database password. Allows any if empty                                    |
+| `--aws-region`            | `AWS_REGION`            |                | AWS region. Required if storage type is `S3`                              |
+| `--aws-s3-bucket`         | `AWS_S3_BUCKET`         |                | AWS S3 bucket name. Required if storage type is `S3`                      |
+| `--aws-access-key-id`     | `AWS_ACCESS_KEY_ID`     |                | AWS access key ID. Required if storage type is `S3`                       |
+| `--aws-secret-access-key` | `AWS_SECRET_ACCESS_KEY` |                | AWS secret access key. Required if storage type is `S3`                   |
+| `--pg-database-url`       | `PG_DATABASE_URL`       |                | PostgreSQL database URL to sync                                           |
+| `--pg-sync-interval`      | `PG_SYNC_INTERVAL`      |                | Interval between syncs. Valid units: `ns`, `us`/`µs`, `ms`, `s`, `m`, `h` |
+| `--pg-exclude-tables`     | `PG_EXCLUDE_TABLES`     |                | List of tables to exclude from sync. Comma-separated `schema.table`       |
+| `--pg-include-tables`     | `PG_INCLUDE_TABLES`     |                | List of tables to include in sync. Comma-separated `schema.table`         |
+| `--pg-schema-prefix`      | `PG_SCHEMA_PREFIX`      |                | Prefix for PostgreSQL schema names                                        |
+
+Note that CLI arguments take precedence over environment variables. I.e. you can override the environment variables with CLI arguments.
 
 ## Architecture
 

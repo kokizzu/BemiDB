@@ -88,9 +88,9 @@ func registerFlags() {
 	flag.StringVar(&_config.StorageType, "storage-type", os.Getenv(ENV_STORAGE_TYPE), "Storage type: \"LOCAL\", \"S3\". Default: \""+DEFAULT_DB_STORAGE_TYPE+"\"")
 	flag.StringVar(&_config.Pg.SchemaPrefix, "pg-schema-prefix", os.Getenv(ENV_PG_SCHEMA_PREFIX), "(Optional) Prefix for PostgreSQL schema names")
 	flag.StringVar(&_config.Pg.SyncInterval, "pg-sync-interval", os.Getenv(ENV_PG_SYNC_INTERVAL), "(Optional) Interval between syncs. Valid units: \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\"")
-	flag.StringVar(&_pgIncludeTables, "include-tables", os.Getenv(ENV_PG_INCLUDE_TABLES), "(Optional) Comma-separated list of tables to include in sync (format: schema.table)")
-	flag.StringVar(&_pgExcludeTables, "exclude-tables", os.Getenv(ENV_PG_EXCLUDE_TABLES), "(Optional) Comma-separated list of tables to exclude from sync (format: schema.table)")
-	flag.StringVar(&_config.Pg.DatabaseUrl, "pg-database-url", os.Getenv(ENV_PG_DATABASE_URL), "PostgreSQL database URL")
+	flag.StringVar(&_pgIncludeTables, "pg-include-tables", os.Getenv(ENV_PG_INCLUDE_TABLES), "(Optional) Comma-separated list of tables to include in sync (format: schema.table)")
+	flag.StringVar(&_pgExcludeTables, "pg-exclude-tables", os.Getenv(ENV_PG_EXCLUDE_TABLES), "(Optional) Comma-separated list of tables to exclude from sync (format: schema.table)")
+	flag.StringVar(&_config.Pg.DatabaseUrl, "pg-database-url", os.Getenv(ENV_PG_DATABASE_URL), "PostgreSQL database URL to sync")
 	flag.StringVar(&_config.Aws.Region, "aws-region", os.Getenv(ENV_AWS_REGION), "AWS region")
 	flag.StringVar(&_config.Aws.S3Bucket, "aws-s3-bucket", os.Getenv(ENV_AWS_S3_BUCKET), "AWS S3 bucket name")
 	flag.StringVar(&_config.Aws.AccessKeyId, "aws-access-key-id", os.Getenv(ENV_AWS_ACCESS_KEY_ID), "AWS access key ID")
@@ -150,7 +150,7 @@ func parseFlags() {
 		}
 	}
 	if _pgIncludeTables != "" && _pgExcludeTables != "" {
-		panic("Cannot specify both --include-tables and --exclude-tables")
+		panic("Cannot specify both --pg-include-tables and --pg-exclude-tables")
 	}
 	if _pgIncludeTables != "" {
 		_config.Pg.IncludeTables = NewSet(strings.Split(_pgIncludeTables, ","))

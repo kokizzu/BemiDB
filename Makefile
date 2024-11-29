@@ -13,6 +13,10 @@ build:
 		devbox run "./scripts/build-darwin.sh" && \
 		./scripts/build-linux.sh
 
+build-local:
+	rm -rf build/bemidb-* && \
+		cd src && go build -o ../build/bemidb-darwin-arm64
+
 sync:
 	devbox run --env-file .env "cd src && go run . sync"
 

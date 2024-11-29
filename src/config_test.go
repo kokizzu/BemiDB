@@ -152,7 +152,7 @@ func TestLoadConfig(t *testing.T) {
 			"--pg-database-url", "postgres://user:password@localhost:5432/db",
 			"--pg-sync-interval", "2h30m",
 			"--pg-schema-prefix", "mydb_",
-			"--include-tables", "public.users",
+			"--pg-include-tables", "public.users",
 		})
 
 		config := LoadConfig()
@@ -189,10 +189,10 @@ func TestLoadConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("Handles exclude-tables configuration", func(t *testing.T) {
+	t.Run("Handles pg-exclude-tables configuration", func(t *testing.T) {
 		setTestArgs([]string{
 			"--pg-database-url", "postgres://user:password@localhost:5432/db",
-			"--exclude-tables", "public.secrets,public.cache",
+			"--pg-exclude-tables", "public.secrets,public.cache",
 		})
 		config := LoadConfig(true)
 
@@ -239,8 +239,8 @@ func TestLoadConfig(t *testing.T) {
 			"--pg-database-url", "postgres://user:password@localhost:5432/db",
 			"--pg-sync-interval", "2h30m",
 			"--pg-schema-prefix", "mydb_",
-			"--include-tables", "public.users",
-			"--exclude-tables", "public.orders",
+			"--pg-include-tables", "public.users",
+			"--pg-exclude-tables", "public.orders",
 		})
 
 		defer func() {
