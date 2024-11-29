@@ -84,7 +84,7 @@ func registerFlags() {
 	flag.StringVar(&_password, "password", os.Getenv(ENV_PASSWORD), "Database password. Default: \""+DEFAULT_PASSWORD+"\"")
 	flag.StringVar(&_config.StoragePath, "storage-path", os.Getenv(ENV_STORAGE_PATH), "Path to the storage folder. Default: \""+DEFAULT_STORAGE_PATH+"\"")
 	flag.StringVar(&_config.InitSqlFilepath, "init-sql", os.Getenv(ENV_INIT_SQL_FILEPATH), "Path to the initialization SQL file. Default: \""+DEFAULT_INIT_SQL_FILEPATH+"\"")
-	flag.StringVar(&_config.LogLevel, "log-level", os.Getenv(ENV_LOG_LEVEL), "Log level: \"DEBUG\", \"INFO\", \"ERROR\". Default: \""+DEFAULT_LOG_LEVEL+"\"")
+	flag.StringVar(&_config.LogLevel, "log-level", os.Getenv(ENV_LOG_LEVEL), "Log level: \"DEBUG\", \"INFO\", \"WARN\", \"ERROR\". Default: \""+DEFAULT_LOG_LEVEL+"\"")
 	flag.StringVar(&_config.StorageType, "storage-type", os.Getenv(ENV_STORAGE_TYPE), "Storage type: \"LOCAL\", \"S3\". Default: \""+DEFAULT_DB_STORAGE_TYPE+"\"")
 	flag.StringVar(&_config.Pg.SchemaPrefix, "pg-schema-prefix", os.Getenv(ENV_PG_SCHEMA_PREFIX), "(Optional) Prefix for PostgreSQL schema names")
 	flag.StringVar(&_config.Pg.SyncInterval, "pg-sync-interval", os.Getenv(ENV_PG_SYNC_INTERVAL), "(Optional) Interval between syncs. Valid units: \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\"")
