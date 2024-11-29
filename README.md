@@ -139,7 +139,7 @@ You can sync only specific tables from your Postgres database. To include specif
 
 ```sh
 ./bemidb \
-  --include-tables public.users,public.transactions \
+  --pg-include-tables public.users,public.transactions \
   --pg-database-url postgres://postgres:postgres@localhost:5432/dbname \
   sync
 ```
@@ -148,12 +148,12 @@ To exclude specific tables during the sync:
 
 ```sh
 ./bemidb \
-  --exclude-tables public.cache,public.logs \
+  --pg-exclude-tables public.cache,public.logs \
   --pg-database-url postgres://postgres:postgres@localhost:5432/dbname \
   sync
 ```
 
-Note: You cannot use `--include-tables` and `--exclude-tables` simultaneously.
+Note: You cannot use `--pg-include-tables` and `--pg-exclude-tables` simultaneously.
 
 ### Syncing from multiple Postgres databases
 
