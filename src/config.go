@@ -12,6 +12,7 @@ const (
 	ENV_DATABASE          = "BEMIDB_DATABASE"
 	ENV_USER              = "BEMIDB_USER"
 	ENV_PASSWORD          = "BEMIDB_PASSWORD"
+	ENV_HOST              = "BEMIDB_HOST"
 	ENV_INIT_SQL_FILEPATH = "BEMIDB_INIT_SQL"
 	ENV_STORAGE_PATH      = "BEMIDB_STORAGE_PATH"
 	ENV_LOG_LEVEL         = "BEMIDB_LOG_LEVEL"
@@ -32,6 +33,7 @@ const (
 	DEFAULT_DATABASE          = "bemidb"
 	DEFAULT_USER              = ""
 	DEFAULT_PASSWORD          = ""
+	DEFAULT_HOST              = "127.0.0.1"
 	DEFAULT_INIT_SQL_FILEPATH = "./init.sql"
 	DEFAULT_STORAGE_PATH      = "iceberg"
 	DEFAULT_LOG_LEVEL         = "INFO"
@@ -57,6 +59,7 @@ type PgConfig struct {
 }
 
 type Config struct {
+	Host              string
 	Port              string
 	Database          string
 	User              string
@@ -78,6 +81,7 @@ func init() {
 }
 
 func registerFlags() {
+	flag.StringVar(&_config.Host, "host", os.Getenv(ENV_HOST), "Database host. Default: \""+DEFAULT_HOST+"\"")
 	flag.StringVar(&_config.Port, "port", os.Getenv(ENV_PORT), "Port for BemiDB to listen on. Default: \""+DEFAULT_PORT+"\"")
 	flag.StringVar(&_config.Database, "database", os.Getenv(ENV_DATABASE), "Database name. Default: \""+DEFAULT_DATABASE+"\"")
 	flag.StringVar(&_config.User, "user", os.Getenv(ENV_USER), "Database user. Default: \""+DEFAULT_USER+"\"")
@@ -100,6 +104,9 @@ func registerFlags() {
 func parseFlags() {
 	flag.Parse()
 
+	if _config.Host == "" {
+		_config.Host = DEFAULT_HOST
+	}
 	if _config.Port == "" {
 		_config.Port = DEFAULT_PORT
 	}

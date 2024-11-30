@@ -30,7 +30,21 @@ func NewPostgres(config *Config, conn *net.Conn) *Postgres {
 }
 
 func NewTcpListener(config *Config) net.Listener {
-	tcpListener, err := net.Listen("tcp", "127.0.0.1:"+config.Port)
+	parsedIp := net.ParseIP(config.Host)
+	if parsedIp == nil {
+		panic("Invalid host: " + config.Host)
+	}
+
+	var network, host string
+	if parsedIp.To4() == nil {
+		network = "tcp6"
+		host = "[" + config.Host + "]"
+	} else {
+		network = "tcp4"
+		host = config.Host
+	}
+
+	tcpListener, err := net.Listen(network, host+":"+config.Port)
 	PanicIfError(err)
 	return tcpListener
 }

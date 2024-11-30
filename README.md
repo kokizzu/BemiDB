@@ -186,6 +186,7 @@ psql postgres://localhost:54321/bemidb -c \
 
 | CLI argument              | Environment variable    | Default value  | Description                                                               |
 |---------------------------|-------------------------|----------------|---------------------------------------------------------------------------|
+| `--host`                  | `BEMIDB_HOST`           | `127.0.0.1`    | Host for BemiDB to listen on                                              |
 | `--port`                  | `BEMIDB_PORT`           | `54321`        | Port for BemiDB to listen on                                              |
 | `--database`              | `BEMIDB_DATABASE`       | `bemidb`       | Database name                                                             |
 | `--storage-type`          | `BEMIDB_STORAGE_TYPE`   | `LOCAL`        | Storage type: `LOCAL` or `S3`                                             |
