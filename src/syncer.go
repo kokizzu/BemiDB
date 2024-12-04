@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -31,8 +33,9 @@ func NewSyncer(config *Config) *Syncer {
 
 func (syncer *Syncer) SyncFromPostgres() {
 	ctx := context.Background()
+	databaseUrl := syncer.urlEncodePassword(syncer.config.Pg.DatabaseUrl)
 
-	conn, err := pgx.Connect(ctx, syncer.config.Pg.DatabaseUrl)
+	conn, err := pgx.Connect(ctx, databaseUrl)
 	PanicIfError(err)
 	defer conn.Close(ctx)
 
@@ -50,6 +53,39 @@ func (syncer *Syncer) SyncFromPostgres() {
 	}
 
 	syncer.deleteOldIcebergSchemaTables(pgSchemaTables)
+}
+
+// Example:
+// - From postgres://username:pas$:wor^d@host:port/database
+// - To postgres://username:pas%24%3Awor%5Ed@host:port/database
+func (syncer *Syncer) urlEncodePassword(databaseUrl string) string {
+	// No credentials
+	if !strings.Contains(databaseUrl, "@") {
+		return databaseUrl
+	}
+
+	password := strings.TrimPrefix(databaseUrl, "postgresql://")
+	password = strings.TrimPrefix(databaseUrl, "postgres://")
+	passwordEndIndex := strings.LastIndex(password, "@")
+	password = password[:passwordEndIndex]
+
+	// Credentials without password
+	if !strings.Contains(password, ":") {
+		return databaseUrl
+	}
+
+	_, password, _ = strings.Cut(password, ":")
+	decodedPassword, err := url.QueryUnescape(password)
+	if err != nil {
+		return databaseUrl
+	}
+
+	// Password is already encoded
+	if decodedPassword != password {
+		return databaseUrl
+	}
+
+	return strings.Replace(databaseUrl, ":"+password+"@", ":"+url.QueryEscape(password)+"@", 1)
 }
 
 func (syncer *Syncer) shouldSyncTable(schemaTable SchemaTable) bool {
