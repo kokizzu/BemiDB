@@ -346,6 +346,31 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"user_defined_column"},
 			"values":      {""},
 		},
+		// Typecasts
+		"SELECT objoid, classoid, objsubid, description FROM pg_description WHERE classoid = 'pg_class'::regclass": {
+			"description": {"objoid", "classoid", "objsubid", "description"},
+			"values":      {},
+		},
+		"SELECT d.objoid, d.classoid, d.description, c.relname FROM pg_description d JOIN pg_class c ON d.classoid = 'pg_class'::regclass": {
+			"description": {"objoid", "classoid", "description", "relname"},
+			"values":      {},
+		},
+		"SELECT objoid, classoid, objsubid, description FROM (SELECT * FROM pg_description WHERE classoid = 'pg_class'::regclass) d": {
+			"description": {"objoid", "classoid", "objsubid", "description"},
+			"values":      {},
+		},
+		"SELECT objoid, classoid, objsubid, description FROM pg_description WHERE (classoid = 'pg_class'::regclass AND objsubid = 0) OR classoid = 'pg_type'::regclass": {
+			"description": {"objoid", "classoid", "objsubid", "description"},
+			"values":      {},
+		},
+		"SELECT objoid, classoid, objsubid, description FROM pg_description WHERE classoid IN ('pg_class'::regclass, 'pg_type'::regclass)": {
+			"description": {"objoid", "classoid", "objsubid", "description"},
+			"values":      {},
+		},
+		"SELECT objoid FROM pg_description WHERE classoid = CASE WHEN true THEN 'pg_class'::regclass ELSE 'pg_type'::regclass END": {
+			"description": {"objoid"},
+			"values":      {},
+		},
 	}
 
 	for query, responses := range responsesByQuery {
