@@ -200,8 +200,11 @@ func (syncer *Syncer) pgTableSchemaColumns(conn *pgx.Conn, pgSchemaTable SchemaT
 			COALESCE(character_maximum_length, 0),
 			COALESCE(numeric_precision, 0),
 			COALESCE(numeric_scale, 0),
-			COALESCE(datetime_precision, 0)
+			COALESCE(datetime_precision, 0),
+			pg_namespace.nspname
 		FROM information_schema.columns
+		JOIN pg_type ON pg_type.typname = udt_name
+		JOIN pg_namespace ON pg_namespace.oid = pg_type.typnamespace
 		WHERE table_schema = $1 AND table_name = $2
 		ORDER BY array_position($3, column_name)`,
 		pgSchemaTable.Schema,
@@ -223,6 +226,7 @@ func (syncer *Syncer) pgTableSchemaColumns(conn *pgx.Conn, pgSchemaTable SchemaT
 			&pgSchemaColumn.NumericPrecision,
 			&pgSchemaColumn.NumericScale,
 			&pgSchemaColumn.DatetimePrecision,
+			&pgSchemaColumn.Namespace,
 		)
 		PanicIfError(err)
 		pgSchemaColumns = append(pgSchemaColumns, pgSchemaColumn)

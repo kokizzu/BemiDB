@@ -9,12 +9,12 @@ import (
 
 const (
 	PG_NULL_STRING = "BEMIDB_NULL"
+	PG_TRUE        = "YES"
+	PG_FALSE       = "FALSE"
 
-	PG_SCHEMA_TRUE  = "YES"
-	PG_SCHEMA_FALSE = "FALSE"
+	PG_SCHEMA_PG_CATALOG = "pg_catalog"
 
-	PG_DATA_TYPE_ARRAY        = "ARRAY"
-	PG_DATA_TYPE_USER_DEFINED = "USER-DEFINED"
+	PG_DATA_TYPE_ARRAY = "ARRAY"
 
 	PARQUET_SCHEMA_REPETITION_TYPE_REQUIRED = "REQUIRED"
 	PARQUET_SCHEMA_REPETITION_TYPE_OPTIONAL = "OPTIONAL"
@@ -33,6 +33,7 @@ type PgSchemaColumn struct {
 	NumericPrecision       string
 	NumericScale           string
 	DatetimePrecision      string
+	Namespace              string
 }
 
 type ParquetSchemaField struct {
@@ -111,7 +112,7 @@ func (pgSchemaColumn PgSchemaColumn) ToIcebergSchemaFieldMap() IcebergSchemaFiel
 	icebergSchemaField.Id = id
 	icebergSchemaField.Name = pgSchemaColumn.ColumnName
 
-	if pgSchemaColumn.IsNullable == PG_SCHEMA_TRUE {
+	if pgSchemaColumn.IsNullable == PG_TRUE {
 		icebergSchemaField.Required = false
 	} else {
 		icebergSchemaField.Required = true
@@ -170,7 +171,7 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 	}
 
 	// Set RepetitionType
-	if pgSchemaColumn.IsNullable == PG_SCHEMA_TRUE {
+	if pgSchemaColumn.IsNullable == PG_TRUE {
 		parquetSchemaField.RepetitionType = PARQUET_SCHEMA_REPETITION_TYPE_OPTIONAL
 	} else {
 		parquetSchemaField.RepetitionType = PARQUET_SCHEMA_REPETITION_TYPE_REQUIRED
@@ -205,7 +206,7 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interf
 	case "varchar", "char", "text", "bytea", "jsonb", "json", "numeric", "uuid", "interval",
 		"point", "line", "lseg", "box", "path", "polygon", "circle",
 		"cidr", "inet", "macaddr", "macaddr8",
-		"tsvector", "ltree", "pg_snapshot":
+		"tsvector", "pg_snapshot":
 		return value
 	case "bpchar":
 		trimmedValue := strings.TrimRight(value, " ")
@@ -289,7 +290,8 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interf
 		PanicIfError(err)
 		return parsedTime.Unix() / 86400
 	default:
-		if pgSchemaColumn.DataType == PG_DATA_TYPE_USER_DEFINED {
+		// User-defined types
+		if pgSchemaColumn.Namespace != PG_SCHEMA_PG_CATALOG {
 			return value
 		}
 	}
@@ -302,7 +304,7 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveTypes() (primitiveType str
 	case "varchar", "char", "text", "bpchar", "bytea", "interval", "jsonb", "json",
 		"point", "line", "lseg", "box", "path", "polygon", "circle",
 		"cidr", "inet", "macaddr", "macaddr8",
-		"tsvector", "ltree", "pg_snapshot":
+		"tsvector", "pg_snapshot":
 		return "BYTE_ARRAY", "UTF8"
 	case "date":
 		return "INT32", "DATE"
@@ -337,7 +339,8 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveTypes() (primitiveType str
 			return "INT64", "TIMESTAMP_MILLIS"
 		}
 	default:
-		if pgSchemaColumn.DataType == PG_DATA_TYPE_USER_DEFINED {
+		// User-defined types
+		if pgSchemaColumn.Namespace != PG_SCHEMA_PG_CATALOG {
 			return "BYTE_ARRAY", "UTF8"
 		}
 	}
@@ -350,7 +353,7 @@ func (pgSchemaColumn *PgSchemaColumn) icebergPrimitiveType() string {
 	case "varchar", "char", "text", "interval", "jsonb", "json", "bpchar",
 		"point", "line", "lseg", "box", "path", "polygon", "circle",
 		"cidr", "inet", "macaddr", "macaddr8",
-		"tsvector", "ltree", "pg_snapshot":
+		"tsvector", "pg_snapshot":
 		return "string"
 	case "uuid":
 		return "uuid"
@@ -377,7 +380,8 @@ func (pgSchemaColumn *PgSchemaColumn) icebergPrimitiveType() string {
 	case "time", "timetz":
 		return "time"
 	default:
-		if pgSchemaColumn.DataType == PG_DATA_TYPE_USER_DEFINED {
+		// User-defined types
+		if pgSchemaColumn.Namespace != PG_SCHEMA_PG_CATALOG {
 			return "string"
 		}
 	}
