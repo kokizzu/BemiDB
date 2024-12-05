@@ -133,6 +133,12 @@ var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 		DatetimePrecision: "3",
 	},
 	{
+		ColumnName:        "timestamptz_column_timezone_mins",
+		DataType:          "timestamp with time zone",
+		UdtName:           "timestamptz",
+		DatetimePrecision: "6",
+	},
+	{
 		ColumnName: "uuid_column",
 		DataType:   "uuid",
 		UdtName:    "uuid",
@@ -223,6 +229,7 @@ var TEST_LOADED_ROWS = [][]string{
 		"2024-01-01 12:00:00.123",              // timestamp_ms_column
 		"2024-01-01 12:00:00.123456-05",        // timestamptz_column
 		"2024-01-01 12:00:00.123-05",           // timestamptz_ms_column
+		"2024-01-01 12:00:00.123456-05:30",     // timestamptz_column_timezone_mins
 		"58a7c845-af77-44b2-8664-7ca613d92f04", // uuid_column
 		"\\x1234",                              // bytea_column
 		"1 mon 2 days 01:00:01.000001",         // interval_column
@@ -238,40 +245,41 @@ var TEST_LOADED_ROWS = [][]string{
 		"(Toronto)",                            // user_defined_column
 	},
 	{
-		"false",                         // bool_column
-		"",                              // bpchar_column
-		PG_NULL_STRING,                  // varchar_column
-		"",                              // text_column
-		"-32767",                        // int2_column
-		PG_NULL_STRING,                  // int4_column
-		"-9223372036854775807",          // int8_column
-		PG_NULL_STRING,                  // xid_column
-		PG_NULL_STRING,                  // xid8_column
-		PG_NULL_STRING,                  // float4_column
-		"-3.141592653589793",            // float8_column
-		"-12345.00",                     // numeric_column
-		PG_NULL_STRING,                  // date_column
-		"12:00:00.123",                  // time_column
-		PG_NULL_STRING,                  // time_ms_column
-		"12:00:00.12300+05",             // timetz_column
-		"12:00:00.1+05",                 // timetz_ms_column
-		"2024-01-01 12:00:00",           // timestamp_column
-		PG_NULL_STRING,                  // timestamp_ms_column
-		"2024-01-01 12:00:00.000123+05", // timestamptz_column
-		"2024-01-01 12:00:00.12+05",     // timestamptz_ms_column
-		PG_NULL_STRING,                  // uuid_column
-		PG_NULL_STRING,                  // bytea_column
-		PG_NULL_STRING,                  // interval_column
-		PG_NULL_STRING,                  // tsvector_column
-		PG_NULL_STRING,                  // pg_snapshot_column
-		PG_NULL_STRING,                  // point_column
-		PG_NULL_STRING,                  // inet_column
-		PG_NULL_STRING,                  // json_column
-		"{}",                            // jsonb_column
-		PG_NULL_STRING,                  // array_text_column
-		"{}",                            // array_int_column
-		PG_NULL_STRING,                  // array_ltree_column
-		PG_NULL_STRING,                  // user_defined_column
+		"false",                            // bool_column
+		"",                                 // bpchar_column
+		PG_NULL_STRING,                     // varchar_column
+		"",                                 // text_column
+		"-32767",                           // int2_column
+		PG_NULL_STRING,                     // int4_column
+		"-9223372036854775807",             // int8_column
+		PG_NULL_STRING,                     // xid_column
+		PG_NULL_STRING,                     // xid8_column
+		PG_NULL_STRING,                     // float4_column
+		"-3.141592653589793",               // float8_column
+		"-12345.00",                        // numeric_column
+		PG_NULL_STRING,                     // date_column
+		"12:00:00.123",                     // time_column
+		PG_NULL_STRING,                     // time_ms_column
+		"12:00:00.12300+05",                // timetz_column
+		"12:00:00.1+05",                    // timetz_ms_column
+		"2024-01-01 12:00:00",              // timestamp_column
+		PG_NULL_STRING,                     // timestamp_ms_column
+		"2024-01-01 12:00:00.000123+05",    // timestamptz_column
+		"2024-01-01 12:00:00.12+05",        // timestamptz_ms_column
+		"2024-01-01 12:00:00.000123+05:30", // timestamptz_column_timezone_mins
+		PG_NULL_STRING,                     // uuid_column
+		PG_NULL_STRING,                     // bytea_column
+		PG_NULL_STRING,                     // interval_column
+		PG_NULL_STRING,                     // tsvector_column
+		PG_NULL_STRING,                     // pg_snapshot_column
+		PG_NULL_STRING,                     // point_column
+		PG_NULL_STRING,                     // inet_column
+		PG_NULL_STRING,                     // json_column
+		"{}",                               // jsonb_column
+		PG_NULL_STRING,                     // array_text_column
+		"{}",                               // array_int_column
+		PG_NULL_STRING,                     // array_ltree_column
+		PG_NULL_STRING,                     // user_defined_column
 	},
 }
 

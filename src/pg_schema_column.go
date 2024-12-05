@@ -250,12 +250,18 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interf
 		}
 	case "timestamptz":
 		if pgSchemaColumn.DatetimePrecision == "6" {
-			parsedTime, err := time.Parse("2006-01-02 15:04:05.999999-07", value)
-			PanicIfError(err)
+			parsedTime, err := time.Parse("2006-01-02 15:04:05.999999-07:00", value)
+			if err != nil {
+				parsedTime, err = time.Parse("2006-01-02 15:04:05.999999-07", value)
+				PanicIfError(err)
+			}
 			return parsedTime.UnixMicro()
 		} else {
-			parsedTime, err := time.Parse("2006-01-02 15:04:05.999-07", value)
-			PanicIfError(err)
+			parsedTime, err := time.Parse("2006-01-02 15:04:05.999-07:00", value)
+			if err != nil {
+				parsedTime, err = time.Parse("2006-01-02 15:04:05.999-07", value)
+				PanicIfError(err)
+			}
 			return parsedTime.UnixMilli()
 		}
 	case "time":
