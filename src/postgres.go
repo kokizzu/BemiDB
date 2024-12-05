@@ -94,7 +94,7 @@ func (postgres *Postgres) handleSimpleQuery(queryHandler *QueryHandler, queryMes
 	LogDebug(postgres.config, "Received query:", queryMessage.String)
 	messages, err := queryHandler.HandleQuery(queryMessage.String)
 	if err != nil {
-		postgres.writeError("Internal error")
+		postgres.writeError(err.Error())
 		return
 	}
 	messages = append(messages, &pgproto3.ReadyForQuery{TxStatus: PG_TX_STATUS_IDLE})
