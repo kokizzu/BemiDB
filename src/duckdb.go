@@ -48,8 +48,12 @@ func NewDuckdb(config *Config) *Duckdb {
 			"region":          config.Aws.Region,
 			"s3Bucket":        "s3://" + config.Aws.S3Bucket,
 		}))
-		LogDebug(config, "Querying DuckDB:", query)
 		PanicIfError(err)
+
+		if config.LogLevel == LOG_LEVEL_TRACE {
+			_, err = db.ExecContext(ctx, "SET enable_http_logging=true")
+			PanicIfError(err)
+		}
 	}
 
 	return &Duckdb{

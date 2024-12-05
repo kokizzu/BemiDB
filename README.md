@@ -191,7 +191,7 @@ psql postgres://localhost:54321/bemidb -c \
 | `--database`              | `BEMIDB_DATABASE`       | `bemidb`       | Database name                                                             |
 | `--storage-type`          | `BEMIDB_STORAGE_TYPE`   | `LOCAL`        | Storage type: `LOCAL` or `S3`                                             |
 | `--storage-path`          | `BEMIDB_STORAGE_PATH`   | `iceberg`      | Path to the storage folder                                                |
-| `--log-level`             | `BEMIDB_LOG_LEVEL`      | `INFO`         | Log level: `DEBUG`, `INFO`, `WARN`, or `ERROR`                            |
+| `--log-level`             | `BEMIDB_LOG_LEVEL`      | `INFO`         | Log level: `ERROR`, `WARN`, `INFO`, `DEBUG`, `TRACE`                      |
 | `--init-sql `             | `BEMIDB_INIT_SQL`       | `./init.sql`   | Path to the initialization SQL file                                       |
 | `--user`                  | `BEMIDB_USER`           |                | Database user. Allows any if empty                                        |
 | `--password`              | `BEMIDB_PASSWORD`       |                | Database password. Allows any if empty                                    |

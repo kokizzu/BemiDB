@@ -7,6 +7,7 @@ import (
 type LogLevel string
 
 const (
+	LOG_LEVEL_TRACE = "TRACE"
 	LOG_LEVEL_DEBUG = "DEBUG"
 	LOG_LEVEL_WARN  = "WARN"
 	LOG_LEVEL_INFO  = "INFO"
@@ -14,6 +15,7 @@ const (
 )
 
 var LOG_LEVELS = []string{
+	LOG_LEVEL_TRACE,
 	LOG_LEVEL_DEBUG,
 	LOG_LEVEL_WARN,
 	LOG_LEVEL_INFO,
@@ -25,19 +27,19 @@ func LogError(config *Config, message ...interface{}) {
 }
 
 func LogWarn(config *Config, message ...interface{}) {
-	if config.LogLevel == LOG_LEVEL_WARN || config.LogLevel == LOG_LEVEL_INFO || config.LogLevel == LOG_LEVEL_DEBUG {
+	if config.LogLevel != LOG_LEVEL_ERROR {
 		log.Println(append([]interface{}{"[WARN]"}, message...)...)
 	}
 }
 
 func LogInfo(config *Config, message ...interface{}) {
-	if config.LogLevel == LOG_LEVEL_INFO || config.LogLevel == LOG_LEVEL_DEBUG {
+	if config.LogLevel != LOG_LEVEL_ERROR && config.LogLevel != LOG_LEVEL_WARN {
 		log.Println(append([]interface{}{"[INFO]"}, message...)...)
 	}
 }
 
 func LogDebug(config *Config, message ...interface{}) {
-	if config.LogLevel == LOG_LEVEL_DEBUG {
+	if config.LogLevel != LOG_LEVEL_ERROR && config.LogLevel != LOG_LEVEL_WARN && config.LogLevel != LOG_LEVEL_INFO {
 		log.Println(append([]interface{}{"[DEBUG]"}, message...)...)
 	}
 }
