@@ -54,7 +54,6 @@ func (storage *StorageBase) WriteParquetFile(fileWriter source.ParquetFile, pgSc
 			rowJson, err := json.Marshal(rowMap)
 			PanicIfError(err)
 
-			LogDebug(storage.config, "Parquet row:", string(rowJson))
 			if err = parquetWriter.Write(string(rowJson)); err != nil {
 				return 0, fmt.Errorf("Write error: %v", err)
 			}
