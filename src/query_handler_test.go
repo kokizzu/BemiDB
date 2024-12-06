@@ -376,6 +376,17 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"search_path"},
 			"values":      {`"$user", public`},
 		},
+		// Keywords query
+		"SELECT * FROM pg_catalog.pg_get_keywords() limit 1": {
+			"description": {"word", "catcode", "barelabel", "catdesc", "baredesc"},
+			"values": {
+				"abort",
+				"U",
+				"t",
+				"unreserved",
+				"can be bare label",
+			},
+		},
 	}
 
 	for query, responses := range responsesByQuery {

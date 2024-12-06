@@ -17,6 +17,7 @@ const (
 	PG_SHADOW                 = "pg_shadow"
 
 	PG_QUOTE_INDENT_FUNCTION_NAME = "quote_ident"
+	PG_GET_KEYWORDS_FUNCTION_NAME = "pg_get_keywords"
 )
 
 var REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME = map[string]string{
@@ -98,6 +99,10 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 				selectStatement.FromClause[i] = selectRemapper.remapTable(fromNode)
 			} else if fromNode.GetRangeSubselect() != nil {
 				selectRemapper.remapSelectStatement(fromNode.GetRangeSubselect().Subquery.GetSelectStmt(), indentLevel+1)
+			}
+
+			if fromNode.GetRangeFunction() != nil {
+				selectStatement.FromClause[i] = selectRemapper.remapTableFunction(fromNode)
 			}
 		}
 		return selectStatement
@@ -293,6 +298,24 @@ func (selectRemapper *SelectRemapper) remapTable(node *pgQuery.Node) *pgQuery.No
 	}
 
 	// iceberg.table
+	return node
+}
+
+// FROM [PG_FUNCTION()]
+func (selectRemapper *SelectRemapper) remapTableFunction(node *pgQuery.Node) *pgQuery.Node {
+	for _, funcf := range node.GetRangeFunction().Functions {
+		for _, item := range funcf.GetList().Items {
+			functionCall := item.GetFuncCall()
+			if len(functionCall.Funcname) == 2 {
+				schema := functionCall.Funcname[0].GetString_().Sval
+				functionName := functionCall.Funcname[1].GetString_().Sval
+
+				if schema == PG_SYSTEM_SCHEMA && functionName == PG_GET_KEYWORDS_FUNCTION_NAME {
+					return MakePgGetKeywordsNode()
+				}
+			}
+		}
+	}
 	return node
 }
 
