@@ -371,6 +371,11 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"objoid"},
 			"values":      {},
 		},
+		// SHOW
+		"SHOW search_path": {
+			"description": {"search_path"},
+			"values":      {`"$user", public`},
+		},
 	}
 
 	for query, responses := range responsesByQuery {

@@ -396,6 +396,14 @@ func (queryHandler *QueryHandler) remapQuery(query string) (string, error) {
 		return FALLBACK_SQL_QUERY, nil
 	}
 
+	if statementNode != nil && statementNode.GetVariableShowStmt() != nil {
+		variableShowStmt := statementNode.GetVariableShowStmt()
+		if variableShowStmt.Name == "search_path" {
+			return `SELECT CONCAT('"$user", ', value) AS search_path FROM duckdb_settings() WHERE name = 'search_path';`, nil
+		}
+		return FALLBACK_SQL_QUERY, nil
+	}
+
 	LogDebug(queryHandler.config, "Query tree:", queryTree)
 	return "", errors.New("Unsupported query type")
 }
