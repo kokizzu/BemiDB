@@ -203,7 +203,7 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 
 func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interface{} {
 	switch strings.TrimLeft(pgSchemaColumn.UdtName, "_") {
-	case "varchar", "char", "text", "bytea", "jsonb", "json", "numeric", "uuid", "interval",
+	case "varchar", "char", "text", "bit", "bytea", "jsonb", "json", "numeric", "uuid", "interval",
 		"point", "line", "lseg", "box", "path", "polygon", "circle",
 		"cidr", "inet", "macaddr", "macaddr8",
 		"tsvector", "pg_snapshot":
@@ -301,7 +301,7 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interf
 
 func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveTypes() (primitiveType string, primitiveConvertedType string) {
 	switch strings.TrimLeft(pgSchemaColumn.UdtName, "_") {
-	case "varchar", "char", "text", "bpchar", "bytea", "interval", "jsonb", "json",
+	case "varchar", "char", "text", "bpchar", "bit", "bytea", "interval", "jsonb", "json",
 		"point", "line", "lseg", "box", "path", "polygon", "circle",
 		"cidr", "inet", "macaddr", "macaddr8",
 		"tsvector", "pg_snapshot":
@@ -350,7 +350,7 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveTypes() (primitiveType str
 
 func (pgSchemaColumn *PgSchemaColumn) icebergPrimitiveType() string {
 	switch strings.TrimLeft(pgSchemaColumn.UdtName, "_") {
-	case "varchar", "char", "text", "interval", "jsonb", "json", "bpchar",
+	case "varchar", "char", "text", "interval", "jsonb", "json", "bpchar", "bit",
 		"point", "line", "lseg", "box", "path", "polygon", "circle",
 		"cidr", "inet", "macaddr", "macaddr8",
 		"tsvector", "pg_snapshot":

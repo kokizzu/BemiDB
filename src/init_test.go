@@ -7,6 +7,12 @@ import (
 
 var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 	{
+		ColumnName:             "bit_column",
+		DataType:               "bit",
+		UdtName:                "bit",
+		CharacterMaximumLength: "1",
+	},
+	{
 		ColumnName: "bool_column",
 		DataType:   "boolean",
 		UdtName:    "bool",
@@ -243,6 +249,7 @@ var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 
 var TEST_LOADED_ROWS = [][]string{
 	{
+		"1",                                    // bit_column
 		"true",                                 // bool_column
 		"bpchar",                               // bpchar_column
 		"varchar",                              // varchar_column
@@ -280,6 +287,7 @@ var TEST_LOADED_ROWS = [][]string{
 		"(Toronto)",                            // user_defined_column
 	},
 	{
+		PG_NULL_STRING,                     // bit_column
 		"false",                            // bool_column
 		"",                                 // bpchar_column
 		PG_NULL_STRING,                     // varchar_column

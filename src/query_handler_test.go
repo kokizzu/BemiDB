@@ -78,6 +78,14 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"count"},
 			"values":      {"2"},
 		},
+		"SELECT bit_column FROM public.test_table WHERE bit_column IS NOT NULL": {
+			"description": {"bit_column"},
+			"values":      {"1"},
+		},
+		"SELECT bit_column FROM public.test_table WHERE bit_column IS NULL": {
+			"description": {"bit_column"},
+			"values":      {""},
+		},
 		"SELECT bool_column FROM public.test_table WHERE bool_column = TRUE": {
 			"description": {"bool_column"},
 			"values":      {"true"},

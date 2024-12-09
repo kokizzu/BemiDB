@@ -11,6 +11,7 @@ CREATE TYPE address AS (
 
 CREATE TABLE test_table (
   id SERIAL PRIMARY KEY,
+  bit_column BIT,
   bool_column BOOLEAN,
   bpchar_column BPCHAR(10),
   varchar_column VARCHAR(255),
@@ -48,6 +49,7 @@ CREATE TABLE test_table (
 );
 
 INSERT INTO test_table (
+  bit_column,
   bool_column,
   bpchar_column,
   varchar_column,
@@ -83,6 +85,7 @@ INSERT INTO test_table (
   array_ltree_column,
   user_defined_column
 ) VALUES (
+  B'1',                                     -- bit_column
   TRUE,                                     -- bool_column
   'bpchar',                                 -- bpchar_column
   'varchar',                                -- varchar_column
@@ -118,6 +121,7 @@ INSERT INTO test_table (
   '{"a.b", "c.d"}'::LTREE[],                -- array_ltree_column
   ROW('Toronto')                            -- user_defined_column
 ), (
+  NULL,                                     -- bit_column
   FALSE,                                    -- bool_column
   '',                                       -- bpchar_column
   NULL,                                     -- varchar_column

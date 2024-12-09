@@ -242,7 +242,7 @@ Primitive data types are mapped as follows:
 | PostgreSQL                                                  | Parquet                                           | Iceberg                          |
 |-------------------------------------------------------------|---------------------------------------------------|----------------------------------|
 | `bool`                                                      | `BOOLEAN`                                         | `boolean`                        |
-| `bpchar`, `varchar`, `text`                                 | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
+| `varchar`, `text`, `bpchar`, `bit`                          | `BYTE_ARRAY` (`UTF8`)                             | `string`                         |
 | `int2`, `int4`                                              | `INT32`                                           | `int`                            |
 | `int8`                                                      | `INT64`                                           | `long`                           |
 | `xid`                                                       | `INT32` (`UINT_32`)                               | `int`                            |
