@@ -91,6 +91,16 @@ func (syncer *Syncer) urlEncodePassword(databaseUrl string) string {
 func (syncer *Syncer) shouldSyncTable(schemaTable SchemaTable) bool {
 	tableId := fmt.Sprintf("%s.%s", schemaTable.Schema, schemaTable.Table)
 
+	if syncer.config.Pg.IncludeSchemas != nil {
+		if !syncer.config.Pg.IncludeSchemas.Contains(schemaTable.Schema) {
+			return false
+		}
+	} else if syncer.config.Pg.ExcludeSchemas != nil {
+		if syncer.config.Pg.ExcludeSchemas.Contains(schemaTable.Schema) {
+			return false
+		}
+	}
+
 	if syncer.config.Pg.IncludeTables != nil {
 		return syncer.config.Pg.IncludeTables.Contains(tableId)
 	}

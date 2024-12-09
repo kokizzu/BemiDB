@@ -23,11 +23,13 @@ const (
 	ENV_AWS_ACCESS_KEY_ID     = "AWS_ACCESS_KEY_ID"
 	ENV_AWS_SECRET_ACCESS_KEY = "AWS_SECRET_ACCESS_KEY"
 
-	ENV_PG_DATABASE_URL   = "PG_DATABASE_URL"
-	ENV_PG_SYNC_INTERVAL  = "PG_SYNC_INTERVAL"
-	ENV_PG_SCHEMA_PREFIX  = "PG_SCHEMA_PREFIX"
-	ENV_PG_INCLUDE_TABLES = "PG_INCLUDE_TABLES"
-	ENV_PG_EXCLUDE_TABLES = "PG_EXCLUDE_TABLES"
+	ENV_PG_DATABASE_URL    = "PG_DATABASE_URL"
+	ENV_PG_SYNC_INTERVAL   = "PG_SYNC_INTERVAL"
+	ENV_PG_SCHEMA_PREFIX   = "PG_SCHEMA_PREFIX"
+	ENV_PG_INCLUDE_SCHEMAS = "PG_INCLUDE_SCHEMAS"
+	ENV_PG_EXCLUDE_SCHEMAS = "PG_EXCLUDE_SCHEMAS"
+	ENV_PG_INCLUDE_TABLES  = "PG_INCLUDE_TABLES"
+	ENV_PG_EXCLUDE_TABLES  = "PG_EXCLUDE_TABLES"
 
 	DEFAULT_PORT              = "54321"
 	DEFAULT_DATABASE          = "bemidb"
@@ -51,11 +53,13 @@ type AwsConfig struct {
 }
 
 type PgConfig struct {
-	DatabaseUrl   string
-	SyncInterval  string // optional
-	SchemaPrefix  string // optional
-	IncludeTables *Set   // optional
-	ExcludeTables *Set   // optional
+	DatabaseUrl    string
+	SyncInterval   string // optional
+	SchemaPrefix   string // optional
+	IncludeSchemas *Set   // optional
+	ExcludeSchemas *Set   // optional
+	IncludeTables  *Set   // optional
+	ExcludeTables  *Set   // optional
 }
 
 type Config struct {
@@ -72,9 +76,16 @@ type Config struct {
 	Pg                PgConfig
 }
 
+type configParseValues struct {
+	password         string
+	pgIncludeSchemas string
+	pgExcludeSchemas string
+	pgIncludeTables  string
+	pgExcludeTables  string
+}
+
 var _config Config
-var _password string
-var _pgIncludeTables, _pgExcludeTables string
+var _configParseValues configParseValues
 
 func init() {
 	registerFlags()
@@ -85,15 +96,17 @@ func registerFlags() {
 	flag.StringVar(&_config.Port, "port", os.Getenv(ENV_PORT), "Port for BemiDB to listen on. Default: \""+DEFAULT_PORT+"\"")
 	flag.StringVar(&_config.Database, "database", os.Getenv(ENV_DATABASE), "Database name. Default: \""+DEFAULT_DATABASE+"\"")
 	flag.StringVar(&_config.User, "user", os.Getenv(ENV_USER), "Database user. Default: \""+DEFAULT_USER+"\"")
-	flag.StringVar(&_password, "password", os.Getenv(ENV_PASSWORD), "Database password. Default: \""+DEFAULT_PASSWORD+"\"")
+	flag.StringVar(&_configParseValues.password, "password", os.Getenv(ENV_PASSWORD), "Database password. Default: \""+DEFAULT_PASSWORD+"\"")
 	flag.StringVar(&_config.StoragePath, "storage-path", os.Getenv(ENV_STORAGE_PATH), "Path to the storage folder. Default: \""+DEFAULT_STORAGE_PATH+"\"")
 	flag.StringVar(&_config.InitSqlFilepath, "init-sql", os.Getenv(ENV_INIT_SQL_FILEPATH), "Path to the initialization SQL file. Default: \""+DEFAULT_INIT_SQL_FILEPATH+"\"")
 	flag.StringVar(&_config.LogLevel, "log-level", os.Getenv(ENV_LOG_LEVEL), "Log level: \"ERROR\", \"WARN\", \"INFO\", \"DEBUG\", \"TRACE\". Default: \""+DEFAULT_LOG_LEVEL+"\"")
 	flag.StringVar(&_config.StorageType, "storage-type", os.Getenv(ENV_STORAGE_TYPE), "Storage type: \"LOCAL\", \"S3\". Default: \""+DEFAULT_DB_STORAGE_TYPE+"\"")
 	flag.StringVar(&_config.Pg.SchemaPrefix, "pg-schema-prefix", os.Getenv(ENV_PG_SCHEMA_PREFIX), "(Optional) Prefix for PostgreSQL schema names")
 	flag.StringVar(&_config.Pg.SyncInterval, "pg-sync-interval", os.Getenv(ENV_PG_SYNC_INTERVAL), "(Optional) Interval between syncs. Valid units: \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\"")
-	flag.StringVar(&_pgIncludeTables, "pg-include-tables", os.Getenv(ENV_PG_INCLUDE_TABLES), "(Optional) Comma-separated list of tables to include in sync (format: schema.table)")
-	flag.StringVar(&_pgExcludeTables, "pg-exclude-tables", os.Getenv(ENV_PG_EXCLUDE_TABLES), "(Optional) Comma-separated list of tables to exclude from sync (format: schema.table)")
+	flag.StringVar(&_configParseValues.pgIncludeSchemas, "pg-include-schemas", os.Getenv(ENV_PG_INCLUDE_SCHEMAS), "(Optional) Comma-separated list of schemas to include in sync")
+	flag.StringVar(&_configParseValues.pgExcludeSchemas, "pg-exclude-schemas", os.Getenv(ENV_PG_EXCLUDE_SCHEMAS), "(Optional) Comma-separated list of schemas to exclude from sync")
+	flag.StringVar(&_configParseValues.pgIncludeTables, "pg-include-tables", os.Getenv(ENV_PG_INCLUDE_TABLES), "(Optional) Comma-separated list of tables to include in sync (format: schema.table)")
+	flag.StringVar(&_configParseValues.pgExcludeTables, "pg-exclude-tables", os.Getenv(ENV_PG_EXCLUDE_TABLES), "(Optional) Comma-separated list of tables to exclude from sync (format: schema.table)")
 	flag.StringVar(&_config.Pg.DatabaseUrl, "pg-database-url", os.Getenv(ENV_PG_DATABASE_URL), "PostgreSQL database URL to sync")
 	flag.StringVar(&_config.Aws.Region, "aws-region", os.Getenv(ENV_AWS_REGION), "AWS region")
 	flag.StringVar(&_config.Aws.S3Bucket, "aws-s3-bucket", os.Getenv(ENV_AWS_S3_BUCKET), "AWS S3 bucket name")
@@ -116,15 +129,14 @@ func parseFlags() {
 	if _config.User == "" {
 		_config.User = DEFAULT_USER
 	}
-	if _password == "" {
-		_password = DEFAULT_PASSWORD
+	if _configParseValues.password == "" {
+		_configParseValues.password = DEFAULT_PASSWORD
 	}
-	if _password != "" {
+	if _configParseValues.password != "" {
 		if _config.User == "" {
 			panic("Password is set without a user")
 		}
-		_config.EncryptedPassword = StringToScramSha256(_password)
-		_password = ""
+		_config.EncryptedPassword = StringToScramSha256(_configParseValues.password)
 	}
 	if _config.StoragePath == "" {
 		_config.StoragePath = DEFAULT_STORAGE_PATH
@@ -156,15 +168,26 @@ func parseFlags() {
 			panic("AWS secret access key is required")
 		}
 	}
-	if _pgIncludeTables != "" && _pgExcludeTables != "" {
+	if _configParseValues.pgIncludeSchemas != "" && _configParseValues.pgExcludeSchemas != "" {
+		panic("Cannot specify both --pg-include-schemas and --pg-exclude-schemas")
+	}
+	if _configParseValues.pgIncludeSchemas != "" {
+		_config.Pg.IncludeSchemas = NewSet(strings.Split(_configParseValues.pgIncludeSchemas, ","))
+	}
+	if _configParseValues.pgExcludeSchemas != "" {
+		_config.Pg.ExcludeSchemas = NewSet(strings.Split(_configParseValues.pgExcludeSchemas, ","))
+	}
+	if _configParseValues.pgIncludeTables != "" && _configParseValues.pgExcludeTables != "" {
 		panic("Cannot specify both --pg-include-tables and --pg-exclude-tables")
 	}
-	if _pgIncludeTables != "" {
-		_config.Pg.IncludeTables = NewSet(strings.Split(_pgIncludeTables, ","))
+	if _configParseValues.pgIncludeTables != "" {
+		_config.Pg.IncludeTables = NewSet(strings.Split(_configParseValues.pgIncludeTables, ","))
 	}
-	if _pgExcludeTables != "" {
-		_config.Pg.ExcludeTables = NewSet(strings.Split(_pgExcludeTables, ","))
+	if _configParseValues.pgExcludeTables != "" {
+		_config.Pg.ExcludeTables = NewSet(strings.Split(_configParseValues.pgExcludeTables, ","))
 	}
+
+	_configParseValues = configParseValues{}
 }
 
 func LoadConfig(reRegisterFlags ...bool) *Config {

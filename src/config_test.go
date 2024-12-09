@@ -35,6 +35,12 @@ func TestLoadConfig(t *testing.T) {
 		if config.Pg.SchemaPrefix != "" {
 			t.Errorf("Expected schemaPrefix to be empty, got %s", config.Pg.SchemaPrefix)
 		}
+		if config.Pg.IncludeSchemas != nil {
+			t.Errorf("Expected includeSchemas to be empty, got %v", config.Pg.IncludeSchemas)
+		}
+		if config.Pg.ExcludeSchemas != nil {
+			t.Errorf("Expected includeSchemas to be empty, got %v", config.Pg.ExcludeSchemas)
+		}
 		if config.Pg.IncludeTables != nil {
 			t.Errorf("Expected includeTables to be empty, got %v", config.Pg.IncludeTables)
 		}
@@ -123,7 +129,8 @@ func TestLoadConfig(t *testing.T) {
 		t.Setenv("PG_DATABASE_URL", "postgres://user:password@localhost:5432/template1")
 		t.Setenv("PG_SYNC_INTERVAL", "1h")
 		t.Setenv("PG_SCHEMA_PREFIX", "mydb_")
-		t.Setenv("PG_INCLUDE_TABLES", "public.users")
+		t.Setenv("PG_INCLUDE_SCHEMAS", "public,auth")
+		t.Setenv("PG_EXCLUDE_TABLES", "public.users,public.secrets")
 
 		config := LoadConfig(true)
 
@@ -136,8 +143,17 @@ func TestLoadConfig(t *testing.T) {
 		if config.Pg.SchemaPrefix != "mydb_" {
 			t.Errorf("Expected schemaPrefix to be empty, got %s", config.Pg.SchemaPrefix)
 		}
-		if !config.Pg.IncludeTables.Contains("public.users") {
-			t.Errorf("Expected includeTables to contain public.users, got %v", config.Pg.IncludeTables)
+		if !config.Pg.IncludeSchemas.Contains("public") {
+			t.Errorf("Expected includeSchemas to contain public, got %v", config.Pg.IncludeSchemas)
+		}
+		if !config.Pg.IncludeSchemas.Contains("auth") {
+			t.Errorf("Expected includeSchemas to contain auth, got %v", config.Pg.IncludeSchemas)
+		}
+		if !config.Pg.ExcludeTables.Contains("public.users") {
+			t.Errorf("Expected ExcludeTables to contain public.users, got %v", config.Pg.ExcludeTables)
+		}
+		if !config.Pg.ExcludeTables.Contains("public.secrets") {
+			t.Errorf("Expected ExcludeTables to contain public.secrets, got %v", config.Pg.ExcludeTables)
 		}
 	})
 
@@ -152,7 +168,8 @@ func TestLoadConfig(t *testing.T) {
 			"--pg-database-url", "postgres://user:password@localhost:5432/db",
 			"--pg-sync-interval", "2h30m",
 			"--pg-schema-prefix", "mydb_",
-			"--pg-include-tables", "public.users",
+			"--pg-include-schemas", "public,auth",
+			"--pg-exclude-tables", "public.users,public.secrets",
 		})
 
 		config := LoadConfig()
@@ -184,38 +201,49 @@ func TestLoadConfig(t *testing.T) {
 		if config.Pg.SchemaPrefix != "mydb_" {
 			t.Errorf("Expected schemaPrefix to be mydb_, got %s", config.Pg.SchemaPrefix)
 		}
-		if !config.Pg.IncludeTables.Contains("public.users") {
-			t.Errorf("Expected includeTables to have public.users, got %v", config.Pg.IncludeTables)
+		if !config.Pg.IncludeSchemas.Contains("public") {
+			t.Errorf("Expected IncludeSchemas to have public.users, got %v", config.Pg.IncludeSchemas)
+		}
+		if !config.Pg.IncludeSchemas.Contains("auth") {
+			t.Errorf("Expected includeSchemas to contain auth, got %v", config.Pg.IncludeSchemas)
+		}
+		if !config.Pg.ExcludeTables.Contains("public.users") {
+			t.Errorf("Expected ExcludeTables to have public.users, got %v", config.Pg.ExcludeTables)
+		}
+		if !config.Pg.ExcludeTables.Contains("public.secrets") {
+			t.Errorf("Expected ExcludeTables to have public.secrets, got %v", config.Pg.ExcludeTables)
 		}
 	})
 
-	t.Run("Handles pg-exclude-tables configuration", func(t *testing.T) {
-		setTestArgs([]string{
-			"--pg-database-url", "postgres://user:password@localhost:5432/db",
-			"--pg-exclude-tables", "public.secrets,public.cache",
-		})
-		config := LoadConfig(true)
+	t.Run("Panics when both include and exclude schemas are specified in env", func(t *testing.T) {
+		t.Setenv("PG_INCLUDE_SCHEMAS", "public")
+		t.Setenv("PG_EXCLUDE_SCHEMAS", "auth")
 
-		if !config.Pg.ExcludeTables.Contains("public.secrets") {
-			t.Errorf("Expected ExcludeTables to contain public.secrets, got %v", config.Pg.ExcludeTables)
-		}
-		if !config.Pg.ExcludeTables.Contains("public.cache") {
-			t.Errorf("Expected ExcludeTables to contain public.cache, got %v", config.Pg.ExcludeTables)
-		}
-		if config.Pg.IncludeTables != nil {
-			t.Errorf("Expected IncludeTables to be empty, got %v", config.Pg.IncludeTables)
-		}
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("Expected panic when both include and exclude schemas are specified")
+			}
+		}()
+
+		LoadConfig(true)
+	})
+
+	t.Run("Panics when both include and exclude schemas are specified in args", func(t *testing.T) {
+		setTestArgs([]string{
+			"--pg-include-schemas", "public",
+			"--pg-exclude-schemas", "auth",
+		})
+
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("Expected panic when both include and exclude schemas are specified")
+			}
+		}()
+
+		LoadConfig()
 	})
 
 	t.Run("Panics when both include and exclude tables are specified in env", func(t *testing.T) {
-		t.Setenv("BEMIDB_PORT", "12345")
-		t.Setenv("BEMIDB_DATABASE", "mydb")
-		t.Setenv("BEMIDB_INIT_SQL", "./init/duckdb.sql")
-		t.Setenv("BEMIDB_STORAGE_PATH", "storage-path")
-		t.Setenv("BEMIDB_LOG_LEVEL", "ERROR")
-		t.Setenv("PG_DATABASE_URL", "postgres://user:password@localhost:5432/template1")
-		t.Setenv("PG_SYNC_INTERVAL", "1h")
-		t.Setenv("PG_SCHEMA_PREFIX", "mydb_")
 		t.Setenv("PG_INCLUDE_TABLES", "public.users")
 		t.Setenv("PG_EXCLUDE_TABLES", "public.orders")
 
@@ -230,15 +258,6 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("Panics when both include and exclude tables are specified in args", func(t *testing.T) {
 		setTestArgs([]string{
-			"--port", "12345",
-			"--database", "mydb",
-			"--init-sql", "./init/duckdb.sql",
-			"--storage-path", "storage-path",
-			"--log-level", "ERROR",
-			"--storage-type", "local",
-			"--pg-database-url", "postgres://user:password@localhost:5432/db",
-			"--pg-sync-interval", "2h30m",
-			"--pg-schema-prefix", "mydb_",
 			"--pg-include-tables", "public.users",
 			"--pg-exclude-tables", "public.orders",
 		})
