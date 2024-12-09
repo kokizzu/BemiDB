@@ -371,6 +371,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"objoid"},
 			"values":      {},
 		},
+		"SELECT word FROM (VALUES ('abort', 'U', 't', 'unreserved', 'can be bare label')) t(word, catcode, barelabel, catdesc, baredesc) WHERE word <> ALL('{a,abs,absolute,action}'::text[])": {
+			"description": {"word"},
+			"values":      {"abort"},
+		},
 		// SHOW
 		"SHOW search_path": {
 			"description": {"search_path"},

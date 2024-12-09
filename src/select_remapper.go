@@ -444,6 +444,29 @@ func (selectRemapper *SelectRemapper) remapTypecast(node *pgQuery.Node) *pgQuery
 			if typeName == "regclass" {
 				return typeCast.Arg
 			}
+
+			if typeName == "text" {
+				arrayStr := typeCast.Arg.GetAConst().GetSval().Sval
+				arrayStr = strings.Trim(arrayStr, "{}")
+				elements := strings.Split(arrayStr, ",")
+
+				funcCall := &pgQuery.FuncCall{
+					Funcname: []*pgQuery.Node{
+						pgQuery.MakeStrNode("list_value"),
+					},
+				}
+
+				for _, elem := range elements {
+					funcCall.Args = append(funcCall.Args,
+						pgQuery.MakeAConstStrNode(elem, 0))
+				}
+
+				return &pgQuery.Node{
+					Node: &pgQuery.Node_FuncCall{
+						FuncCall: funcCall,
+					},
+				}
+			}
 		}
 	}
 	return node
