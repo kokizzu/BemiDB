@@ -24,43 +24,43 @@ type Duckdb struct {
 }
 
 func NewDuckdb(config *Config) *Duckdb {
-	bootQueries := readDuckdbInitFile(config)
-	if bootQueries == nil {
-		bootQueries = DEFAULT_BOOT_QUERIES
-	}
-
 	ctx := context.Background()
 	db, err := sql.Open("duckdb", "")
 	PanicIfError(err)
 
+	duckdb := &Duckdb{
+		db:     db,
+		config: config,
+	}
+
+	bootQueries := readDuckdbInitFile(config)
+	if bootQueries == nil {
+		bootQueries = DEFAULT_BOOT_QUERIES
+	}
 	for _, query := range bootQueries {
-		LogDebug(config, "Querying DuckDB:", query)
-		_, err := db.ExecContext(ctx, query)
+		_, err := duckdb.ExecContext(ctx, query, nil)
 		PanicIfError(err)
 	}
 
 	switch config.StorageType {
 	case STORAGE_TYPE_S3:
 		query := "CREATE SECRET aws_s3_secret (TYPE S3, KEY_ID '$accessKeyId', SECRET '$secretAccessKey', REGION '$region', ENDPOINT '$endpoint', SCOPE '$s3Bucket')"
-		_, err = db.ExecContext(ctx, replaceNamedStringArgs(query, map[string]string{
+		_, err = duckdb.ExecContext(ctx, query, map[string]string{
 			"accessKeyId":     config.Aws.AccessKeyId,
 			"secretAccessKey": config.Aws.SecretAccessKey,
 			"region":          config.Aws.Region,
 			"endpoint":        config.Aws.S3Endpoint,
 			"s3Bucket":        "s3://" + config.Aws.S3Bucket,
-		}))
+		})
 		PanicIfError(err)
 
 		if config.LogLevel == LOG_LEVEL_TRACE {
-			_, err = db.ExecContext(ctx, "SET enable_http_logging=true")
+			_, err = duckdb.ExecContext(ctx, "SET enable_http_logging=true", nil)
 			PanicIfError(err)
 		}
 	}
 
-	return &Duckdb{
-		db:     db,
-		config: config,
-	}
+	return duckdb
 }
 
 func (duckdb *Duckdb) ExecContext(ctx context.Context, query string, args map[string]string) (sql.Result, error) {
