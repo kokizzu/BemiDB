@@ -22,6 +22,11 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"quote_ident"},
 			"values":      {"\"fooBar\""},
 		},
+		// pg_get_partkeydef
+		"SELECT pg_catalog.pg_get_partkeydef(c.oid) FROM pg_catalog.pg_class c LIMIT 1": {
+			"description": {"pg_get_partkeydef"},
+			"values":      {""},
+		},
 		// PG system tables
 		"SELECT oid, typname AS typename FROM pg_type WHERE typname='geometry' OR typname='geography'": {
 			"description": {"oid", "typename"},

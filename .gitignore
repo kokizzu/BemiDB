@@ -9,3 +9,4 @@
 /benchmark/data/*.tbl
 /build
 bemidb
+/src/__debug*

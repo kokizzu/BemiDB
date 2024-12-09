@@ -27,6 +27,7 @@ var REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME = map[string]string{
 	"pg_total_relation_size":             "0",
 	"pg_table_size":                      "0",
 	"pg_indexes_size":                    "0",
+	"pg_get_partkeydef":                  "",
 }
 
 var KNOWN_SET_STATEMENTS = NewSet([]string{
