@@ -87,6 +87,7 @@ func TestLoadConfig(t *testing.T) {
 		t.Setenv("BEMIDB_LOG_LEVEL", "ERROR")
 		t.Setenv("BEMIDB_STORAGE_TYPE", "S3")
 		t.Setenv("AWS_REGION", "us-west-1")
+		t.Setenv("AWS_S3_ENDPOINT", "s3-us-west-1.amazonaws.com")
 		t.Setenv("AWS_S3_BUCKET", "my_bucket")
 		t.Setenv("AWS_ACCESS_KEY_ID", "my_access_key_id")
 		t.Setenv("AWS_SECRET_ACCESS_KEY", "my_secret_access_key")
@@ -113,6 +114,9 @@ func TestLoadConfig(t *testing.T) {
 		}
 		if config.Aws.Region != "us-west-1" {
 			t.Errorf("Expected awsRegion to be us-west-1, got %s", config.Aws.Region)
+		}
+		if config.Aws.S3Endpoint != "s3-us-west-1.amazonaws.com" {
+			t.Errorf("Expected awsS3Endpoint to be s3-us-west-1.amazonaws.com, got %s", config.Aws.S3Endpoint)
 		}
 		if config.Aws.S3Bucket != "my_bucket" {
 			t.Errorf("Expected awsS3Bucket to be mybucket, got %s", config.Aws.S3Bucket)
