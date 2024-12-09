@@ -297,7 +297,7 @@ var TEST_LOADED_ROWS = [][]string{
 		"-9223372036854775807",             // int8_column
 		PG_NULL_STRING,                     // xid_column
 		PG_NULL_STRING,                     // xid8_column
-		PG_NULL_STRING,                     // float4_column
+		"NaN",                              // float4_column
 		"-3.141592653589793",               // float8_column
 		"-12345.00",                        // numeric_column
 		PG_NULL_STRING,                     // date_column

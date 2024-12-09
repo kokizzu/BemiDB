@@ -158,13 +158,13 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"xid8_column"},
 			"values":      {""},
 		},
-		"SELECT float4_column FROM public.test_table WHERE float4_column IS NOT NULL": {
+		"SELECT float4_column FROM public.test_table WHERE float4_column = 3.14": {
 			"description": {"float4_column"},
 			"values":      {"3.14"},
 		},
-		"SELECT float4_column FROM public.test_table WHERE float4_column IS NULL": {
+		"SELECT float4_column FROM public.test_table WHERE float4_column != 3.14": {
 			"description": {"float4_column"},
-			"values":      {""},
+			"values":      {"NaN"},
 		},
 		"SELECT float8_column FROM public.test_table WHERE bool_column = TRUE": {
 			"description": {"float8_column"},

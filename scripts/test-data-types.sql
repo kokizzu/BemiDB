@@ -131,7 +131,7 @@ INSERT INTO test_table (
   -9223372036854775807::INT8,               -- int8_column
   NULL,                                     -- xid_column
   NULL,                                     -- xid8_column
-  NULL,                                     -- float4_column
+  'NaN',                                    -- float4_column
   -3.141592653589793::FLOAT8,               -- float8_column
   -12345.00::NUMERIC(10, 2),                -- numeric_column
   NULL,                                     -- date_column

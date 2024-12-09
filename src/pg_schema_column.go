@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +19,8 @@ const (
 
 	PARQUET_SCHEMA_REPETITION_TYPE_REQUIRED = "REQUIRED"
 	PARQUET_SCHEMA_REPETITION_TYPE_OPTIONAL = "OPTIONAL"
+
+	PARQUET_NAN = "NaN"
 
 	// 0000-01-01 00:00:00 +0000 UTC
 	EPOCH_TIME_MS = -62167219200000
@@ -230,11 +233,17 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interf
 	case "float4":
 		floatValue, err := strconv.ParseFloat(value, 32)
 		PanicIfError(err)
+		if math.IsNaN(floatValue) {
+			return PARQUET_NAN
+		}
 		return float32(floatValue)
 	case "float8":
 		floatValue, err := strconv.ParseFloat(value, 64)
 		PanicIfError(err)
-		return float64(floatValue)
+		if math.IsNaN(floatValue) {
+			return PARQUET_NAN
+		}
+		return floatValue
 	case "bool":
 		boolValue, err := strconv.ParseBool(value)
 		PanicIfError(err)
