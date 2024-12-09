@@ -184,29 +184,29 @@ psql postgres://localhost:54321/bemidb -c \
 
 ### Configuration options
 
-| CLI argument              | Environment variable    | Default value      | Description                                                               |
-|---------------------------|-------------------------|--------------------|---------------------------------------------------------------------------|
-| `--host`                  | `BEMIDB_HOST`           | `127.0.0.1`        | Host for BemiDB to listen on                                              |
-| `--port`                  | `BEMIDB_PORT`           | `54321`            | Port for BemiDB to listen on                                              |
-| `--database`              | `BEMIDB_DATABASE`       | `bemidb`           | Database name                                                             |
-| `--storage-type`          | `BEMIDB_STORAGE_TYPE`   | `LOCAL`            | Storage type: `LOCAL` or `S3`                                             |
-| `--storage-path`          | `BEMIDB_STORAGE_PATH`   | `iceberg`          | Path to the storage folder                                                |
-| `--log-level`             | `BEMIDB_LOG_LEVEL`      | `INFO`             | Log level: `ERROR`, `WARN`, `INFO`, `DEBUG`, `TRACE`                      |
-| `--init-sql `             | `BEMIDB_INIT_SQL`       | `./init.sql`       | Path to the initialization SQL file                                       |
-| `--user`                  | `BEMIDB_USER`           |                    | Database user. Allows any if empty                                        |
-| `--password`              | `BEMIDB_PASSWORD`       |                    | Database password. Allows any if empty                                    |
-| `--aws-region`            | `AWS_REGION`            |                    | AWS region. Required if storage type is `S3`                              |
-| `--aws-s3-endpoint`       | `AWS_S3_ENDPOINT`       | `s3.amazonaws.com` | AWS S3 endpoint
-| `--aws-s3-bucket`         | `AWS_S3_BUCKET`         |                    | AWS S3 bucket name. Required if storage type is `S3`                      |
-| `--aws-access-key-id`     | `AWS_ACCESS_KEY_ID`     |                    | AWS access key ID. Required if storage type is `S3`                       |
-| `--aws-secret-access-key` | `AWS_SECRET_ACCESS_KEY` |                    | AWS secret access key. Required if storage type is `S3`                   |
-| `--pg-database-url`       | `PG_DATABASE_URL`       |                    | PostgreSQL database URL to sync                                           |
-| `--pg-sync-interval`      | `PG_SYNC_INTERVAL`      |                    | Interval between syncs. Valid units: `ns`, `us`/`µs`, `ms`, `s`, `m`, `h` |
-| `--pg-exclude-schemas`    | `PG_EXCLUDE_SCHEMAS`    |                    | List of schemas to exclude from sync. Comma-separated                     |
-| `--pg-include-schemas`    | `PG_INCLUDE_SCHEMAS`    |                    | List of schemas to include in sync. Comma-separated                       |
-| `--pg-exclude-tables`     | `PG_EXCLUDE_TABLES`     |                    | List of tables to exclude from sync. Comma-separated `schema.table`       |
-| `--pg-include-tables`     | `PG_INCLUDE_TABLES`     |                    | List of tables to include in sync. Comma-separated `schema.table`         |
-| `--pg-schema-prefix`      | `PG_SCHEMA_PREFIX`      |                    | Prefix for PostgreSQL schema names                                        |
+| CLI argument              | Environment variable    | Default value                   | Description                                                               |
+|---------------------------|-------------------------|---------------------------------|---------------------------------------------------------------------------|
+| `--host`                  | `BEMIDB_HOST`           | `127.0.0.1`                     | Host for BemiDB to listen on                                              |
+| `--port`                  | `BEMIDB_PORT`           | `54321`                         | Port for BemiDB to listen on                                              |
+| `--database`              | `BEMIDB_DATABASE`       | `bemidb`                        | Database name                                                             |
+| `--storage-type`          | `BEMIDB_STORAGE_TYPE`   | `LOCAL`                         | Storage type: `LOCAL` or `S3`                                             |
+| `--storage-path`          | `BEMIDB_STORAGE_PATH`   | `iceberg`                       | Path to the storage folder                                                |
+| `--log-level`             | `BEMIDB_LOG_LEVEL`      | `INFO`                          | Log level: `ERROR`, `WARN`, `INFO`, `DEBUG`, `TRACE`                      |
+| `--init-sql `             | `BEMIDB_INIT_SQL`       | `./init.sql`                    | Path to the initialization SQL file                                       |
+| `--user`                  | `BEMIDB_USER`           |                                 | Database user. Allows any if empty                                        |
+| `--password`              | `BEMIDB_PASSWORD`       |                                 | Database password. Allows any if empty                                    |
+| `--aws-region`            | `AWS_REGION`            | Required with `S3` storage type | AWS region                                                                |
+| `--aws-access-key-id`     | `AWS_ACCESS_KEY_ID`     | Required with `S3` storage type | AWS access key ID                                                         |
+| `--aws-secret-access-key` | `AWS_SECRET_ACCESS_KEY` | Required with `S3` storage type | AWS secret access key                                                     |
+| `--aws-s3-bucket`         | `AWS_S3_BUCKET`         | Required with `S3` storage type | AWS S3 bucket name                                                        |
+| `--aws-s3-endpoint`       | `AWS_S3_ENDPOINT`       | `s3.amazonaws.com`              | AWS S3 endpoint                                                           |
+| `--pg-database-url`       | `PG_DATABASE_URL`       | Required with `sync` command    | PostgreSQL database URL to sync                                           |
+| `--pg-sync-interval`      | `PG_SYNC_INTERVAL`      |                                 | Interval between syncs. Valid units: `ns`, `us`/`µs`, `ms`, `s`, `m`, `h` |
+| `--pg-exclude-schemas`    | `PG_EXCLUDE_SCHEMAS`    |                                 | List of schemas to exclude from sync. Comma-separated                     |
+| `--pg-include-schemas`    | `PG_INCLUDE_SCHEMAS`    |                                 | List of schemas to include in sync. Comma-separated                       |
+| `--pg-exclude-tables`     | `PG_EXCLUDE_TABLES`     |                                 | List of tables to exclude from sync. Comma-separated `schema.table`       |
+| `--pg-include-tables`     | `PG_INCLUDE_TABLES`     |                                 | List of tables to include in sync. Comma-separated `schema.table`         |
+| `--pg-schema-prefix`      | `PG_SCHEMA_PREFIX`      |                                 | Prefix for PostgreSQL schema names                                        |
 
 Note that CLI arguments take precedence over environment variables. I.e. you can override the environment variables with CLI arguments.
 
