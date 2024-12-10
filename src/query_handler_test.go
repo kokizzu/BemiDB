@@ -2,6 +2,7 @@ package main
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgproto3"
@@ -431,6 +432,26 @@ func TestHandleQuery(t *testing.T) {
 
 		})
 	}
+
+	t.Run("Returns an error if a table does not exist", func(t *testing.T) {
+		queryHandler := initQueryHandler()
+
+		_, err := queryHandler.HandleQuery("SELECT * FROM non_existent_table")
+
+		if err == nil {
+			t.Errorf("Expected an error, got nil")
+		}
+
+		expectedErrorMessage := strings.Join([]string{
+			"Catalog Error: Table with name non_existent_table does not exist!",
+			"Did you mean \"sqlite_temp_master\"?",
+			"LINE 1: SELECT * FROM non_existent_table",
+			"                      ^",
+		}, "\n")
+		if err.Error() != expectedErrorMessage {
+			t.Errorf("Expected the error to be '"+expectedErrorMessage+"', got %v", err.Error())
+		}
+	})
 }
 
 func TestHandleParseQuery(t *testing.T) {

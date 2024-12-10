@@ -11,10 +11,12 @@ func NewIcebergReader(config *Config) *IcebergReader {
 }
 
 func (reader *IcebergReader) Schemas() (icebergSchemas []string, err error) {
+	LogDebug(reader.config, "Reading Iceberg schemas...")
 	return reader.storage.IcebergSchemas()
 }
 
 func (reader *IcebergReader) SchemaTables() (icebergSchemaTables []SchemaTable, err error) {
+	LogDebug(reader.config, "Reading Iceberg tables...")
 	return reader.storage.IcebergSchemaTables()
 }
 

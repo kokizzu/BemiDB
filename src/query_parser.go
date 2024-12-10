@@ -734,7 +734,7 @@ func (queryParser *QueryParser) IsTableFromPgCatalog(schemaTable SchemaTable) bo
 
 // information_schema.tables
 func (queryParser *QueryParser) IsInformationSchemaTablesTable(schemaTable SchemaTable) bool {
-	return schemaTable.Schema == PG_SCHEMA_INFORMATION_SCHEMA && schemaTable.Table == PG_TABLE_TABLES
+	return queryParser.IsTableFromInformationSchema(schemaTable) && schemaTable.Table == PG_TABLE_TABLES
 }
 
 // information_schema.tables -> VALUES(values...) t(columns...)
@@ -763,6 +763,13 @@ func (queryParser *QueryParser) MakeInformationSchemaTablesNode(database string,
 	}
 
 	return queryParser.makeSubselectNode(columns, rowsValues)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// Other system pg_* tables
+func (queryParser *QueryParser) IsTableFromInformationSchema(schemaTable SchemaTable) bool {
+	return schemaTable.Schema == PG_SCHEMA_INFORMATION_SCHEMA
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -804,6 +811,35 @@ func (queryParser *QueryParser) MakePgGetKeywordsNode() *pgQuery.Node {
 	}
 
 	return queryParser.makeSubselectNode(columns, rows)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// iceberg.table -> FROM iceberg_scan('path', skip_schema_inference = true)
+func (queryParser *QueryParser) MakeIcebergTableNode(tablePath string) *pgQuery.Node {
+	return pgQuery.MakeSimpleRangeFunctionNode([]*pgQuery.Node{
+		pgQuery.MakeListNode([]*pgQuery.Node{
+			pgQuery.MakeFuncCallNode(
+				[]*pgQuery.Node{
+					pgQuery.MakeStrNode("iceberg_scan"),
+				},
+				[]*pgQuery.Node{
+					pgQuery.MakeAConstStrNode(
+						tablePath,
+						0,
+					),
+					pgQuery.MakeAExprNode(
+						pgQuery.A_Expr_Kind_AEXPR_OP,
+						[]*pgQuery.Node{pgQuery.MakeStrNode("=")},
+						pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("skip_schema_inference")}, 0),
+						queryParser.MakeAConstBoolNode(true),
+						0,
+					),
+				},
+				0,
+			),
+		}),
+	})
 }
 
 ////////////////////////////////////////////////////////////////////////////////

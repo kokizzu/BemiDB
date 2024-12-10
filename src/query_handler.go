@@ -164,7 +164,7 @@ func NewQueryHandler(config *Config, duckdb *Duckdb, icebergReader *IcebergReade
 		config:         config,
 	}
 
-	queryHandler.createSchemasAndViews()
+	queryHandler.createSchemas()
 
 	return queryHandler
 }
@@ -184,15 +184,6 @@ func (queryHandler *QueryHandler) HandleQuery(originalQuery string) ([]pgproto3.
 			// https://github.com/duckdb/duckdb/issues/11693
 			LogWarn(queryHandler.config, "Couldn't handle query via DuckDB:", query+"\n"+err.Error())
 			return queryHandler.HandleQuery(FALLBACK_SQL_QUERY)
-		} else if strings.HasPrefix(errorMessage, "Catalog Error: Table with name ") && strings.Contains(errorMessage, " does not exist!") {
-			// Re-fetch Iceberg tables and try again
-			LogWarn(queryHandler.config, "Couldn't handle query via DuckDB:", query+"\n"+err.Error())
-			queryHandler.createSchemasAndViews()
-			rows, err = queryHandler.duckdb.QueryContext(context.Background(), query)
-			if err != nil {
-				LogError(queryHandler.config, "Couldn't handle query via DuckDB:", query+"\n"+err.Error())
-				return nil, err
-			}
 		} else {
 			LogError(queryHandler.config, "Couldn't handle query via DuckDB:", query+"\n"+err.Error())
 			return nil, err
@@ -307,8 +298,7 @@ func (queryHandler *QueryHandler) HandleExecuteQuery(message *pgproto3.Execute, 
 	return queryHandler.rowsToDataMessages(preparedStatement.Rows, preparedStatement.Query)
 }
 
-func (queryHandler *QueryHandler) createSchemasAndViews() {
-	LogInfo(queryHandler.config, "Initializing schemas and tables...")
+func (queryHandler *QueryHandler) createSchemas() {
 	ctx := context.Background()
 	schemas, err := queryHandler.icebergReader.Schemas()
 	PanicIfError(err)
@@ -318,19 +308,6 @@ func (queryHandler *QueryHandler) createSchemasAndViews() {
 			ctx,
 			"CREATE SCHEMA IF NOT EXISTS \"$schema\"",
 			map[string]string{"schema": schema},
-		)
-		PanicIfError(err)
-	}
-
-	icebergSchemaTables, err := queryHandler.icebergReader.SchemaTables()
-	PanicIfError(err)
-
-	for _, icebergSchemaTable := range icebergSchemaTables {
-		metadataFilePath := queryHandler.icebergReader.MetadataFilePath(icebergSchemaTable)
-		_, err := queryHandler.duckdb.ExecContext(
-			ctx,
-			"CREATE VIEW IF NOT EXISTS \"$schema\".\"$table\" AS SELECT * FROM iceberg_scan('$metadataFilePath', skip_schema_inference = true)",
-			map[string]string{"schema": icebergSchemaTable.Schema, "table": icebergSchemaTable.Table, "metadataFilePath": metadataFilePath},
 		)
 		PanicIfError(err)
 	}
