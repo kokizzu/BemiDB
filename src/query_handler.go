@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/binary"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -238,8 +239,25 @@ func (queryHandler *QueryHandler) HandleBindQuery(message *pgproto3.Bind, prepar
 	}
 
 	var variables []interface{}
-	for _, parameter := range message.Parameters {
-		variables = append(variables, string(parameter))
+	paramFormatCodes := message.ParameterFormatCodes
+
+	for i, param := range message.Parameters {
+		if param == nil {
+			continue
+		}
+
+		textFormat := true
+		if len(paramFormatCodes) == 1 {
+			textFormat = paramFormatCodes[0] == 0
+		} else if len(paramFormatCodes) > 1 {
+			textFormat = paramFormatCodes[i] == 0
+		}
+
+		if textFormat {
+			variables = append(variables, string(param))
+		} else {
+			variables = append(variables, int64(binary.BigEndian.Uint64(param)))
+		}
 	}
 
 	preparedStatement.Variables = variables

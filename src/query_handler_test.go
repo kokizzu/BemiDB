@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"reflect"
 	"strings"
 	"testing"
@@ -478,14 +479,18 @@ func TestHandleParseQuery(t *testing.T) {
 }
 
 func TestHandleBindQuery(t *testing.T) {
-	t.Run("Handles BIND extended query", func(t *testing.T) {
+	t.Run("Handles BIND extended query with text format parameter", func(t *testing.T) {
 		queryHandler := initQueryHandler()
 		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
 		parseMessage := &pgproto3.Parse{Query: query}
-		messages, preparedStatement, err := queryHandler.HandleParseQuery(parseMessage)
-		message := &pgproto3.Bind{Parameters: [][]byte{[]byte("bemidb")}}
+		_, preparedStatement, err := queryHandler.HandleParseQuery(parseMessage)
+		testNoError(t, err)
 
-		messages, preparedStatement, err = queryHandler.HandleBindQuery(message, preparedStatement)
+		bindMessage := &pgproto3.Bind{
+			Parameters:           [][]byte{[]byte("bemidb")},
+			ParameterFormatCodes: []int16{0}, // Text format
+		}
+		messages, preparedStatement, err := queryHandler.HandleBindQuery(bindMessage, preparedStatement)
 
 		testNoError(t, err)
 		testMessageTypes(t, messages, []pgproto3.Message{
@@ -495,7 +500,36 @@ func TestHandleBindQuery(t *testing.T) {
 			t.Errorf("Expected the prepared statement to have 1 variable, got %v", len(preparedStatement.Variables))
 		}
 		if preparedStatement.Variables[0] != "bemidb" {
-			t.Errorf("Expected the prepared statement variables to be %v, got %v", "", preparedStatement.Variables[0])
+			t.Errorf("Expected the prepared statement variable to be 'bemidb', got %v", preparedStatement.Variables[0])
+		}
+	})
+
+	t.Run("Handles BIND extended query with binary format parameter", func(t *testing.T) {
+		queryHandler := initQueryHandler()
+		query := "SELECT c.oid FROM pg_catalog.pg_class c WHERE c.relnamespace = $1"
+		parseMessage := &pgproto3.Parse{Query: query}
+		_, preparedStatement, err := queryHandler.HandleParseQuery(parseMessage)
+		testNoError(t, err)
+
+		paramValue := int64(2200)
+		paramBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(paramBytes, uint64(paramValue))
+
+		bindMessage := &pgproto3.Bind{
+			Parameters:           [][]byte{paramBytes},
+			ParameterFormatCodes: []int16{1}, // Binary format
+		}
+		messages, preparedStatement, err := queryHandler.HandleBindQuery(bindMessage, preparedStatement)
+
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.BindComplete{},
+		})
+		if len(preparedStatement.Variables) != 1 {
+			t.Errorf("Expected the prepared statement to have 1 variable, got %v", len(preparedStatement.Variables))
+		}
+		if preparedStatement.Variables[0] != paramValue {
+			t.Errorf("Expected the prepared statement variable to be %v, got %v", paramValue, preparedStatement.Variables[0])
 		}
 	})
 }
