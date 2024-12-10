@@ -51,15 +51,11 @@ func (remapper *SelectTableRemapper) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 
 	// information_schema.tables -> return Iceberg tables
 	if parser.IsInformationSchemaTablesTable(schemaTable) {
-		icebergSchemaTables, err := remapper.icebergReader.SchemaTables()
-		if err != nil {
-			LogError(remapper.config, "Failed to get Iceberg schema tables:", err)
+		remapper.reloadIceberSchemaTables()
+		if len(remapper.icebergSchemaTables) == 0 {
 			return node
 		}
-		if len(icebergSchemaTables) == 0 {
-			return node
-		}
-		tableNode := parser.MakeInformationSchemaTablesNode(remapper.config.Database, icebergSchemaTables)
+		tableNode := parser.MakeInformationSchemaTablesNode(remapper.config.Database, remapper.icebergSchemaTables)
 		return remapper.overrideTable(node, tableNode)
 	}
 
