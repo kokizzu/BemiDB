@@ -1,7 +1,5 @@
 #!/bin/bash
 
-VERSION="0.22.1"
-
 # Detect OS and architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
@@ -22,7 +20,7 @@ esac
 
 # Set the download URL and binary name
 BINARY_NAME="bemidb-${OS}-${ARCH}"
-DOWNLOAD_URL="https://github.com/BemiHQ/BemiDB/releases/download/v$VERSION/$BINARY_NAME"
+DOWNLOAD_URL="https://github.com/BemiHQ/BemiDB/releases/latest/download/$BINARY_NAME"
 
 # Download the binary
 echo "Downloading $DOWNLOAD_URL..."

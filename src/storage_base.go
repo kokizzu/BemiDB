@@ -11,10 +11,19 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/linkedin/goavro"
+	"github.com/xitongsys/parquet-go/parquet"
 	"github.com/xitongsys/parquet-go/reader"
 	"github.com/xitongsys/parquet-go/schema"
 	"github.com/xitongsys/parquet-go/source"
 	"github.com/xitongsys/parquet-go/writer"
+)
+
+const (
+	PARQUET_PARALLEL_NUMBER  = 4
+	PARQUET_ROW_GROUP_SIZE   = 64 * 1024 * 1024 // 64 MB
+	PARQUET_COMPRESSION_TYPE = parquet.CompressionCodec_ZSTD
+
+	VERSION_HINT_FILE_NAME = "version-hint.text"
 )
 
 type StorageBase struct {
@@ -43,6 +52,7 @@ func (storage *StorageBase) WriteParquetFile(fileWriter source.ParquetFile, pgSc
 
 	parquetWriter.RowGroupSize = PARQUET_ROW_GROUP_SIZE
 	parquetWriter.CompressionType = PARQUET_COMPRESSION_TYPE
+	totalRowCount := 0
 
 	rows := loadRows()
 	for len(rows) > 0 {
@@ -59,9 +69,13 @@ func (storage *StorageBase) WriteParquetFile(fileWriter source.ParquetFile, pgSc
 			}
 			recordCount++
 		}
+		totalRowCount += len(rows)
+		LogDebug(storage.config, "Wrote", totalRowCount, "rows to Parquet file...")
+
 		rows = loadRows()
 	}
 
+	LogDebug(storage.config, "Stopping Parquet writer...")
 	if err := parquetWriter.WriteStop(); err != nil {
 		return 0, fmt.Errorf("Failed to stop Parquet writer: %v", err)
 	}
