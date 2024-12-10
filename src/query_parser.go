@@ -4,6 +4,19 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
+const (
+	// PG_SCHEMA_PG_CATALOG = "pg_catalog" Already defined in pg_schema_column.go
+	PG_TABLE_PG_STATIO_USER_TABLES = "pg_statio_user_tables"
+	PG_TABLE_PG_SHADOW             = "pg_shadow"
+	PG_TABLE_PG_NAMESPACE          = "pg_namespace"
+
+	PG_SCHEMA_INFORMATION_SCHEMA = "information_schema"
+	PG_TABLE_TABLES              = "tables"
+
+	PG_FUNCTION_PG_GET_KEYWORDS   = "pg_get_keywords"
+	PG_FUNCTION_NAME_QUOTE_INDENT = "quote_ident"
+)
+
 var PG_SYSTEM_TABLES = NewSet([]string{
 	"pg_aggregate",
 	"pg_am",
@@ -647,39 +660,85 @@ var DUCKDB_KEYWORDS = []DuckDBKeyword{
 	{"zone", "unreserved"},
 }
 
-func IsSystemTable(table string) bool {
-	return PG_SYSTEM_TABLES.Contains(table) || PG_SYSTEM_VIEWS.Contains(table)
+type QueryParser struct {
+	config *Config
 }
 
-func RawSelectColumns(selectStatement *pgQuery.SelectStmt) []string {
-	var columns = []string{}
-	for _, targetItem := range selectStatement.TargetList {
-		var column string
-		target := targetItem.GetResTarget()
-		if target.Val.GetColumnRef() != nil {
-			columnRef := target.Val.GetColumnRef()
-			if columnRef.Fields[0].GetAStar() != nil {
-				return []string{"*"}
-			}
-			column = columnRef.Fields[0].GetString_().Sval
-			columns = append(columns, column)
-		} else if target.Val.GetFuncCall() != nil {
-			return []string{"*"} // Don't attempt to detect the used columns in the functions, return all
-		}
-	}
-	return columns
+func NewQueryParser(config *Config) *QueryParser {
+	return &QueryParser{config: config}
 }
 
-// FROM pg_catalog.pg_statio_user_tables: return nothing
-func MakePgStatioUserTablesNode() *pgQuery.Node {
+func (queryParser *QueryParser) NodeToSchemaTable(node *pgQuery.Node) SchemaTable {
+	rangeVar := node.GetRangeVar()
+	return SchemaTable{Schema: rangeVar.Schemaname, Table: rangeVar.Relname}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// pg_catalog.pg_statio_user_tables
+func (queryParser *QueryParser) IsPgStatioUserTablesTable(schemaTable SchemaTable) bool {
+	return queryParser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_STATIO_USER_TABLES
+}
+
+// pg_catalog.pg_statio_user_tables -> return nothing
+func (queryParser *QueryParser) MakePgStatioUserTablesNode() *pgQuery.Node {
 	columns := PG_STATIO_USER_TABLES_VALUE_BY_COLUMN.Keys()
 	rowValues := PG_STATIO_USER_TABLES_VALUE_BY_COLUMN.Values()
 
-	return makeSubselectNode(columns, [][]string{rowValues})
+	return queryParser.makeSubselectNode(columns, [][]string{rowValues})
 }
 
-// FROM information_schema.tables: VALUES(values...) t(columns...)
-func MakeInformationSchemaTablesNode(database string, schemaAndTables []SchemaTable) *pgQuery.Node {
+////////////////////////////////////////////////////////////////////////////////
+
+// pg_catalog.pg_shadow
+func (queryParser *QueryParser) IsPgShadowTable(schemaTable SchemaTable) bool {
+	return queryParser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_SHADOW
+}
+
+// pg_catalog.pg_shadow -> VALUES(values...) t(columns...)
+func (queryParser *QueryParser) MakePgShadowNode(user string, encryptedPassword string) *pgQuery.Node {
+	columns := PG_SHADOW_VALUE_BY_COLUMN.Keys()
+	staticRowValues := PG_SHADOW_VALUE_BY_COLUMN.Values()
+
+	var rowsValues [][]string
+
+	rowValues := make([]string, len(staticRowValues))
+	copy(rowValues, staticRowValues)
+	for i, column := range columns {
+		switch column {
+		case "usename":
+			rowValues[i] = user
+		case "passwd":
+			rowValues[i] = encryptedPassword
+		}
+	}
+	rowsValues = append(rowsValues, rowValues)
+
+	return queryParser.makeSubselectNode(columns, rowsValues)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// pg_catalog.pg_namespace
+func (queryParser *QueryParser) IsPgNamespaceTable(schemaTable SchemaTable) bool {
+	return queryParser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_NAMESPACE
+}
+
+// Other system pg_* tables
+func (queryParser *QueryParser) IsTableFromPgCatalog(schemaTable SchemaTable) bool {
+	return queryParser.isPgCatalogSchema(schemaTable) &&
+		(PG_SYSTEM_TABLES.Contains(schemaTable.Table) || PG_SYSTEM_VIEWS.Contains(schemaTable.Table))
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// information_schema.tables
+func (queryParser *QueryParser) IsInformationSchemaTablesTable(schemaTable SchemaTable) bool {
+	return schemaTable.Schema == PG_SCHEMA_INFORMATION_SCHEMA && schemaTable.Table == PG_TABLE_TABLES
+}
+
+// information_schema.tables -> VALUES(values...) t(columns...)
+func (queryParser *QueryParser) MakeInformationSchemaTablesNode(database string, schemaAndTables []SchemaTable) *pgQuery.Node {
 	columns := PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN.Keys()
 	staticRowValues := PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN.Values()
 
@@ -703,33 +762,18 @@ func MakeInformationSchemaTablesNode(database string, schemaAndTables []SchemaTa
 		rowsValues = append(rowsValues, rowValues)
 	}
 
-	return makeSubselectNode(columns, rowsValues)
+	return queryParser.makeSubselectNode(columns, rowsValues)
 }
 
-// FROM pg_shadow: VALUES(values...) t(columns...)
-func MakePgShadowNode(user string, encryptedPassword string) *pgQuery.Node {
-	columns := PG_SHADOW_VALUE_BY_COLUMN.Keys()
-	staticRowValues := PG_SHADOW_VALUE_BY_COLUMN.Values()
+////////////////////////////////////////////////////////////////////////////////
 
-	var rowsValues [][]string
-
-	rowValues := make([]string, len(staticRowValues))
-	copy(rowValues, staticRowValues)
-	for i, column := range columns {
-		switch column {
-		case "usename":
-			rowValues[i] = user
-		case "passwd":
-			rowValues[i] = encryptedPassword
-		}
-	}
-	rowsValues = append(rowsValues, rowValues)
-
-	return makeSubselectNode(columns, rowsValues)
+// pg_catalog.pg_get_keywords()
+func (queryParser *QueryParser) IsPgGetKeywordsFunction(schema string, functionName string) bool {
+	return schema == PG_SCHEMA_PG_CATALOG && functionName == PG_FUNCTION_PG_GET_KEYWORDS
 }
 
-// FROM pg_catalog.pg_get_keywords():
-func MakePgGetKeywordsNode() *pgQuery.Node {
+// pg_catalog.pg_get_keywords() -> VALUES(values...) t(columns...)
+func (queryParser *QueryParser) MakePgGetKeywordsNode() *pgQuery.Node {
 	columns := []string{"word", "catcode", "barelabel", "catdesc", "baredesc"}
 
 	var rows [][]string
@@ -759,10 +803,19 @@ func MakePgGetKeywordsNode() *pgQuery.Node {
 		rows = append(rows, row)
 	}
 
-	return makeSubselectNode(columns, rows)
+	return queryParser.makeSubselectNode(columns, rows)
 }
 
-func MakeStringExpressionNode(column string, operation string, value string) *pgQuery.Node {
+////////////////////////////////////////////////////////////////////////////////
+
+// quote_ident()
+func (queryParser *QueryParser) IsQuoteIdentFunction(functionName string) bool {
+	return functionName == PG_FUNCTION_NAME_QUOTE_INDENT
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+func (queryParser *QueryParser) MakeStringExpressionNode(column string, operation string, value string) *pgQuery.Node {
 	return pgQuery.MakeAExprNode(
 		pgQuery.A_Expr_Kind_AEXPR_OP,
 		[]*pgQuery.Node{pgQuery.MakeStrNode(operation)},
@@ -772,7 +825,7 @@ func MakeStringExpressionNode(column string, operation string, value string) *pg
 	)
 }
 
-func MakeAConstBoolNode(val bool) *pgQuery.Node {
+func (queryParser *QueryParser) MakeAConstBoolNode(val bool) *pgQuery.Node {
 	return &pgQuery.Node{
 		Node: &pgQuery.Node_AConst{
 			AConst: &pgQuery.A_Const{
@@ -788,17 +841,11 @@ func MakeAConstBoolNode(val bool) *pgQuery.Node {
 	}
 }
 
-func MakeStatementNode(targetList []*pgQuery.Node) *pgQuery.Node {
-	return &pgQuery.Node{
-		Node: &pgQuery.Node_SelectStmt{
-			SelectStmt: &pgQuery.SelectStmt{
-				TargetList: targetList,
-			},
-		},
-	}
+func (queryParser *QueryParser) isPgCatalogSchema(schemaTable SchemaTable) bool {
+	return schemaTable.Schema == PG_SCHEMA_PG_CATALOG || schemaTable.Schema == ""
 }
 
-func makeSubselectNode(columns []string, rowsValues [][]string) *pgQuery.Node {
+func (queryParser *QueryParser) makeSubselectNode(columns []string, rowsValues [][]string) *pgQuery.Node {
 	var columnNodes []*pgQuery.Node
 	for _, column := range columns {
 		columnNodes = append(columnNodes, pgQuery.MakeStrNode(column))

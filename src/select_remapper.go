@@ -6,20 +6,6 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
-const (
-	INFORMATION_SCHEMA = "information_schema"
-	PG_DEFAULT_SCHEMA  = "public"
-	PG_SYSTEM_SCHEMA   = "pg_catalog"
-
-	INFORMATION_SCHEMA_TABLES = "tables"
-	PG_NAMESPACE              = "pg_namespace"
-	PG_STATIO_USER_TABLES     = "pg_statio_user_tables"
-	PG_SHADOW                 = "pg_shadow"
-
-	PG_QUOTE_INDENT_FUNCTION_NAME = "quote_ident"
-	PG_GET_KEYWORDS_FUNCTION_NAME = "pg_get_keywords"
-)
-
 var REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME = map[string]string{
 	"version":                            "PostgreSQL " + PG_VERSION + ", compiled by Bemi",
 	"pg_get_userbyid":                    "bemidb",
@@ -39,8 +25,21 @@ var KNOWN_SET_STATEMENTS = NewSet([]string{
 })
 
 type SelectRemapper struct {
+	queryParser   *QueryParser
+	tableRemapper *SelectTableRemapper
 	icebergReader *IcebergReader
 	config        *Config
+}
+
+func NewSelectRemapper(config *Config, icebergReader *IcebergReader) *SelectRemapper {
+	queryParser := NewQueryParser(config)
+
+	return &SelectRemapper{
+		queryParser:   queryParser,
+		tableRemapper: NewSelectTableRemapper(config, queryParser, icebergReader),
+		icebergReader: icebergReader,
+		config:        config,
+	}
 }
 
 func (selectRemapper *SelectRemapper) RemapQueryTreeWithSelect(queryTree *pgQuery.ParseResult) *pgQuery.ParseResult {
@@ -97,7 +96,7 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 		for i, fromNode := range selectStatement.FromClause {
 			if fromNode.GetRangeVar() != nil {
 				LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" SELECT statement")
-				selectStatement.FromClause[i] = selectRemapper.remapTable(fromNode)
+				selectStatement.FromClause[i] = selectRemapper.tableRemapper.RemapTable(fromNode)
 			} else if fromNode.GetRangeSubselect() != nil {
 				selectRemapper.remapSelectStatement(fromNode.GetRangeSubselect().Subquery.GetSelectStmt(), indentLevel+1)
 			}
@@ -211,7 +210,7 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(node *pgQuery.Node, i
 	if leftJoinNode.GetJoinExpr() != nil {
 		leftJoinNode = selectRemapper.remapJoinExpressions(leftJoinNode, indentLevel+1)
 	} else if leftJoinNode.GetRangeVar() != nil {
-		leftJoinNode = selectRemapper.remapTable(leftJoinNode)
+		leftJoinNode = selectRemapper.tableRemapper.RemapTable(leftJoinNode)
 	} else if leftJoinNode.GetRangeSubselect() != nil {
 		leftSelectStatement := leftJoinNode.GetRangeSubselect().Subquery.GetSelectStmt()
 		leftSelectStatement = selectRemapper.remapSelectStatement(leftSelectStatement, indentLevel+1)
@@ -222,7 +221,7 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(node *pgQuery.Node, i
 	if rightJoinNode.GetJoinExpr() != nil {
 		rightJoinNode = selectRemapper.remapJoinExpressions(rightJoinNode, indentLevel+1)
 	} else if rightJoinNode.GetRangeVar() != nil {
-		rightJoinNode = selectRemapper.remapTable(rightJoinNode)
+		rightJoinNode = selectRemapper.tableRemapper.RemapTable(rightJoinNode)
 	} else if rightJoinNode.GetRangeSubselect() != nil {
 		rightSelectStatement := rightJoinNode.GetRangeSubselect().Subquery.GetSelectStmt()
 		rightSelectStatement = selectRemapper.remapSelectStatement(rightSelectStatement, indentLevel+1)
@@ -233,73 +232,22 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(node *pgQuery.Node, i
 
 // WHERE [CONDITION]
 func (selectRemapper *SelectRemapper) remapWhere(selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
-	fromVar := selectStatement.FromClause[0].GetRangeVar()
-	schemaName := fromVar.Schemaname
-	tableName := fromVar.Relname
+	schemaTable := selectRemapper.queryParser.NodeToSchemaTable(selectStatement.FromClause[0])
 
-	// System pg_* tables
-	if (schemaName == PG_SYSTEM_SCHEMA || schemaName == "") && IsSystemTable(tableName) {
-		switch tableName {
-		case PG_NAMESPACE:
-			// FROM pg_catalog.pg_namespace => FROM pg_catalog.pg_namespace WHERE nspname != 'main'
-			withoutMainSchemaWhereCondition := MakeStringExpressionNode("nspname", "!=", "main")
-			return selectRemapper.appendWhereCondition(selectStatement, withoutMainSchemaWhereCondition)
-		case PG_STATIO_USER_TABLES:
-			// FROM pg_catalog.pg_statio_user_tables -> return nothing
-			falseWhereCondition := MakeAConstBoolNode(false)
-			selectStatement = selectRemapper.overrideWhereCondition(selectStatement, falseWhereCondition)
-			return selectStatement
-		}
+	// FROM pg_catalog.pg_namespace => FROM pg_catalog.pg_namespace WHERE nspname != 'main'
+	if selectRemapper.queryParser.IsPgNamespaceTable(schemaTable) {
+		withoutMainSchemaWhereCondition := selectRemapper.queryParser.MakeStringExpressionNode("nspname", "!=", "main")
+		return selectRemapper.appendWhereCondition(selectStatement, withoutMainSchemaWhereCondition)
+	}
+
+	// FROM pg_catalog.pg_statio_user_tables -> return nothing
+	if selectRemapper.queryParser.IsPgStatioUserTablesTable(schemaTable) {
+		falseWhereCondition := selectRemapper.queryParser.MakeAConstBoolNode(false)
+		selectStatement = selectRemapper.overrideWhereCondition(selectStatement, falseWhereCondition)
+		return selectStatement
 	}
 
 	return selectStatement
-}
-
-// FROM / JOIN [TABLE]
-func (selectRemapper *SelectRemapper) remapTable(node *pgQuery.Node) *pgQuery.Node {
-	rangeVar := node.GetRangeVar()
-	schemaName := rangeVar.Schemaname
-	tableName := rangeVar.Relname
-
-	// System pg_* tables
-	if (schemaName == PG_SYSTEM_SCHEMA || schemaName == "") && IsSystemTable(tableName) {
-		switch tableName {
-		case PG_STATIO_USER_TABLES:
-			// FROM pg_catalog.pg_statio_user_tables -> return nothing
-			tableNode := MakePgStatioUserTablesNode()
-			return selectRemapper.overrideTable(node, tableNode)
-		case PG_SHADOW:
-			// FROM pg_shadow -> return hard-coded credentials
-			tableNode := MakePgShadowNode(selectRemapper.config.User, selectRemapper.config.EncryptedPassword)
-			return selectRemapper.overrideTable(node, tableNode)
-		default:
-			// System pg_* tables
-			return node
-		}
-	}
-
-	// Information schema
-	if schemaName == INFORMATION_SCHEMA {
-		switch tableName {
-		case INFORMATION_SCHEMA_TABLES:
-			icebergSchemaTables, err := selectRemapper.icebergReader.SchemaTables()
-			if err != nil {
-				LogError(selectRemapper.config, "Failed to get Iceberg schema tables:", err)
-				return node
-			}
-			if len(icebergSchemaTables) == 0 {
-				return node
-			}
-			// FROM information_schema.tables -> return Iceberg tables
-			tableNode := MakeInformationSchemaTablesNode(selectRemapper.config.Database, icebergSchemaTables)
-			return selectRemapper.overrideTable(node, tableNode)
-		default:
-			return node
-		}
-	}
-
-	// iceberg.table
-	return node
 }
 
 // FROM [PG_FUNCTION()]
@@ -311,8 +259,9 @@ func (selectRemapper *SelectRemapper) remapTableFunction(node *pgQuery.Node) *pg
 				schema := functionCall.Funcname[0].GetString_().Sval
 				functionName := functionCall.Funcname[1].GetString_().Sval
 
-				if schema == PG_SYSTEM_SCHEMA && functionName == PG_GET_KEYWORDS_FUNCTION_NAME {
-					return MakePgGetKeywordsNode()
+				// pg_catalog.pg_get_keywords() -> hard-coded keywords
+				if selectRemapper.queryParser.IsPgGetKeywordsFunction(schema, functionName) {
+					return selectRemapper.queryParser.MakePgGetKeywordsNode()
 				}
 			}
 		}
@@ -343,11 +292,6 @@ func (selectRemapper *SelectRemapper) appendWhereCondition(selectStatement *pgQu
 func (selectRemapper *SelectRemapper) overrideWhereCondition(selectStatement *pgQuery.SelectStmt, whereCondition *pgQuery.Node) *pgQuery.SelectStmt {
 	selectStatement.WhereClause = whereCondition
 	return selectStatement
-}
-
-func (selectRemapper *SelectRemapper) overrideTable(node *pgQuery.Node, fromClause *pgQuery.Node) *pgQuery.Node {
-	node = fromClause
-	return node
 }
 
 // SELECT [PG_FUNCTION()]
@@ -412,7 +356,7 @@ func (selectRemapper *SelectRemapper) remapFunctionCallArgs(functionCall *pgQuer
 func (selectRemapper *SelectRemapper) remappedFunctionName(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
 	functionName := functionCall.Funcname[len(functionCall.Funcname)-1].GetString_().Sval
 
-	if functionName == PG_QUOTE_INDENT_FUNCTION_NAME {
+	if selectRemapper.queryParser.IsQuoteIdentFunction(functionName) {
 		functionCall.Funcname[0] = pgQuery.MakeStrNode("concat")
 		argConstant := functionCall.Args[0].GetAConst()
 		if argConstant != nil {
