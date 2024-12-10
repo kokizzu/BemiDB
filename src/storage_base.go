@@ -52,7 +52,6 @@ func (storage *StorageBase) WriteParquetFile(fileWriter source.ParquetFile, pgSc
 
 	parquetWriter.RowGroupSize = PARQUET_ROW_GROUP_SIZE
 	parquetWriter.CompressionType = PARQUET_COMPRESSION_TYPE
-	totalRowCount := 0
 
 	rows := loadRows()
 	for len(rows) > 0 {
@@ -69,8 +68,6 @@ func (storage *StorageBase) WriteParquetFile(fileWriter source.ParquetFile, pgSc
 			}
 			recordCount++
 		}
-		totalRowCount += len(rows)
-		LogDebug(storage.config, "Wrote", totalRowCount, "rows to Parquet file...")
 
 		rows = loadRows()
 	}

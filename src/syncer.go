@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	BATCH_SIZE = 10000
+	BATCH_SIZE                    = 10000
+	PING_INTERVAL_BETWEEN_BATCHES = 20
 )
 
 type Syncer struct {
@@ -173,6 +174,7 @@ func (syncer *Syncer) syncFromPgTable(conn *pgx.Conn, pgSchemaTable SchemaTable)
 
 	pgSchemaColumns := syncer.pgTableSchemaColumns(conn, pgSchemaTable, csvHeader)
 	reachedEnd := false
+	totalRowCount := 0
 
 	syncer.icebergWriter.Write(pgSchemaTable, pgSchemaColumns, func() [][]string {
 		if reachedEnd {
@@ -192,6 +194,17 @@ func (syncer *Syncer) syncFromPgTable(conn *pgx.Conn, pgSchemaTable SchemaTable)
 				break
 			}
 		}
+
+		totalRowCount += len(rows)
+		LogDebug(syncer.config, "Writing", totalRowCount, "rows to Parquet...")
+
+		// Ping the database to prevent the connection from being closed
+		if totalRowCount%(BATCH_SIZE*PING_INTERVAL_BETWEEN_BATCHES) == 0 {
+			LogDebug(syncer.config, "Pinging the database...")
+			_, err := conn.Exec(context.Background(), "SELECT 1")
+			PanicIfError(err)
+		}
+
 		return rows
 	})
 }
