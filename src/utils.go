@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"golang.org/x/crypto/pbkdf2"
 	"os"
+	"strconv"
 )
 
 func PanicIfError(err error, message ...string) {
@@ -32,7 +33,11 @@ func DeleteTemporaryFile(file *os.File) {
 }
 
 func IntToString(i int) string {
-	return fmt.Sprintf("%d", i)
+	return strconv.Itoa(i)
+}
+
+func StringToInt(s string) (int, error) {
+	return strconv.Atoi(s)
 }
 
 func StringToScramSha256(password string) string {

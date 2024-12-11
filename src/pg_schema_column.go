@@ -20,7 +20,8 @@ const (
 	PARQUET_SCHEMA_REPETITION_TYPE_REQUIRED = "REQUIRED"
 	PARQUET_SCHEMA_REPETITION_TYPE_OPTIONAL = "OPTIONAL"
 
-	PARQUET_NAN = "NaN"
+	PARQUET_NAN           = "NaN"
+	PARQUET_MAX_PRECISION = 38
 
 	// 0000-01-01 00:00:00 +0000 UTC
 	EPOCH_TIME_MS = -62167219200000
@@ -107,7 +108,7 @@ func (pgSchemaColumn PgSchemaColumn) ToParquetSchemaFieldMap() map[string]interf
 func (pgSchemaColumn PgSchemaColumn) ToIcebergSchemaFieldMap() IcebergSchemaField {
 	icebergSchemaField := IcebergSchemaField{}
 
-	id, err := strconv.Atoi(pgSchemaColumn.OrdinalPosition)
+	id, err := StringToInt(pgSchemaColumn.OrdinalPosition)
 	if err != nil {
 		panic(err)
 	}
@@ -183,13 +184,17 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 	// Set other field properties
 	switch pgSchemaColumn.UdtName {
 	case "numeric":
-		parquetSchemaField.Scale = pgSchemaColumn.NumericScale
-		parquetSchemaField.Precision = pgSchemaColumn.NumericPrecision
-		scale, err := strconv.Atoi(pgSchemaColumn.NumericScale)
+		scale, err := StringToInt(pgSchemaColumn.NumericScale)
 		PanicIfError(err)
-		precision, err := strconv.Atoi(pgSchemaColumn.NumericPrecision)
+		precision, err := StringToInt(pgSchemaColumn.NumericPrecision)
 		PanicIfError(err)
-		parquetSchemaField.Length = strconv.Itoa(scale + precision)
+		if precision > PARQUET_MAX_PRECISION {
+			precision = PARQUET_MAX_PRECISION
+		}
+
+		parquetSchemaField.Scale = IntToString(scale)
+		parquetSchemaField.Precision = IntToString(precision)
+		parquetSchemaField.Length = IntToString(scale + precision)
 	case "uuid":
 		parquetSchemaField.Length = "36"
 	default:
@@ -215,7 +220,7 @@ func (pgSchemaColumn *PgSchemaColumn) parquetPrimitiveValue(value string) interf
 		trimmedValue := strings.TrimRight(value, " ")
 		return trimmedValue
 	case "int2", "int4":
-		intValue, err := strconv.Atoi(value)
+		intValue, err := StringToInt(value)
 		PanicIfError(err)
 		return int32(intValue)
 	case "int8":

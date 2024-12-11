@@ -92,7 +92,7 @@ var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 		ColumnName:       "numeric_column",
 		DataType:         "numeric",
 		UdtName:          "numeric",
-		NumericPrecision: "10",
+		NumericPrecision: "40", // Will be capped to 38
 		NumericScale:     "2",
 		Namespace:        "pg_catalog",
 	},
