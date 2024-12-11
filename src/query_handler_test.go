@@ -400,16 +400,14 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"search_path"},
 			"values":      {`"$user", public`},
 		},
-		// Keywords query
-		"SELECT * FROM pg_catalog.pg_get_keywords() limit 1": {
+		// SELECT * FROM function()
+		"SELECT * FROM pg_catalog.pg_get_keywords() LIMIT 1": {
 			"description": {"word", "catcode", "barelabel", "catdesc", "baredesc"},
-			"values": {
-				"abort",
-				"U",
-				"t",
-				"unreserved",
-				"can be bare label",
-			},
+			"values":      {"abort", "U", "t", "unreserved", "can be bare label"},
+		},
+		"SELECT * FROM generate_series(1, 2) AS series(index) LIMIT 1": {
+			"description": {"index"},
+			"values":      {"1"},
 		},
 	}
 

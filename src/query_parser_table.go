@@ -22,6 +22,11 @@ type QueryParserTable struct {
 	utils  *QueryUtils
 }
 
+type FunctionCall struct {
+	Schema   string
+	Function string
+}
+
 func NewQueryParserTable(config *Config) *QueryParserTable {
 	return &QueryParserTable{config: config, utils: NewQueryUtils(config)}
 }
@@ -29,6 +34,37 @@ func NewQueryParserTable(config *Config) *QueryParserTable {
 func (parser *QueryParserTable) NodeToSchemaTable(node *pgQuery.Node) SchemaTable {
 	rangeVar := node.GetRangeVar()
 	return SchemaTable{Schema: rangeVar.Schemaname, Table: rangeVar.Relname}
+}
+
+func (parser *QueryParserTable) NodeToFunctionCalls(node *pgQuery.Node) []FunctionCall {
+	var functionCalls []FunctionCall
+
+	for _, functionNode := range node.GetRangeFunction().Functions {
+		for _, item := range functionNode.GetList().Items {
+			funcCall := item.GetFuncCall()
+			if funcCall == nil {
+				continue
+			}
+
+			var functionCall FunctionCall
+
+			switch len(funcCall.Funcname) {
+			case 1:
+				functionCall = FunctionCall{
+					Function: funcCall.Funcname[0].GetString_().Sval,
+				}
+			case 2:
+				functionCall = FunctionCall{
+					Schema:   funcCall.Funcname[0].GetString_().Sval,
+					Function: funcCall.Funcname[1].GetString_().Sval,
+				}
+			}
+
+			functionCalls = append(functionCalls, functionCall)
+		}
+	}
+
+	return functionCalls
 }
 
 // pg_catalog.pg_statio_user_tables
@@ -172,8 +208,8 @@ func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string) *pgQuery.
 }
 
 // pg_catalog.pg_get_keywords()
-func (parser *QueryParserTable) IsPgGetKeywordsFunction(schema string, functionName string) bool {
-	return schema == PG_SCHEMA_PG_CATALOG && functionName == PG_FUNCTION_PG_GET_KEYWORDS
+func (parser *QueryParserTable) IsPgGetKeywordsFunction(functionCall FunctionCall) bool {
+	return functionCall.Schema == PG_SCHEMA_PG_CATALOG && functionCall.Function == PG_FUNCTION_PG_GET_KEYWORDS
 }
 
 // pg_catalog.pg_get_keywords() -> VALUES(values...) t(columns...)

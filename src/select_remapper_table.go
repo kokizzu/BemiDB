@@ -87,20 +87,13 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 
 // FROM [PG_FUNCTION()]
 func (remapper *SelectRemapperTable) RemapTableFunction(node *pgQuery.Node) *pgQuery.Node {
-	for _, functionNode := range node.GetRangeFunction().Functions {
-		for _, item := range functionNode.GetList().Items {
-			functionCall := item.GetFuncCall()
-			if len(functionCall.Funcname) == 2 {
-				schema := functionCall.Funcname[0].GetString_().Sval
-				functionName := functionCall.Funcname[1].GetString_().Sval
-
-				// pg_catalog.pg_get_keywords() -> hard-coded keywords
-				if remapper.parserTable.IsPgGetKeywordsFunction(schema, functionName) {
-					return remapper.parserTable.MakePgGetKeywordsNode()
-				}
-			}
+	for _, functionCall := range remapper.parserTable.NodeToFunctionCalls(node) {
+		// pg_catalog.pg_get_keywords() -> hard-coded keywords
+		if remapper.parserTable.IsPgGetKeywordsFunction(functionCall) {
+			return remapper.parserTable.MakePgGetKeywordsNode()
 		}
 	}
+
 	return node
 }
 
