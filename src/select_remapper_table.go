@@ -8,19 +8,19 @@ const (
 	PG_SCHEMA_PUBLIC = "public"
 )
 
-type SelectTableRemapper struct {
-	queryParser         *QueryParser
+type SelectRemapperTable struct {
+	parserTable         *QueryParserTable
 	icebergSchemaTables []SchemaTable
 	icebergReader       *IcebergReader
 	config              *Config
 }
 
-func NewSelectTableRemapper(config *Config, queryParser *QueryParser, icebergReader *IcebergReader) *SelectTableRemapper {
+func NewSelectRemapperTable(config *Config, icebergReader *IcebergReader) *SelectRemapperTable {
 	icebergSchemaTables, err := icebergReader.SchemaTables()
 	PanicIfError(err)
 
-	return &SelectTableRemapper{
-		queryParser:         queryParser,
+	return &SelectRemapperTable{
+		parserTable:         NewQueryParserTable(config),
 		icebergSchemaTables: icebergSchemaTables,
 		icebergReader:       icebergReader,
 		config:              config,
@@ -28,8 +28,8 @@ func NewSelectTableRemapper(config *Config, queryParser *QueryParser, icebergRea
 }
 
 // FROM / JOIN [TABLE]
-func (remapper *SelectTableRemapper) RemapTable(node *pgQuery.Node) *pgQuery.Node {
-	parser := remapper.queryParser
+func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node {
+	parser := remapper.parserTable
 	schemaTable := parser.NodeToSchemaTable(node)
 
 	// pg_catalog.pg_statio_user_tables -> return nothing
@@ -85,18 +85,37 @@ func (remapper *SelectTableRemapper) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 	return remapper.overrideTable(node, tableNode)
 }
 
-func (remapper *SelectTableRemapper) overrideTable(node *pgQuery.Node, fromClause *pgQuery.Node) *pgQuery.Node {
+// FROM [PG_FUNCTION()]
+func (remapper *SelectRemapperTable) RemapTableFunction(node *pgQuery.Node) *pgQuery.Node {
+	for _, functionNode := range node.GetRangeFunction().Functions {
+		for _, item := range functionNode.GetList().Items {
+			functionCall := item.GetFuncCall()
+			if len(functionCall.Funcname) == 2 {
+				schema := functionCall.Funcname[0].GetString_().Sval
+				functionName := functionCall.Funcname[1].GetString_().Sval
+
+				// pg_catalog.pg_get_keywords() -> hard-coded keywords
+				if remapper.parserTable.IsPgGetKeywordsFunction(schema, functionName) {
+					return remapper.parserTable.MakePgGetKeywordsNode()
+				}
+			}
+		}
+	}
+	return node
+}
+
+func (remapper *SelectRemapperTable) overrideTable(node *pgQuery.Node, fromClause *pgQuery.Node) *pgQuery.Node {
 	node = fromClause
 	return node
 }
 
-func (remapper *SelectTableRemapper) reloadIceberSchemaTables() {
+func (remapper *SelectRemapperTable) reloadIceberSchemaTables() {
 	icebergSchemaTables, err := remapper.icebergReader.SchemaTables()
 	PanicIfError(err)
 	remapper.icebergSchemaTables = icebergSchemaTables
 }
 
-func (remapper *SelectTableRemapper) icebergSchemaTableExists(schemaTable SchemaTable) bool {
+func (remapper *SelectRemapperTable) icebergSchemaTableExists(schemaTable SchemaTable) bool {
 	for _, icebergSchemaTable := range remapper.icebergSchemaTables {
 		if icebergSchemaTable == schemaTable {
 			return true

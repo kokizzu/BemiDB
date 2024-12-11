@@ -25,20 +25,20 @@ var KNOWN_SET_STATEMENTS = NewSet([]string{
 })
 
 type SelectRemapper struct {
-	queryParser   *QueryParser
-	tableRemapper *SelectTableRemapper
-	icebergReader *IcebergReader
-	config        *Config
+	remapperTable  *SelectRemapperTable
+	remapperWhere  *SelectRemapperWhere
+	remapperSelect *SelectRemapperSelect
+	icebergReader  *IcebergReader
+	config         *Config
 }
 
 func NewSelectRemapper(config *Config, icebergReader *IcebergReader) *SelectRemapper {
-	queryParser := NewQueryParser(config)
-
 	return &SelectRemapper{
-		queryParser:   queryParser,
-		tableRemapper: NewSelectTableRemapper(config, queryParser, icebergReader),
-		icebergReader: icebergReader,
-		config:        config,
+		remapperTable:  NewSelectRemapperTable(config, icebergReader),
+		remapperWhere:  NewSelectRemapperWhere(config),
+		remapperSelect: NewSelectRemapperSelect(config),
+		icebergReader:  icebergReader,
+		config:         config,
 	}
 }
 
@@ -90,19 +90,19 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 
 	if len(selectStatement.FromClause) > 0 {
 		if selectStatement.FromClause[0].GetRangeVar() != nil {
-			selectStatement = selectRemapper.remapWhere(selectStatement)
+			selectStatement = selectRemapper.remapperWhere.RemapWhere(selectStatement)
 		}
 		selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel)
 		for i, fromNode := range selectStatement.FromClause {
 			if fromNode.GetRangeVar() != nil {
 				LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" SELECT statement")
-				selectStatement.FromClause[i] = selectRemapper.tableRemapper.RemapTable(fromNode)
+				selectStatement.FromClause[i] = selectRemapper.remapperTable.RemapTable(fromNode)
 			} else if fromNode.GetRangeSubselect() != nil {
 				selectRemapper.remapSelectStatement(fromNode.GetRangeSubselect().Subquery.GetSelectStmt(), indentLevel+1)
 			}
 
 			if fromNode.GetRangeFunction() != nil {
-				selectStatement.FromClause[i] = selectRemapper.remapTableFunction(fromNode)
+				selectStatement.FromClause[i] = selectRemapper.remapperTable.RemapTableFunction(fromNode)
 			}
 		}
 		return selectStatement
@@ -210,7 +210,7 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(node *pgQuery.Node, i
 	if leftJoinNode.GetJoinExpr() != nil {
 		leftJoinNode = selectRemapper.remapJoinExpressions(leftJoinNode, indentLevel+1)
 	} else if leftJoinNode.GetRangeVar() != nil {
-		leftJoinNode = selectRemapper.tableRemapper.RemapTable(leftJoinNode)
+		leftJoinNode = selectRemapper.remapperTable.RemapTable(leftJoinNode)
 	} else if leftJoinNode.GetRangeSubselect() != nil {
 		leftSelectStatement := leftJoinNode.GetRangeSubselect().Subquery.GetSelectStmt()
 		leftSelectStatement = selectRemapper.remapSelectStatement(leftSelectStatement, indentLevel+1)
@@ -221,7 +221,7 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(node *pgQuery.Node, i
 	if rightJoinNode.GetJoinExpr() != nil {
 		rightJoinNode = selectRemapper.remapJoinExpressions(rightJoinNode, indentLevel+1)
 	} else if rightJoinNode.GetRangeVar() != nil {
-		rightJoinNode = selectRemapper.tableRemapper.RemapTable(rightJoinNode)
+		rightJoinNode = selectRemapper.remapperTable.RemapTable(rightJoinNode)
 	} else if rightJoinNode.GetRangeSubselect() != nil {
 		rightSelectStatement := rightJoinNode.GetRangeSubselect().Subquery.GetSelectStmt()
 		rightSelectStatement = selectRemapper.remapSelectStatement(rightSelectStatement, indentLevel+1)
@@ -230,155 +230,22 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(node *pgQuery.Node, i
 	return node
 }
 
-// WHERE [CONDITION]
-func (selectRemapper *SelectRemapper) remapWhere(selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
-	schemaTable := selectRemapper.queryParser.NodeToSchemaTable(selectStatement.FromClause[0])
-
-	// FROM pg_catalog.pg_namespace => FROM pg_catalog.pg_namespace WHERE nspname != 'main'
-	if selectRemapper.queryParser.IsPgNamespaceTable(schemaTable) {
-		withoutMainSchemaWhereCondition := selectRemapper.queryParser.MakeStringExpressionNode("nspname", "!=", "main")
-		return selectRemapper.appendWhereCondition(selectStatement, withoutMainSchemaWhereCondition)
-	}
-
-	// FROM pg_catalog.pg_statio_user_tables -> return nothing
-	if selectRemapper.queryParser.IsPgStatioUserTablesTable(schemaTable) {
-		falseWhereCondition := selectRemapper.queryParser.MakeAConstBoolNode(false)
-		selectStatement = selectRemapper.overrideWhereCondition(selectStatement, falseWhereCondition)
-		return selectStatement
-	}
-
-	return selectStatement
-}
-
-// FROM [PG_FUNCTION()]
-func (selectRemapper *SelectRemapper) remapTableFunction(node *pgQuery.Node) *pgQuery.Node {
-	for _, funcf := range node.GetRangeFunction().Functions {
-		for _, item := range funcf.GetList().Items {
-			functionCall := item.GetFuncCall()
-			if len(functionCall.Funcname) == 2 {
-				schema := functionCall.Funcname[0].GetString_().Sval
-				functionName := functionCall.Funcname[1].GetString_().Sval
-
-				// pg_catalog.pg_get_keywords() -> hard-coded keywords
-				if selectRemapper.queryParser.IsPgGetKeywordsFunction(schema, functionName) {
-					return selectRemapper.queryParser.MakePgGetKeywordsNode()
-				}
-			}
-		}
-	}
-	return node
-}
-
-func (selectRemapper *SelectRemapper) appendWhereCondition(selectStatement *pgQuery.SelectStmt, whereCondition *pgQuery.Node) *pgQuery.SelectStmt {
-	whereClause := selectStatement.WhereClause
-
-	if whereClause == nil {
-		selectStatement.WhereClause = whereCondition
-	} else if whereClause.GetBoolExpr() != nil {
-		boolExpr := whereClause.GetBoolExpr()
-		if boolExpr.Boolop.String() == "AND_EXPR" {
-			selectStatement.WhereClause.GetBoolExpr().Args = append(boolExpr.Args, whereCondition)
-		}
-	} else if whereClause.GetAExpr() != nil {
-		selectStatement.WhereClause = pgQuery.MakeBoolExprNode(
-			pgQuery.BoolExprType_AND_EXPR,
-			[]*pgQuery.Node{whereClause, whereCondition},
-			0,
-		)
-	}
-	return selectStatement
-}
-
-func (selectRemapper *SelectRemapper) overrideWhereCondition(selectStatement *pgQuery.SelectStmt, whereCondition *pgQuery.Node) *pgQuery.SelectStmt {
-	selectStatement.WhereClause = whereCondition
-	return selectStatement
-}
-
-// SELECT [PG_FUNCTION()]
 func (selectRemapper *SelectRemapper) remapSelect(selectStatement *pgQuery.SelectStmt, indentLevel int) *pgQuery.SelectStmt {
 	LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" SELECT functions")
 
-	for _, targetItem := range selectStatement.TargetList {
-		target := targetItem.GetResTarget()
-		if target.Val.GetFuncCall() != nil {
-			functionCall := target.Val.GetFuncCall()
-			originalFunctionName := functionCall.Funcname[len(functionCall.Funcname)-1].GetString_().Sval
+	for i, targetNode := range selectStatement.TargetList {
+		targetNode = selectRemapper.remapperSelect.RemapSelect(targetNode)
 
-			renamedFunctionCall := selectRemapper.remappedFunctionName(functionCall)
-			if renamedFunctionCall != nil {
-				functionCall = renamedFunctionCall
-				if target.Name == "" {
-					target.Name = originalFunctionName
-				}
-			}
-
-			constantNode := selectRemapper.remappedConstantNode(functionCall)
-			if constantNode != nil {
-				target.Val = constantNode
-				if target.Name == "" {
-					target.Name = originalFunctionName
-				}
-			}
-
-			functionCall = selectRemapper.remapFunctionCallArgs(functionCall, indentLevel+1)
-		} else if target.Val.GetSubLink() != nil {
-			subSelectStatement := target.Val.GetSubLink().Subselect.GetSelectStmt()
+		// Recursively remap sub-selects
+		subSelectStatement := selectRemapper.remapperSelect.SubselectStatement(targetNode)
+		if subSelectStatement != nil {
 			subSelectStatement = selectRemapper.remapSelect(subSelectStatement, indentLevel+1)
 		}
+
+		selectStatement.TargetList[i] = targetNode
 	}
 
 	return selectStatement
-}
-
-func (selectRemapper *SelectRemapper) remapFunctionCallArgs(functionCall *pgQuery.FuncCall, indentLevel int) *pgQuery.FuncCall {
-	LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" SELECT function args")
-
-	for i, arg := range functionCall.Args {
-		if arg.GetFuncCall() != nil {
-			argFunctionCall := arg.GetFuncCall()
-
-			renamedFunctionCall := selectRemapper.remappedFunctionName(argFunctionCall)
-			if renamedFunctionCall != nil {
-				argFunctionCall = renamedFunctionCall
-			}
-
-			constantNode := selectRemapper.remappedConstantNode(argFunctionCall)
-			if constantNode != nil {
-				functionCall.Args[i] = constantNode
-			}
-			argFunctionCall = selectRemapper.remapFunctionCallArgs(argFunctionCall, indentLevel+1)
-		}
-	}
-
-	return functionCall
-}
-
-func (selectRemapper *SelectRemapper) remappedFunctionName(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
-	functionName := functionCall.Funcname[len(functionCall.Funcname)-1].GetString_().Sval
-
-	if selectRemapper.queryParser.IsQuoteIdentFunction(functionName) {
-		functionCall.Funcname[0] = pgQuery.MakeStrNode("concat")
-		argConstant := functionCall.Args[0].GetAConst()
-		if argConstant != nil {
-			str := argConstant.GetSval().Sval
-			str = "\"" + str + "\""
-			functionCall.Args[0] = pgQuery.MakeAConstStrNode(str, 0)
-		}
-
-		return functionCall
-	}
-
-	return nil
-}
-
-func (selectRemapper *SelectRemapper) remappedConstantNode(functionCall *pgQuery.FuncCall) *pgQuery.Node {
-	functionName := functionCall.Funcname[len(functionCall.Funcname)-1].GetString_().Sval
-	constant, ok := REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME[functionName]
-	if ok {
-		return pgQuery.MakeAConstStrNode(constant, 0)
-	}
-
-	return nil
 }
 
 func (selectRemapper *SelectRemapper) remapTypecast(node *pgQuery.Node) *pgQuery.Node {

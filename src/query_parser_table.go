@@ -14,9 +14,205 @@ const (
 	PG_SCHEMA_INFORMATION_SCHEMA = "information_schema"
 	PG_TABLE_TABLES              = "tables"
 
-	PG_FUNCTION_PG_GET_KEYWORDS   = "pg_get_keywords"
-	PG_FUNCTION_NAME_QUOTE_INDENT = "quote_ident"
+	PG_FUNCTION_PG_GET_KEYWORDS = "pg_get_keywords"
 )
+
+type QueryParserTable struct {
+	config *Config
+	utils  *QueryUtils
+}
+
+func NewQueryParserTable(config *Config) *QueryParserTable {
+	return &QueryParserTable{config: config, utils: NewQueryUtils(config)}
+}
+
+func (parser *QueryParserTable) NodeToSchemaTable(node *pgQuery.Node) SchemaTable {
+	rangeVar := node.GetRangeVar()
+	return SchemaTable{Schema: rangeVar.Schemaname, Table: rangeVar.Relname}
+}
+
+// pg_catalog.pg_statio_user_tables
+func (parser *QueryParserTable) IsPgStatioUserTablesTable(schemaTable SchemaTable) bool {
+	return parser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_STATIO_USER_TABLES
+}
+
+// pg_catalog.pg_statio_user_tables -> return nothing
+func (parser *QueryParserTable) MakePgStatioUserTablesNode() *pgQuery.Node {
+	columns := PG_STATIO_USER_TABLES_VALUE_BY_COLUMN.Keys()
+	rowValues := PG_STATIO_USER_TABLES_VALUE_BY_COLUMN.Values()
+
+	return parser.utils.MakeSubselectNode(columns, [][]string{rowValues})
+}
+
+// pg_catalog.pg_shadow
+func (parser *QueryParserTable) IsPgShadowTable(schemaTable SchemaTable) bool {
+	return parser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_SHADOW
+}
+
+// pg_catalog.pg_shadow -> VALUES(values...) t(columns...)
+func (parser *QueryParserTable) MakePgShadowNode(user string, encryptedPassword string) *pgQuery.Node {
+	columns := PG_SHADOW_VALUE_BY_COLUMN.Keys()
+	staticRowValues := PG_SHADOW_VALUE_BY_COLUMN.Values()
+
+	var rowsValues [][]string
+
+	rowValues := make([]string, len(staticRowValues))
+	copy(rowValues, staticRowValues)
+	for i, column := range columns {
+		switch column {
+		case "usename":
+			rowValues[i] = user
+		case "passwd":
+			rowValues[i] = encryptedPassword
+		}
+	}
+	rowsValues = append(rowsValues, rowValues)
+
+	return parser.utils.MakeSubselectNode(columns, rowsValues)
+}
+
+// pg_catalog.pg_roles
+func (parser *QueryParserTable) IsPgRolesTable(schemaTable SchemaTable) bool {
+	return parser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_ROLES
+}
+
+// pg_catalog.pg_roles -> VALUES(values...) t(columns...)
+func (parser *QueryParserTable) MakePgRolesNode(user string) *pgQuery.Node {
+	columns := PG_ROLES_VALUE_BY_COLUMN.Keys()
+	staticRowValues := PG_ROLES_VALUE_BY_COLUMN.Values()
+
+	var rowsValues [][]string
+	rowValues := make([]string, len(staticRowValues))
+	copy(rowValues, staticRowValues)
+
+	for i, column := range columns {
+		if column == "rolname" {
+			rowValues[i] = user
+		}
+	}
+	rowsValues = append(rowsValues, rowValues)
+
+	return parser.utils.MakeSubselectNode(columns, rowsValues)
+}
+
+// pg_catalog.pg_namespace
+func (parser *QueryParserTable) IsPgNamespaceTable(schemaTable SchemaTable) bool {
+	return parser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_NAMESPACE
+}
+
+// Other system pg_* tables
+func (parser *QueryParserTable) IsTableFromPgCatalog(schemaTable SchemaTable) bool {
+	return parser.isPgCatalogSchema(schemaTable) &&
+		(PG_SYSTEM_TABLES.Contains(schemaTable.Table) || PG_SYSTEM_VIEWS.Contains(schemaTable.Table))
+}
+
+// information_schema.tables
+func (parser *QueryParserTable) IsInformationSchemaTablesTable(schemaTable SchemaTable) bool {
+	return parser.IsTableFromInformationSchema(schemaTable) && schemaTable.Table == PG_TABLE_TABLES
+}
+
+// information_schema.tables -> VALUES(values...) t(columns...)
+func (parser *QueryParserTable) MakeInformationSchemaTablesNode(database string, schemaAndTables []SchemaTable) *pgQuery.Node {
+	columns := PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN.Keys()
+	staticRowValues := PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN.Values()
+
+	var rowsValues [][]string
+
+	for _, schemaTable := range schemaAndTables {
+		rowValues := make([]string, len(staticRowValues))
+		copy(rowValues, staticRowValues)
+
+		for i, column := range columns {
+			switch column {
+			case "table_catalog":
+				rowValues[i] = database
+			case "table_schema":
+				rowValues[i] = schemaTable.Schema
+			case "table_name":
+				rowValues[i] = schemaTable.Table
+			}
+		}
+
+		rowsValues = append(rowsValues, rowValues)
+	}
+
+	return parser.utils.MakeSubselectNode(columns, rowsValues)
+}
+
+// Other information_schema.* tables
+func (parser *QueryParserTable) IsTableFromInformationSchema(schemaTable SchemaTable) bool {
+	return schemaTable.Schema == PG_SCHEMA_INFORMATION_SCHEMA
+}
+
+// iceberg.table -> FROM iceberg_scan('path', skip_schema_inference = true)
+func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string) *pgQuery.Node {
+	return pgQuery.MakeSimpleRangeFunctionNode([]*pgQuery.Node{
+		pgQuery.MakeListNode([]*pgQuery.Node{
+			pgQuery.MakeFuncCallNode(
+				[]*pgQuery.Node{
+					pgQuery.MakeStrNode("iceberg_scan"),
+				},
+				[]*pgQuery.Node{
+					pgQuery.MakeAConstStrNode(
+						tablePath,
+						0,
+					),
+					pgQuery.MakeAExprNode(
+						pgQuery.A_Expr_Kind_AEXPR_OP,
+						[]*pgQuery.Node{pgQuery.MakeStrNode("=")},
+						pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("skip_schema_inference")}, 0),
+						parser.utils.MakeAConstBoolNode(true),
+						0,
+					),
+				},
+				0,
+			),
+		}),
+	})
+}
+
+// pg_catalog.pg_get_keywords()
+func (parser *QueryParserTable) IsPgGetKeywordsFunction(schema string, functionName string) bool {
+	return schema == PG_SCHEMA_PG_CATALOG && functionName == PG_FUNCTION_PG_GET_KEYWORDS
+}
+
+// pg_catalog.pg_get_keywords() -> VALUES(values...) t(columns...)
+func (parser *QueryParserTable) MakePgGetKeywordsNode() *pgQuery.Node {
+	columns := []string{"word", "catcode", "barelabel", "catdesc", "baredesc"}
+
+	var rows [][]string
+	for _, kw := range DUCKDB_KEYWORDS {
+		catcode := "U"
+		catdesc := "unreserved"
+
+		switch kw.category {
+		case "reserved":
+			catcode = "R"
+			catdesc = "reserved"
+		case "type_function":
+			catcode = "T"
+			catdesc = "reserved (can be function or type name)"
+		case "column_name":
+			catcode = "C"
+			catdesc = "unreserved (cannot be function or type name)"
+		}
+
+		row := []string{
+			kw.word,
+			catcode,
+			"t",
+			catdesc,
+			"can be bare label",
+		}
+		rows = append(rows, row)
+	}
+
+	return parser.utils.MakeSubselectNode(columns, rows)
+}
+
+func (parser *QueryParserTable) isPgCatalogSchema(schemaTable SchemaTable) bool {
+	return schemaTable.Schema == PG_SCHEMA_PG_CATALOG || schemaTable.Schema == ""
+}
 
 var PG_SYSTEM_TABLES = NewSet([]string{
 	"pg_aggregate",
@@ -675,286 +871,4 @@ var DUCKDB_KEYWORDS = []DuckDBKeyword{
 	{"years", "unreserved"},
 	{"yes", "unreserved"},
 	{"zone", "unreserved"},
-}
-
-type QueryParser struct {
-	config *Config
-}
-
-func NewQueryParser(config *Config) *QueryParser {
-	return &QueryParser{config: config}
-}
-
-func (queryParser *QueryParser) NodeToSchemaTable(node *pgQuery.Node) SchemaTable {
-	rangeVar := node.GetRangeVar()
-	return SchemaTable{Schema: rangeVar.Schemaname, Table: rangeVar.Relname}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// pg_catalog.pg_statio_user_tables
-func (queryParser *QueryParser) IsPgStatioUserTablesTable(schemaTable SchemaTable) bool {
-	return queryParser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_STATIO_USER_TABLES
-}
-
-// pg_catalog.pg_statio_user_tables -> return nothing
-func (queryParser *QueryParser) MakePgStatioUserTablesNode() *pgQuery.Node {
-	columns := PG_STATIO_USER_TABLES_VALUE_BY_COLUMN.Keys()
-	rowValues := PG_STATIO_USER_TABLES_VALUE_BY_COLUMN.Values()
-
-	return queryParser.makeSubselectNode(columns, [][]string{rowValues})
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// pg_catalog.pg_shadow
-func (queryParser *QueryParser) IsPgShadowTable(schemaTable SchemaTable) bool {
-	return queryParser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_SHADOW
-}
-
-// pg_catalog.pg_shadow -> VALUES(values...) t(columns...)
-func (queryParser *QueryParser) MakePgShadowNode(user string, encryptedPassword string) *pgQuery.Node {
-	columns := PG_SHADOW_VALUE_BY_COLUMN.Keys()
-	staticRowValues := PG_SHADOW_VALUE_BY_COLUMN.Values()
-
-	var rowsValues [][]string
-
-	rowValues := make([]string, len(staticRowValues))
-	copy(rowValues, staticRowValues)
-	for i, column := range columns {
-		switch column {
-		case "usename":
-			rowValues[i] = user
-		case "passwd":
-			rowValues[i] = encryptedPassword
-		}
-	}
-	rowsValues = append(rowsValues, rowValues)
-
-	return queryParser.makeSubselectNode(columns, rowsValues)
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// pg_catalog.pg_roles
-func (queryParser *QueryParser) IsPgRolesTable(schemaTable SchemaTable) bool {
-	return queryParser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_ROLES
-}
-
-// pg_catalog.pg_roles -> VALUES(values...) t(columns...)
-func (queryParser *QueryParser) MakePgRolesNode(user string) *pgQuery.Node {
-	columns := PG_ROLES_VALUE_BY_COLUMN.Keys()
-	staticRowValues := PG_ROLES_VALUE_BY_COLUMN.Values()
-
-	var rowsValues [][]string
-	rowValues := make([]string, len(staticRowValues))
-	copy(rowValues, staticRowValues)
-
-	for i, column := range columns {
-		if column == "rolname" {
-			rowValues[i] = user
-		}
-	}
-	rowsValues = append(rowsValues, rowValues)
-
-	return queryParser.makeSubselectNode(columns, rowsValues)
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// pg_catalog.pg_namespace
-func (queryParser *QueryParser) IsPgNamespaceTable(schemaTable SchemaTable) bool {
-	return queryParser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_NAMESPACE
-}
-
-// Other system pg_* tables
-func (queryParser *QueryParser) IsTableFromPgCatalog(schemaTable SchemaTable) bool {
-	return queryParser.isPgCatalogSchema(schemaTable) &&
-		(PG_SYSTEM_TABLES.Contains(schemaTable.Table) || PG_SYSTEM_VIEWS.Contains(schemaTable.Table))
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// information_schema.tables
-func (queryParser *QueryParser) IsInformationSchemaTablesTable(schemaTable SchemaTable) bool {
-	return queryParser.IsTableFromInformationSchema(schemaTable) && schemaTable.Table == PG_TABLE_TABLES
-}
-
-// information_schema.tables -> VALUES(values...) t(columns...)
-func (queryParser *QueryParser) MakeInformationSchemaTablesNode(database string, schemaAndTables []SchemaTable) *pgQuery.Node {
-	columns := PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN.Keys()
-	staticRowValues := PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN.Values()
-
-	var rowsValues [][]string
-
-	for _, schemaTable := range schemaAndTables {
-		rowValues := make([]string, len(staticRowValues))
-		copy(rowValues, staticRowValues)
-
-		for i, column := range columns {
-			switch column {
-			case "table_catalog":
-				rowValues[i] = database
-			case "table_schema":
-				rowValues[i] = schemaTable.Schema
-			case "table_name":
-				rowValues[i] = schemaTable.Table
-			}
-		}
-
-		rowsValues = append(rowsValues, rowValues)
-	}
-
-	return queryParser.makeSubselectNode(columns, rowsValues)
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// Other system pg_* tables
-func (queryParser *QueryParser) IsTableFromInformationSchema(schemaTable SchemaTable) bool {
-	return schemaTable.Schema == PG_SCHEMA_INFORMATION_SCHEMA
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// pg_catalog.pg_get_keywords()
-func (queryParser *QueryParser) IsPgGetKeywordsFunction(schema string, functionName string) bool {
-	return schema == PG_SCHEMA_PG_CATALOG && functionName == PG_FUNCTION_PG_GET_KEYWORDS
-}
-
-// pg_catalog.pg_get_keywords() -> VALUES(values...) t(columns...)
-func (queryParser *QueryParser) MakePgGetKeywordsNode() *pgQuery.Node {
-	columns := []string{"word", "catcode", "barelabel", "catdesc", "baredesc"}
-
-	var rows [][]string
-	for _, kw := range DUCKDB_KEYWORDS {
-		catcode := "U"
-		catdesc := "unreserved"
-
-		switch kw.category {
-		case "reserved":
-			catcode = "R"
-			catdesc = "reserved"
-		case "type_function":
-			catcode = "T"
-			catdesc = "reserved (can be function or type name)"
-		case "column_name":
-			catcode = "C"
-			catdesc = "unreserved (cannot be function or type name)"
-		}
-
-		row := []string{
-			kw.word,
-			catcode,
-			"t",
-			catdesc,
-			"can be bare label",
-		}
-		rows = append(rows, row)
-	}
-
-	return queryParser.makeSubselectNode(columns, rows)
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// iceberg.table -> FROM iceberg_scan('path', skip_schema_inference = true)
-func (queryParser *QueryParser) MakeIcebergTableNode(tablePath string) *pgQuery.Node {
-	return pgQuery.MakeSimpleRangeFunctionNode([]*pgQuery.Node{
-		pgQuery.MakeListNode([]*pgQuery.Node{
-			pgQuery.MakeFuncCallNode(
-				[]*pgQuery.Node{
-					pgQuery.MakeStrNode("iceberg_scan"),
-				},
-				[]*pgQuery.Node{
-					pgQuery.MakeAConstStrNode(
-						tablePath,
-						0,
-					),
-					pgQuery.MakeAExprNode(
-						pgQuery.A_Expr_Kind_AEXPR_OP,
-						[]*pgQuery.Node{pgQuery.MakeStrNode("=")},
-						pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("skip_schema_inference")}, 0),
-						queryParser.MakeAConstBoolNode(true),
-						0,
-					),
-				},
-				0,
-			),
-		}),
-	})
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// quote_ident()
-func (queryParser *QueryParser) IsQuoteIdentFunction(functionName string) bool {
-	return functionName == PG_FUNCTION_NAME_QUOTE_INDENT
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-func (queryParser *QueryParser) MakeStringExpressionNode(column string, operation string, value string) *pgQuery.Node {
-	return pgQuery.MakeAExprNode(
-		pgQuery.A_Expr_Kind_AEXPR_OP,
-		[]*pgQuery.Node{pgQuery.MakeStrNode(operation)},
-		pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode(column)}, 0),
-		pgQuery.MakeAConstStrNode(value, 0),
-		0,
-	)
-}
-
-func (queryParser *QueryParser) MakeAConstBoolNode(val bool) *pgQuery.Node {
-	return &pgQuery.Node{
-		Node: &pgQuery.Node_AConst{
-			AConst: &pgQuery.A_Const{
-				Val: &pgQuery.A_Const_Boolval{
-					Boolval: &pgQuery.Boolean{
-						Boolval: val,
-					},
-				},
-				Isnull:   false,
-				Location: 0,
-			},
-		},
-	}
-}
-
-func (queryParser *QueryParser) isPgCatalogSchema(schemaTable SchemaTable) bool {
-	return schemaTable.Schema == PG_SCHEMA_PG_CATALOG || schemaTable.Schema == ""
-}
-
-func (queryParser *QueryParser) makeSubselectNode(columns []string, rowsValues [][]string) *pgQuery.Node {
-	var columnNodes []*pgQuery.Node
-	for _, column := range columns {
-		columnNodes = append(columnNodes, pgQuery.MakeStrNode(column))
-	}
-
-	var rowsValuesNodes []*pgQuery.Node
-	for _, rowValues := range rowsValues {
-		var rowValuesNodes []*pgQuery.Node
-		for _, value := range rowValues {
-			rowValuesNodes = append(rowValuesNodes, pgQuery.MakeAConstStrNode(value, 0))
-		}
-
-		rowsValuesNodes = append(rowsValuesNodes, pgQuery.MakeListNode(rowValuesNodes))
-	}
-
-	return &pgQuery.Node{
-		Node: &pgQuery.Node_RangeSubselect{
-			RangeSubselect: &pgQuery.RangeSubselect{
-				Subquery: &pgQuery.Node{
-					Node: &pgQuery.Node_SelectStmt{
-						SelectStmt: &pgQuery.SelectStmt{
-							ValuesLists: rowsValuesNodes,
-						},
-					},
-				},
-				Alias: &pgQuery.Alias{
-					Aliasname: "t",
-					Colnames:  columnNodes,
-				},
-			},
-		},
-	}
 }
