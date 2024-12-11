@@ -9,6 +9,7 @@ const (
 	PG_TABLE_PG_STATIO_USER_TABLES = "pg_statio_user_tables"
 	PG_TABLE_PG_SHADOW             = "pg_shadow"
 	PG_TABLE_PG_NAMESPACE          = "pg_namespace"
+	PG_TABLE_PG_ROLES              = "pg_roles"
 
 	PG_SCHEMA_INFORMATION_SCHEMA = "information_schema"
 	PG_TABLE_TABLES              = "tables"
@@ -170,6 +171,22 @@ var PG_SHADOW_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 	{"passwd", ""},
 	{"valuntil", "NULL"},
 	{"useconfig", "NULL"},
+})
+
+var PG_ROLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{
+	{"oid", "10"},
+	{"rolname", ""},
+	{"rolsuper", "true"},
+	{"rolinherit", "true"},
+	{"rolcreaterole", "true"},
+	{"rolcreatedb", "true"},
+	{"rolcanlogin", "true"},
+	{"rolreplication", "false"},
+	{"rolconnlimit", "-1"},
+	{"rolpassword", "NULL"},
+	{"rolvaliduntil", "NULL"},
+	{"rolbypassrls", "false"},
+	{"rolconfig", "NULL"},
 })
 
 type DuckDBKeyword struct {
@@ -710,6 +727,32 @@ func (queryParser *QueryParser) MakePgShadowNode(user string, encryptedPassword 
 			rowValues[i] = user
 		case "passwd":
 			rowValues[i] = encryptedPassword
+		}
+	}
+	rowsValues = append(rowsValues, rowValues)
+
+	return queryParser.makeSubselectNode(columns, rowsValues)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// pg_catalog.pg_roles
+func (queryParser *QueryParser) IsPgRolesTable(schemaTable SchemaTable) bool {
+	return queryParser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_ROLES
+}
+
+// pg_catalog.pg_roles -> VALUES(values...) t(columns...)
+func (queryParser *QueryParser) MakePgRolesNode(user string) *pgQuery.Node {
+	columns := PG_ROLES_VALUE_BY_COLUMN.Keys()
+	staticRowValues := PG_ROLES_VALUE_BY_COLUMN.Values()
+
+	var rowsValues [][]string
+	rowValues := make([]string, len(staticRowValues))
+	copy(rowValues, staticRowValues)
+
+	for i, column := range columns {
+		if column == "rolname" {
+			rowValues[i] = user
 		}
 	}
 	rowsValues = append(rowsValues, rowValues)

@@ -52,6 +52,11 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"total_size"},
 			"values":      {},
 		},
+		// pg_roles
+		"SELECT * FROM pg_catalog.pg_roles": {
+			"description": {"oid", "rolname", "rolsuper", "rolinherit", "rolcreaterole", "rolcreatedb", "rolcanlogin", "rolreplication", "rolconnlimit", "rolpassword", "rolvaliduntil", "rolbypassrls", "rolconfig"},
+			"values":      {"10", "bemidb", "true", "true", "true", "true", "true", "false", "-1", "NULL", "NULL", "false", "NULL"},
+		},
 		// Information schema
 		"SELECT * FROM information_schema.tables": {
 			"description": {"table_catalog", "table_schema", "table_name", "table_type", "self_referencing_column_name", "reference_generation", "user_defined_type_catalog", "user_defined_type_schema", "user_defined_type_name", "is_insertable_into", "is_typed", "commit_action"},

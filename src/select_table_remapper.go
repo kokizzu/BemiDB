@@ -44,6 +44,12 @@ func (remapper *SelectTableRemapper) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 		return remapper.overrideTable(node, tableNode)
 	}
 
+	// pg_catalog.pg_roles -> return hard-coded role info
+	if parser.IsPgRolesTable(schemaTable) {
+		tableNode := parser.MakePgRolesNode(remapper.config.User)
+		return remapper.overrideTable(node, tableNode)
+	}
+
 	// pg_catalog.pg_* other system tables
 	if parser.IsTableFromPgCatalog(schemaTable) {
 		return node
