@@ -22,9 +22,12 @@ var KNOWN_SET_STATEMENTS = NewSet([]string{
 	"standard_conforming_strings", // SET standard_conforming_strings = on
 	"intervalstyle",               // SET intervalstyle = iso_8601
 	"timezone",                    // SET SESSION timezone TO 'UTC'
+	"extra_float_digits",          // SET extra_float_digits = 3
+	"application_name",            // SET application_name = 'psql'
 })
 
 type SelectRemapper struct {
+	parserTable    *QueryParserTable
 	remapperTable  *SelectRemapperTable
 	remapperWhere  *SelectRemapperWhere
 	remapperSelect *SelectRemapperSelect
@@ -34,6 +37,7 @@ type SelectRemapper struct {
 
 func NewSelectRemapper(config *Config, icebergReader *IcebergReader) *SelectRemapper {
 	return &SelectRemapper{
+		parserTable:    NewQueryParserTable(config),
 		remapperTable:  NewSelectRemapperTable(config, icebergReader),
 		remapperWhere:  NewSelectRemapperWhere(config),
 		remapperSelect: NewSelectRemapperSelect(config),
@@ -60,7 +64,7 @@ func (selectRemapper *SelectRemapper) RemapQueryTreeWithSet(queryTree *pgQuery.P
 
 	queryTree.Stmts[0].Stmt.GetVariableSetStmt().Name = "schema"
 	queryTree.Stmts[0].Stmt.GetVariableSetStmt().Args = []*pgQuery.Node{
-		pgQuery.MakeAConstStrNode("main", 0),
+		pgQuery.MakeAConstStrNode(PG_SCHEMA_PUBLIC, 0),
 	}
 
 	return queryTree
@@ -87,32 +91,34 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 	// JOIN
 	if len(selectStatement.FromClause) > 0 && selectStatement.FromClause[0].GetJoinExpr() != nil {
 		// SELECT
-		selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel)                                      // recursive
-		selectStatement.FromClause[0] = selectRemapper.remapJoinExpressions(selectStatement.FromClause[0], indentLevel) // recursive with self-recursion
+		selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel)                                                         // recursive
+		selectStatement.FromClause[0] = selectRemapper.remapJoinExpressions(selectStatement, selectStatement.FromClause[0], indentLevel+1) // recursive with self-recursion
 		return selectStatement
 	}
 
 	// FROM
 	if len(selectStatement.FromClause) > 0 {
-		// WHERE
-		if selectStatement.FromClause[0].GetRangeVar() != nil {
-			selectRemapper.logTreeTraversal("WHERE statements", indentLevel)
-			selectStatement = selectRemapper.remapperWhere.RemapWhere(selectStatement)
-		}
-
 		// SELECT
 		selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel) // recursive
 
+		// FROM
 		for i, fromNode := range selectStatement.FromClause {
 			if fromNode.GetRangeVar() != nil {
+				// WHERE
+				selectRemapper.logTreeTraversal("WHERE statements", indentLevel)
+				schemaTable := selectRemapper.parserTable.NodeToSchemaTable(fromNode)
+				selectStatement = selectRemapper.remapperWhere.RemapWhere(schemaTable, selectStatement)
+				// TABLE
 				selectRemapper.logTreeTraversal("FROM table", indentLevel)
 				selectStatement.FromClause[i] = selectRemapper.remapperTable.RemapTable(fromNode)
 			} else if fromNode.GetRangeSubselect() != nil {
+				// FROM (SELECT ...)
 				selectRemapper.logTreeTraversal("FROM subselect", indentLevel)
 				subSelectStatement := fromNode.GetRangeSubselect().Subquery.GetSelectStmt()
 				subSelectStatement = selectRemapper.remapSelectStatement(subSelectStatement, indentLevel+1) // self-recursion
 			}
 
+			// FROM PG_FUNCTION()
 			if fromNode.GetRangeFunction() != nil {
 				selectStatement.FromClause[i] = selectRemapper.remapTableFunction(fromNode, indentLevel+1) // recursive
 			}
@@ -257,12 +263,18 @@ func (selectRemapper *SelectRemapper) remapTypeCastsInNode(node *pgQuery.Node) *
 	return node
 }
 
-func (selectRemapper *SelectRemapper) remapJoinExpressions(node *pgQuery.Node, indentLevel int) *pgQuery.Node {
-	selectRemapper.logTreeTraversal("JOIN left", indentLevel+1)
+func (selectRemapper *SelectRemapper) remapJoinExpressions(selectStatement *pgQuery.SelectStmt, node *pgQuery.Node, indentLevel int) *pgQuery.Node {
+	selectRemapper.logTreeTraversal("JOIN left", indentLevel)
 	leftJoinNode := node.GetJoinExpr().Larg
 	if leftJoinNode.GetJoinExpr() != nil {
-		leftJoinNode = selectRemapper.remapJoinExpressions(leftJoinNode, indentLevel+1) // self-recursion
+		leftJoinNode = selectRemapper.remapJoinExpressions(selectStatement, leftJoinNode, indentLevel+1) // self-recursion
 	} else if leftJoinNode.GetRangeVar() != nil {
+		// WHERE
+		selectRemapper.logTreeTraversal("WHERE left", indentLevel+1)
+		schemaTable := selectRemapper.parserTable.NodeToSchemaTable(leftJoinNode)
+		selectStatement = selectRemapper.remapperWhere.RemapWhere(schemaTable, selectStatement)
+		// TABLE
+		selectRemapper.logTreeTraversal("TABLE left", indentLevel+1)
 		leftJoinNode = selectRemapper.remapperTable.RemapTable(leftJoinNode)
 	} else if leftJoinNode.GetRangeSubselect() != nil {
 		leftSelectStatement := leftJoinNode.GetRangeSubselect().Subquery.GetSelectStmt()
@@ -270,11 +282,17 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(node *pgQuery.Node, i
 	}
 	node.GetJoinExpr().Larg = leftJoinNode
 
-	selectRemapper.logTreeTraversal("JOIN right", indentLevel+1)
+	selectRemapper.logTreeTraversal("JOIN right", indentLevel)
 	rightJoinNode := node.GetJoinExpr().Rarg
 	if rightJoinNode.GetJoinExpr() != nil {
-		rightJoinNode = selectRemapper.remapJoinExpressions(rightJoinNode, indentLevel+1) // self-recursion
+		rightJoinNode = selectRemapper.remapJoinExpressions(selectStatement, rightJoinNode, indentLevel+1) // self-recursion
 	} else if rightJoinNode.GetRangeVar() != nil {
+		// WHERE
+		selectRemapper.logTreeTraversal("WHERE right", indentLevel+1)
+		schemaTable := selectRemapper.parserTable.NodeToSchemaTable(rightJoinNode)
+		selectStatement = selectRemapper.remapperWhere.RemapWhere(schemaTable, selectStatement)
+		// TABLE
+		selectRemapper.logTreeTraversal("TABLE right", indentLevel+1)
 		rightJoinNode = selectRemapper.remapperTable.RemapTable(rightJoinNode)
 	} else if rightJoinNode.GetRangeSubselect() != nil {
 		rightSelectStatement := rightJoinNode.GetRangeSubselect().Subquery.GetSelectStmt()

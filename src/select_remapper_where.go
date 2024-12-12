@@ -19,9 +19,7 @@ func NewSelectRemapperWhere(config *Config) *SelectRemapperWhere {
 }
 
 // WHERE [CONDITION]
-func (remapper *SelectRemapperWhere) RemapWhere(selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
-	schemaTable := remapper.parserTable.NodeToSchemaTable(selectStatement.FromClause[0])
-
+func (remapper *SelectRemapperWhere) RemapWhere(schemaTable SchemaTable, selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
 	// FROM pg_catalog.pg_namespace -> FROM pg_catalog.pg_namespace WHERE nspname != 'main'
 	if remapper.parserTable.IsPgNamespaceTable(schemaTable) {
 		withoutMainSchemaWhereCondition := remapper.parserWhere.MakeExpressionNode("nspname", "!=", "main")

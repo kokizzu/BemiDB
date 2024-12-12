@@ -43,6 +43,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"nspname"},
 			"values":      {},
 		},
+		"SELECT n.nspname FROM pg_catalog.pg_namespace n LEFT OUTER JOIN pg_catalog.pg_description d ON d.objoid = n.oid ORDER BY n.oid LIMIT 1": {
+			"description": {"nspname"},
+			"values":      {"public"},
+		},
 		// pg_statio_user_tables
 		"SELECT pg_total_relation_size(relid) AS total_size FROM pg_catalog.pg_statio_user_tables WHERE schemaname = 'public'": {
 			"description": {"total_size"},
