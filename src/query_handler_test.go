@@ -414,6 +414,15 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"index"},
 			"values":      {"1"},
 		},
+		// Transformed JOIN's
+		"SELECT s.usename, r.rolconfig FROM pg_catalog.pg_shadow s LEFT JOIN pg_catalog.pg_roles r ON s.usename = r.rolname": {
+			"description": {"usename", "rolconfig"},
+			"values":      {"bemidb", "NULL"},
+		},
+		"SELECT a.oid, pd.description FROM pg_catalog.pg_roles a LEFT JOIN pg_catalog.pg_shdescription pd ON a.oid = pd.objoid": {
+			"description": {"oid", "description"},
+			"values":      {"10", ""},
+		},
 	}
 
 	for query, responses := range responsesByQuery {

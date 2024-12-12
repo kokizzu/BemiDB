@@ -87,6 +87,7 @@ type SchemaTable struct {
 	Schema                 string
 	Table                  string
 	ParentPartitionedTable string
+	Alias                  string
 }
 
 func (schemaTable SchemaTable) String() string {

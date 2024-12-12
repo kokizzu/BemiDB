@@ -12,7 +12,7 @@ func NewQueryUtils(config *Config) *QueryUtils {
 	return &QueryUtils{config: config}
 }
 
-func (utils *QueryUtils) MakeSubselectNode(columns []string, rowsValues [][]string) *pgQuery.Node {
+func (utils *QueryUtils) MakeSubselectNode(columns []string, rowsValues [][]string, alias string) *pgQuery.Node {
 	var columnNodes []*pgQuery.Node
 	for _, column := range columns {
 		columnNodes = append(columnNodes, pgQuery.MakeStrNode(column))
@@ -28,6 +28,11 @@ func (utils *QueryUtils) MakeSubselectNode(columns []string, rowsValues [][]stri
 		rowsValuesNodes = append(rowsValuesNodes, pgQuery.MakeListNode(rowValuesNodes))
 	}
 
+	aliasName := alias
+	if aliasName == "" {
+		aliasName = "t"
+	}
+
 	return &pgQuery.Node{
 		Node: &pgQuery.Node_RangeSubselect{
 			RangeSubselect: &pgQuery.RangeSubselect{
@@ -39,7 +44,7 @@ func (utils *QueryUtils) MakeSubselectNode(columns []string, rowsValues [][]stri
 					},
 				},
 				Alias: &pgQuery.Alias{
-					Aliasname: "t",
+					Aliasname: aliasName,
 					Colnames:  columnNodes,
 				},
 			},

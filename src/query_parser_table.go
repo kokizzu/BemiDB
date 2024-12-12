@@ -26,6 +26,7 @@ type QueryParserTable struct {
 type FunctionCall struct {
 	Schema   string
 	Function string
+	Alias 	string
 }
 
 func NewQueryParserTable(config *Config) *QueryParserTable {
@@ -34,13 +35,30 @@ func NewQueryParserTable(config *Config) *QueryParserTable {
 
 func (parser *QueryParserTable) NodeToSchemaTable(node *pgQuery.Node) SchemaTable {
 	rangeVar := node.GetRangeVar()
-	return SchemaTable{Schema: rangeVar.Schemaname, Table: rangeVar.Relname}
+	var alias string
+
+
+		if rangeVar.Alias != nil {
+			alias = rangeVar.Alias.Aliasname
+		}
+
+	return SchemaTable{
+		Schema: rangeVar.Schemaname,
+		Table:  rangeVar.Relname,
+		Alias:  alias,
+	}
 }
 
 func (parser *QueryParserTable) NodeToFunctionCalls(node *pgQuery.Node) []FunctionCall {
 	var functionCalls []FunctionCall
+	rangeFunction := node.GetRangeFunction()
 
-	for _, functionNode := range node.GetRangeFunction().Functions {
+	var alias string
+	if rangeFunction.Alias != nil {
+		alias = rangeFunction.Alias.Aliasname
+	}
+
+	for _, functionNode := range rangeFunction.Functions {
 		for _, item := range functionNode.GetList().Items {
 			funcCall := item.GetFuncCall()
 			if funcCall == nil {
@@ -53,11 +71,13 @@ func (parser *QueryParserTable) NodeToFunctionCalls(node *pgQuery.Node) []Functi
 			case 1:
 				functionCall = FunctionCall{
 					Function: funcCall.Funcname[0].GetString_().Sval,
+					Alias:    alias,
 				}
 			case 2:
 				functionCall = FunctionCall{
 					Schema:   funcCall.Funcname[0].GetString_().Sval,
 					Function: funcCall.Funcname[1].GetString_().Sval,
+					Alias:    alias,
 				}
 			}
 
@@ -74,11 +94,11 @@ func (parser *QueryParserTable) IsPgStatioUserTablesTable(schemaTable SchemaTabl
 }
 
 // pg_catalog.pg_statio_user_tables -> return nothing
-func (parser *QueryParserTable) MakePgStatioUserTablesNode() *pgQuery.Node {
+func (parser *QueryParserTable) MakePgStatioUserTablesNode(alias string) *pgQuery.Node {
 	columns := PG_STATIO_USER_TABLES_VALUE_BY_COLUMN.Keys()
 	rowValues := PG_STATIO_USER_TABLES_VALUE_BY_COLUMN.Values()
 
-	return parser.utils.MakeSubselectNode(columns, [][]string{rowValues})
+	return parser.utils.MakeSubselectNode(columns, [][]string{rowValues}, alias)
 }
 
 // pg_catalog.pg_shadow
@@ -87,7 +107,7 @@ func (parser *QueryParserTable) IsPgShadowTable(schemaTable SchemaTable) bool {
 }
 
 // pg_catalog.pg_shadow -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakePgShadowNode(user string, encryptedPassword string) *pgQuery.Node {
+func (parser *QueryParserTable) MakePgShadowNode(user string, encryptedPassword string, alias string) *pgQuery.Node {
 	columns := PG_SHADOW_VALUE_BY_COLUMN.Keys()
 	staticRowValues := PG_SHADOW_VALUE_BY_COLUMN.Values()
 
@@ -105,7 +125,7 @@ func (parser *QueryParserTable) MakePgShadowNode(user string, encryptedPassword 
 	}
 	rowsValues = append(rowsValues, rowValues)
 
-	return parser.utils.MakeSubselectNode(columns, rowsValues)
+	return parser.utils.MakeSubselectNode(columns, rowsValues, alias)
 }
 
 // pg_catalog.pg_roles
@@ -114,7 +134,7 @@ func (parser *QueryParserTable) IsPgRolesTable(schemaTable SchemaTable) bool {
 }
 
 // pg_catalog.pg_roles -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakePgRolesNode(user string) *pgQuery.Node {
+func (parser *QueryParserTable) MakePgRolesNode(user string, alias string) *pgQuery.Node {
 	columns := PG_ROLES_VALUE_BY_COLUMN.Keys()
 	staticRowValues := PG_ROLES_VALUE_BY_COLUMN.Values()
 
@@ -129,7 +149,7 @@ func (parser *QueryParserTable) MakePgRolesNode(user string) *pgQuery.Node {
 	}
 	rowsValues = append(rowsValues, rowValues)
 
-	return parser.utils.MakeSubselectNode(columns, rowsValues)
+	return parser.utils.MakeSubselectNode(columns, rowsValues, alias)
 }
 
 // pg_catalog.pg_namespace
@@ -143,11 +163,11 @@ func (parser *QueryParserTable) IsPgShdescriptionTable(schemaTable SchemaTable) 
 }
 
 // pg_catalog.pg_shdescription -> return nothing
-func (parser *QueryParserTable) MakePgShdescriptionNode() *pgQuery.Node {
+func (parser *QueryParserTable) MakePgShdescriptionNode(alias string) *pgQuery.Node {
 	columns := PG_SHDESCRIPTION_VALUE_BY_COLUMN.Keys()
 	rowValues := PG_SHDESCRIPTION_VALUE_BY_COLUMN.Values()
 
-	return parser.utils.MakeSubselectNode(columns, [][]string{rowValues})
+	return parser.utils.MakeSubselectNode(columns, [][]string{rowValues}, alias)
 }
 
 // Other system pg_* tables
@@ -162,7 +182,7 @@ func (parser *QueryParserTable) IsInformationSchemaTablesTable(schemaTable Schem
 }
 
 // information_schema.tables -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakeInformationSchemaTablesNode(database string, schemaAndTables []SchemaTable) *pgQuery.Node {
+func (parser *QueryParserTable) MakeInformationSchemaTablesNode(database string, schemaAndTables []SchemaTable, alias string) *pgQuery.Node {
 	columns := PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN.Keys()
 	staticRowValues := PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN.Values()
 
@@ -186,7 +206,7 @@ func (parser *QueryParserTable) MakeInformationSchemaTablesNode(database string,
 		rowsValues = append(rowsValues, rowValues)
 	}
 
-	return parser.utils.MakeSubselectNode(columns, rowsValues)
+	return parser.utils.MakeSubselectNode(columns, rowsValues, alias)
 }
 
 // Other information_schema.* tables
@@ -227,7 +247,7 @@ func (parser *QueryParserTable) IsPgGetKeywordsFunction(functionCall FunctionCal
 }
 
 // pg_catalog.pg_get_keywords() -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakePgGetKeywordsNode() *pgQuery.Node {
+func (parser *QueryParserTable) MakePgGetKeywordsNode(alias string) *pgQuery.Node {
 	columns := []string{"word", "catcode", "barelabel", "catdesc", "baredesc"}
 
 	var rows [][]string
@@ -257,7 +277,7 @@ func (parser *QueryParserTable) MakePgGetKeywordsNode() *pgQuery.Node {
 		rows = append(rows, row)
 	}
 
-	return parser.utils.MakeSubselectNode(columns, rows)
+	return parser.utils.MakeSubselectNode(columns, rows, alias)
 }
 
 func (parser *QueryParserTable) isPgCatalogSchema(schemaTable SchemaTable) bool {

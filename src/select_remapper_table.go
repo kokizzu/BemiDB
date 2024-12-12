@@ -34,25 +34,25 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 
 	// pg_catalog.pg_statio_user_tables -> return nothing
 	if parser.IsPgStatioUserTablesTable(schemaTable) {
-		tableNode := parser.MakePgStatioUserTablesNode()
+		tableNode := parser.MakePgStatioUserTablesNode(schemaTable.Alias)
 		return remapper.overrideTable(node, tableNode)
 	}
 
 	// pg_catalog.pg_shadow -> return hard-coded credentials
 	if parser.IsPgShadowTable(schemaTable) {
-		tableNode := parser.MakePgShadowNode(remapper.config.User, remapper.config.EncryptedPassword)
+		tableNode := parser.MakePgShadowNode(remapper.config.User, remapper.config.EncryptedPassword, schemaTable.Alias)
 		return remapper.overrideTable(node, tableNode)
 	}
 
 	// pg_catalog.pg_roles -> return hard-coded role info
 	if parser.IsPgRolesTable(schemaTable) {
-		tableNode := parser.MakePgRolesNode(remapper.config.User)
+		tableNode := parser.MakePgRolesNode(remapper.config.User, schemaTable.Alias)
 		return remapper.overrideTable(node, tableNode)
 	}
 
 	// pg_catalog.pg_shdescription -> return nothing
 	if parser.IsPgShdescriptionTable(schemaTable) {
-		tableNode := parser.MakePgShdescriptionNode()
+		tableNode := parser.MakePgShdescriptionNode(schemaTable.Alias)
 		return remapper.overrideTable(node, tableNode)
 	}
 
@@ -67,7 +67,7 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 		if len(remapper.icebergSchemaTables) == 0 {
 			return node
 		}
-		tableNode := parser.MakeInformationSchemaTablesNode(remapper.config.Database, remapper.icebergSchemaTables)
+		tableNode := parser.MakeInformationSchemaTablesNode(remapper.config.Database, remapper.icebergSchemaTables, schemaTable.Alias)
 		return remapper.overrideTable(node, tableNode)
 	}
 
@@ -96,7 +96,7 @@ func (remapper *SelectRemapperTable) RemapTableFunction(node *pgQuery.Node) *pgQ
 	for _, functionCall := range remapper.parserTable.NodeToFunctionCalls(node) {
 		// pg_catalog.pg_get_keywords() -> hard-coded keywords
 		if remapper.parserTable.IsPgGetKeywordsFunction(functionCall) {
-			return remapper.parserTable.MakePgGetKeywordsNode()
+			return remapper.parserTable.MakePgGetKeywordsNode(functionCall.Alias)
 		}
 	}
 
