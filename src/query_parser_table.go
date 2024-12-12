@@ -16,8 +16,9 @@ const (
 	PG_SCHEMA_INFORMATION_SCHEMA = "information_schema"
 	PG_TABLE_TABLES              = "tables"
 
-	PG_FUNCTION_PG_GET_KEYWORDS = "pg_get_keywords"
-	PG_FUNCTION_ARRAY_UPPER     = "array_upper"
+	PG_FUNCTION_PG_GET_KEYWORDS      = "pg_get_keywords"
+	PG_FUNCTION_ARRAY_UPPER          = "array_upper"
+	PG_FUNCTION_PG_SHOW_ALL_SETTINGS = "pg_show_all_settings"
 )
 
 type QueryParserTable struct {
@@ -265,6 +266,128 @@ func (parser *QueryParserTable) MakeArrayUpperNode(funcCallNode *pgQuery.FuncCal
 		},
 		0,
 	).GetFuncCall()
+}
+
+// pg_show_all_settings()
+func (parser *QueryParserTable) IsPgShowAllSettingsFunction(node *pgQuery.Node) bool {
+	for _, funcNode := range node.GetRangeFunction().Functions {
+		for _, funcItemNode := range funcNode.GetList().Items {
+			funcCallNode := funcItemNode.GetFuncCall()
+			if funcCallNode == nil {
+				continue
+			}
+			if len(funcCallNode.Funcname) != 1 {
+				continue
+			}
+
+			function := funcCallNode.Funcname[0].GetString_().Sval
+			if function == PG_FUNCTION_PG_SHOW_ALL_SETTINGS {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// pg_show_all_settings() -> duckdb_settings() mapped to pg format
+func (parser *QueryParserTable) MakePgShowAllSettingsNode(node *pgQuery.Node) *pgQuery.Node {
+	return &pgQuery.Node{
+		Node: &pgQuery.Node_RangeSubselect{
+			RangeSubselect: &pgQuery.RangeSubselect{
+				Subquery: &pgQuery.Node{
+					Node: &pgQuery.Node_SelectStmt{
+						SelectStmt: &pgQuery.SelectStmt{
+							TargetList: []*pgQuery.Node{
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("name")}, 0),
+									"name",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
+									"setting",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeAConstStrNode("", 0),
+									"unit",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeAConstStrNode("Settings", 0),
+									"category",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("description")}, 0),
+									"short_desc",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeAConstStrNode("", 0),
+									"extra_desc",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("scope")}, 0),
+									"context",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("input_type")}, 0),
+									"vartype",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeAConstStrNode("default", 0),
+									"source",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeAConstStrNode("", 0),
+									"min_val",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeAConstStrNode("", 0),
+									"max_val",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeAConstStrNode("", 0),
+									"enumvals",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
+									"boot_val",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
+									"reset_val",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeAConstStrNode("", 0),
+									"sourcefile",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeAConstStrNode("0", 0),
+									"sourceline",
+								),
+								parser.utils.MakeResTargetNode(
+									pgQuery.MakeAConstStrNode("f", 0),
+									"pending_restart",
+								),
+							},
+							FromClause: []*pgQuery.Node{
+								pgQuery.MakeSimpleRangeFunctionNode([]*pgQuery.Node{
+									pgQuery.MakeListNode([]*pgQuery.Node{
+										pgQuery.MakeFuncCallNode(
+											[]*pgQuery.Node{
+												pgQuery.MakeStrNode("duckdb_settings"),
+											},
+											nil,
+											0,
+										),
+									}),
+								}),
+							},
+						},
+					},
+				},
+				Alias: node.GetAlias(),
+			},
+		},
+	}
 }
 
 func (parser *QueryParserTable) isPgCatalogSchema(qSchemaTable QuerySchemaTable) bool {

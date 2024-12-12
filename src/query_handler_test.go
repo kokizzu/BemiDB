@@ -24,6 +24,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"quote_ident"},
 			"values":      {"\"fooBar\""},
 		},
+		"SELECT setting from pg_show_all_settings() WHERE name = 'default_null_order'": {
+			"description": {"setting"},
+			"values":      {"nulls_last"},
+		},
 		// pg_get_partkeydef
 		"SELECT pg_catalog.pg_get_partkeydef(c.oid) FROM pg_catalog.pg_class c LIMIT 1": {
 			"description": {"pg_get_partkeydef"},

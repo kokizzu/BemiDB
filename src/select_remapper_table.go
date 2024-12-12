@@ -103,6 +103,11 @@ func (remapper *SelectRemapperTable) RemapTableFunction(node *pgQuery.Node) *pgQ
 		return remapper.parserTable.MakePgGetKeywordsNode(node)
 	}
 
+	// pg_show_all_settings() -> duckdb_settings()
+	if remapper.parserTable.IsPgShowAllSettingsFunction(node) {
+		return remapper.parserTable.MakePgShowAllSettingsNode(node)
+	}
+
 	return node
 }
 
