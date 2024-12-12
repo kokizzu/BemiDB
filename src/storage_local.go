@@ -20,7 +20,7 @@ func NewLocalStorage(config *Config) *StorageLocal {
 
 // Read ----------------------------------------------------------------------------------------------------------------
 
-func (storage *StorageLocal) IcebergMetadataFilePath(icebergSchemaTable SchemaTable) string {
+func (storage *StorageLocal) IcebergMetadataFilePath(icebergSchemaTable IcebergSchemaTable) string {
 	return storage.tablePath(icebergSchemaTable, true) + "/metadata/v1.metadata.json"
 }
 
@@ -34,7 +34,7 @@ func (storage *StorageLocal) IcebergSchemas() (icebergSchemas []string, err erro
 	return icebergSchemas, nil
 }
 
-func (storage *StorageLocal) IcebergSchemaTables() (icebergSchemaTables []SchemaTable, err error) {
+func (storage *StorageLocal) IcebergSchemaTables() (icebergSchemaTables []IcebergSchemaTable, err error) {
 	schemasPath := storage.absoluteIcebergPath()
 	icebergSchemas, err := storage.IcebergSchemas()
 	if err != nil {
@@ -49,7 +49,7 @@ func (storage *StorageLocal) IcebergSchemaTables() (icebergSchemaTables []Schema
 		}
 
 		for _, table := range tables {
-			icebergSchemaTables = append(icebergSchemaTables, SchemaTable{Schema: icebergSchema, Table: table})
+			icebergSchemaTables = append(icebergSchemaTables, IcebergSchemaTable{Schema: icebergSchema, Table: table})
 		}
 	}
 
@@ -77,7 +77,7 @@ func (storage *StorageLocal) DeleteSchema(schema string) error {
 	return nil
 }
 
-func (storage *StorageLocal) DeleteSchemaTable(schemaTable SchemaTable) error {
+func (storage *StorageLocal) DeleteSchemaTable(schemaTable IcebergSchemaTable) error {
 	tablePath := storage.tablePath(schemaTable)
 
 	_, err := os.Stat(tablePath)
@@ -89,7 +89,7 @@ func (storage *StorageLocal) DeleteSchemaTable(schemaTable SchemaTable) error {
 	return nil
 }
 
-func (storage *StorageLocal) CreateDataDir(schemaTable SchemaTable) string {
+func (storage *StorageLocal) CreateDataDir(schemaTable IcebergSchemaTable) string {
 	tablePath := storage.tablePath(schemaTable)
 	dataPath := filepath.Join(tablePath, "data")
 	err := os.MkdirAll(dataPath, os.ModePerm)
@@ -97,7 +97,7 @@ func (storage *StorageLocal) CreateDataDir(schemaTable SchemaTable) string {
 	return dataPath
 }
 
-func (storage *StorageLocal) CreateMetadataDir(schemaTable SchemaTable) string {
+func (storage *StorageLocal) CreateMetadataDir(schemaTable IcebergSchemaTable) string {
 	tablePath := storage.tablePath(schemaTable)
 	metadataPath := filepath.Join(tablePath, "metadata")
 	err := os.MkdirAll(metadataPath, os.ModePerm)
@@ -197,7 +197,7 @@ func (storage *StorageLocal) CreateVersionHint(metadataDirPath string, metadataF
 	return nil
 }
 
-func (storage *StorageLocal) tablePath(schemaTable SchemaTable, isIcebergSchemaTable ...bool) string {
+func (storage *StorageLocal) tablePath(schemaTable IcebergSchemaTable, isIcebergSchemaTable ...bool) string {
 	if len(isIcebergSchemaTable) > 0 && isIcebergSchemaTable[0] {
 		return storage.absoluteIcebergPath(schemaTable.Schema, schemaTable.Table)
 	}

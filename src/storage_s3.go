@@ -51,7 +51,7 @@ func NewS3Storage(config *Config) *StorageS3 {
 
 // Read ----------------------------------------------------------------------------------------------------------------
 
-func (storage *StorageS3) IcebergMetadataFilePath(icebergSchemaTable SchemaTable) string {
+func (storage *StorageS3) IcebergMetadataFilePath(icebergSchemaTable IcebergSchemaTable) string {
 	return storage.fullBucketPath() + storage.tablePrefix(icebergSchemaTable, true) + "metadata/v1.metadata.json"
 }
 
@@ -70,7 +70,7 @@ func (storage *StorageS3) IcebergSchemas() (icebergSchemas []string, err error) 
 	return icebergSchemas, nil
 }
 
-func (storage *StorageS3) IcebergSchemaTables() (icebergSchemaTables []SchemaTable, err error) {
+func (storage *StorageS3) IcebergSchemaTables() (icebergSchemaTables []IcebergSchemaTable, err error) {
 	icebergSchemas, err := storage.IcebergSchemas()
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (storage *StorageS3) IcebergSchemaTables() (icebergSchemaTables []SchemaTab
 			tableParts := strings.Split(tablePrefix, "/")
 			table := tableParts[len(tableParts)-2]
 
-			icebergSchemaTables = append(icebergSchemaTables, SchemaTable{Schema: icebergSchema, Table: table})
+			icebergSchemaTables = append(icebergSchemaTables, IcebergSchemaTable{Schema: icebergSchema, Table: table})
 		}
 	}
 
@@ -99,17 +99,17 @@ func (storage *StorageS3) DeleteSchema(schema string) (err error) {
 	return storage.deleteNestedObjects(storage.config.StoragePath + "/" + schema + "/")
 }
 
-func (storage *StorageS3) DeleteSchemaTable(schemaTable SchemaTable) (err error) {
+func (storage *StorageS3) DeleteSchemaTable(schemaTable IcebergSchemaTable) (err error) {
 	tablePrefix := storage.tablePrefix(schemaTable)
 	return storage.deleteNestedObjects(tablePrefix)
 }
 
-func (storage *StorageS3) CreateDataDir(schemaTable SchemaTable) (dataDirPath string) {
+func (storage *StorageS3) CreateDataDir(schemaTable IcebergSchemaTable) (dataDirPath string) {
 	tablePrefix := storage.tablePrefix(schemaTable)
 	return tablePrefix + "data"
 }
 
-func (storage *StorageS3) CreateMetadataDir(schemaTable SchemaTable) (metadataDirPath string) {
+func (storage *StorageS3) CreateMetadataDir(schemaTable IcebergSchemaTable) (metadataDirPath string) {
 	tablePrefix := storage.tablePrefix(schemaTable)
 	return tablePrefix + "metadata"
 }
@@ -270,7 +270,7 @@ func (storage *StorageS3) uploadFile(filePath string, file *os.File) (err error)
 	return nil
 }
 
-func (storage *StorageS3) tablePrefix(schemaTable SchemaTable, isIcebergSchemaTable ...bool) string {
+func (storage *StorageS3) tablePrefix(schemaTable IcebergSchemaTable, isIcebergSchemaTable ...bool) string {
 	if len(isIcebergSchemaTable) > 0 && isIcebergSchemaTable[0] {
 		return storage.config.StoragePath + "/" + schemaTable.Schema + "/" + schemaTable.Table + "/"
 	}

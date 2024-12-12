@@ -28,7 +28,7 @@ func NewQueryParserTable(config *Config) *QueryParserTable {
 	return &QueryParserTable{config: config, utils: NewQueryParserUtils(config)}
 }
 
-func (parser *QueryParserTable) NodeToSchemaTable(node *pgQuery.Node) SchemaTable {
+func (parser *QueryParserTable) NodeToQuerySchemaTable(node *pgQuery.Node) QuerySchemaTable {
 	rangeVar := node.GetRangeVar()
 	var alias string
 
@@ -36,7 +36,7 @@ func (parser *QueryParserTable) NodeToSchemaTable(node *pgQuery.Node) SchemaTabl
 		alias = rangeVar.Alias.Aliasname
 	}
 
-	return SchemaTable{
+	return QuerySchemaTable{
 		Schema: rangeVar.Schemaname,
 		Table:  rangeVar.Relname,
 		Alias:  alias,
@@ -44,8 +44,8 @@ func (parser *QueryParserTable) NodeToSchemaTable(node *pgQuery.Node) SchemaTabl
 }
 
 // pg_catalog.pg_statio_user_tables
-func (parser *QueryParserTable) IsPgStatioUserTablesTable(schemaTable SchemaTable) bool {
-	return parser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_STATIO_USER_TABLES
+func (parser *QueryParserTable) IsPgStatioUserTablesTable(qSchemaTable QuerySchemaTable) bool {
+	return parser.isPgCatalogSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_PG_STATIO_USER_TABLES
 }
 
 // pg_catalog.pg_statio_user_tables -> return nothing
@@ -57,8 +57,8 @@ func (parser *QueryParserTable) MakePgStatioUserTablesNode(alias string) *pgQuer
 }
 
 // pg_catalog.pg_shadow
-func (parser *QueryParserTable) IsPgShadowTable(schemaTable SchemaTable) bool {
-	return parser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_SHADOW
+func (parser *QueryParserTable) IsPgShadowTable(qSchemaTable QuerySchemaTable) bool {
+	return parser.isPgCatalogSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_PG_SHADOW
 }
 
 // pg_catalog.pg_shadow -> VALUES(values...) t(columns...)
@@ -84,8 +84,8 @@ func (parser *QueryParserTable) MakePgShadowNode(user string, encryptedPassword 
 }
 
 // pg_catalog.pg_roles
-func (parser *QueryParserTable) IsPgRolesTable(schemaTable SchemaTable) bool {
-	return parser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_ROLES
+func (parser *QueryParserTable) IsPgRolesTable(qSchemaTable QuerySchemaTable) bool {
+	return parser.isPgCatalogSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_PG_ROLES
 }
 
 // pg_catalog.pg_roles -> VALUES(values...) t(columns...)
@@ -108,13 +108,13 @@ func (parser *QueryParserTable) MakePgRolesNode(user string, alias string) *pgQu
 }
 
 // pg_catalog.pg_namespace
-func (parser *QueryParserTable) IsPgNamespaceTable(schemaTable SchemaTable) bool {
-	return parser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_NAMESPACE
+func (parser *QueryParserTable) IsPgNamespaceTable(qSchemaTable QuerySchemaTable) bool {
+	return parser.isPgCatalogSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_PG_NAMESPACE
 }
 
 // pg_catalog.pg_shdescription
-func (parser *QueryParserTable) IsPgShdescriptionTable(schemaTable SchemaTable) bool {
-	return parser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_SHDESCRIPTION
+func (parser *QueryParserTable) IsPgShdescriptionTable(qSchemaTable QuerySchemaTable) bool {
+	return parser.isPgCatalogSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_PG_SHDESCRIPTION
 }
 
 // pg_catalog.pg_shdescription -> return nothing
@@ -126,18 +126,18 @@ func (parser *QueryParserTable) MakePgShdescriptionNode(alias string) *pgQuery.N
 }
 
 // Other system pg_* tables
-func (parser *QueryParserTable) IsTableFromPgCatalog(schemaTable SchemaTable) bool {
-	return parser.isPgCatalogSchema(schemaTable) &&
-		(PG_SYSTEM_TABLES.Contains(schemaTable.Table) || PG_SYSTEM_VIEWS.Contains(schemaTable.Table))
+func (parser *QueryParserTable) IsTableFromPgCatalog(qSchemaTable QuerySchemaTable) bool {
+	return parser.isPgCatalogSchema(qSchemaTable) &&
+		(PG_SYSTEM_TABLES.Contains(qSchemaTable.Table) || PG_SYSTEM_VIEWS.Contains(qSchemaTable.Table))
 }
 
 // information_schema.tables
-func (parser *QueryParserTable) IsInformationSchemaTablesTable(schemaTable SchemaTable) bool {
-	return parser.IsTableFromInformationSchema(schemaTable) && schemaTable.Table == PG_TABLE_TABLES
+func (parser *QueryParserTable) IsInformationSchemaTablesTable(qSchemaTable QuerySchemaTable) bool {
+	return parser.IsTableFromInformationSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_TABLES
 }
 
 // information_schema.tables -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakeInformationSchemaTablesNode(database string, schemaAndTables []SchemaTable, alias string) *pgQuery.Node {
+func (parser *QueryParserTable) MakeInformationSchemaTablesNode(database string, schemaAndTables []IcebergSchemaTable, alias string) *pgQuery.Node {
 	columns := PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN.Keys()
 	staticRowValues := PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN.Values()
 
@@ -165,8 +165,8 @@ func (parser *QueryParserTable) MakeInformationSchemaTablesNode(database string,
 }
 
 // Other information_schema.* tables
-func (parser *QueryParserTable) IsTableFromInformationSchema(schemaTable SchemaTable) bool {
-	return schemaTable.Schema == PG_SCHEMA_INFORMATION_SCHEMA
+func (parser *QueryParserTable) IsTableFromInformationSchema(qSchemaTable QuerySchemaTable) bool {
+	return qSchemaTable.Schema == PG_SCHEMA_INFORMATION_SCHEMA
 }
 
 // iceberg.table -> FROM iceberg_scan('path', skip_schema_inference = true)
@@ -289,8 +289,8 @@ func (parser *QueryParserTable) MakeArrayUpperNode(funcCallNode *pgQuery.FuncCal
 	).GetFuncCall()
 }
 
-func (parser *QueryParserTable) isPgCatalogSchema(schemaTable SchemaTable) bool {
-	return schemaTable.Schema == PG_SCHEMA_PG_CATALOG || schemaTable.Schema == ""
+func (parser *QueryParserTable) isPgCatalogSchema(qSchemaTable QuerySchemaTable) bool {
+	return qSchemaTable.Schema == PG_SCHEMA_PG_CATALOG || qSchemaTable.Schema == ""
 }
 
 var PG_SYSTEM_TABLES = NewSet([]string{

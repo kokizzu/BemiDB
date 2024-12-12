@@ -337,7 +337,7 @@ func init() {
 
 	i := 0
 	icebergWriter.Write(
-		SchemaTable{Schema: "public", Table: "test_table"},
+		IcebergSchemaTable{Schema: "public", Table: "test_table"},
 		TEST_PG_SCHEMA_COLUMNS,
 		func() [][]string {
 			if i > 0 {

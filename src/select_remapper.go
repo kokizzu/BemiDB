@@ -106,8 +106,8 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 			if fromNode.GetRangeVar() != nil {
 				// WHERE
 				selectRemapper.logTreeTraversal("WHERE statements", indentLevel)
-				schemaTable := selectRemapper.parserTable.NodeToSchemaTable(fromNode)
-				selectStatement = selectRemapper.remapperWhere.RemapWhere(schemaTable, selectStatement)
+				qSchemaTable := selectRemapper.parserTable.NodeToQuerySchemaTable(fromNode)
+				selectStatement = selectRemapper.remapperWhere.RemapWhere(qSchemaTable, selectStatement)
 				// TABLE
 				selectRemapper.logTreeTraversal("FROM table", indentLevel)
 				selectStatement.FromClause[i] = selectRemapper.remapperTable.RemapTable(fromNode)
@@ -271,8 +271,8 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(selectStatement *pgQu
 	} else if leftJoinNode.GetRangeVar() != nil {
 		// WHERE
 		selectRemapper.logTreeTraversal("WHERE left", indentLevel+1)
-		schemaTable := selectRemapper.parserTable.NodeToSchemaTable(leftJoinNode)
-		selectStatement = selectRemapper.remapperWhere.RemapWhere(schemaTable, selectStatement)
+		qSchemaTable := selectRemapper.parserTable.NodeToQuerySchemaTable(leftJoinNode)
+		selectStatement = selectRemapper.remapperWhere.RemapWhere(qSchemaTable, selectStatement)
 		// TABLE
 		selectRemapper.logTreeTraversal("TABLE left", indentLevel+1)
 		leftJoinNode = selectRemapper.remapperTable.RemapTable(leftJoinNode)
@@ -289,8 +289,8 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(selectStatement *pgQu
 	} else if rightJoinNode.GetRangeVar() != nil {
 		// WHERE
 		selectRemapper.logTreeTraversal("WHERE right", indentLevel+1)
-		schemaTable := selectRemapper.parserTable.NodeToSchemaTable(rightJoinNode)
-		selectStatement = selectRemapper.remapperWhere.RemapWhere(schemaTable, selectStatement)
+		qSchemaTable := selectRemapper.parserTable.NodeToQuerySchemaTable(rightJoinNode)
+		selectStatement = selectRemapper.remapperWhere.RemapWhere(qSchemaTable, selectStatement)
 		// TABLE
 		selectRemapper.logTreeTraversal("TABLE right", indentLevel+1)
 		rightJoinNode = selectRemapper.remapperTable.RemapTable(rightJoinNode)

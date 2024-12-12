@@ -83,13 +83,41 @@ func (set *Set) Contains(item string) bool {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-type SchemaTable struct {
+type IcebergSchemaTable struct {
+	Schema string
+	Table  string
+}
+
+func (schemaTable IcebergSchemaTable) String() string {
+	return fmt.Sprintf(`"%s"."%s"`, schemaTable.Schema, schemaTable.Table)
+}
+
+type QuerySchemaTable struct {
+	Schema string
+	Table  string
+	Alias  string
+}
+
+func (qSchemaTable QuerySchemaTable) ToIcebergSchemaTable() IcebergSchemaTable {
+	return IcebergSchemaTable{
+		Schema: qSchemaTable.Schema,
+		Table:  qSchemaTable.Table,
+	}
+}
+
+type PgSchemaTable struct {
 	Schema                 string
 	Table                  string
 	ParentPartitionedTable string
-	Alias                  string
 }
 
-func (schemaTable SchemaTable) String() string {
-	return fmt.Sprintf(`"%s"."%s"`, schemaTable.Schema, schemaTable.Table)
+func (pgSchemaTable PgSchemaTable) String() string {
+	return fmt.Sprintf(`"%s"."%s"`, pgSchemaTable.Schema, pgSchemaTable.Table)
+}
+
+func (pgSchemaTable PgSchemaTable) ToIcebergSchemaTable() IcebergSchemaTable {
+	return IcebergSchemaTable{
+		Schema: pgSchemaTable.Schema,
+		Table:  pgSchemaTable.Table,
+	}
 }

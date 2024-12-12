@@ -37,14 +37,14 @@ type MetadataFile struct {
 type Storage interface {
 	// Read
 	IcebergSchemas() (icebergSchemas []string, err error)
-	IcebergSchemaTables() (icebersSchemaTables []SchemaTable, err error)
-	IcebergMetadataFilePath(icebergSchemaTable SchemaTable) (path string)
+	IcebergSchemaTables() (icebersSchemaTables []IcebergSchemaTable, err error)
+	IcebergMetadataFilePath(icebergSchemaTable IcebergSchemaTable) (path string)
 
 	// Write
 	DeleteSchema(schema string) (err error)
-	DeleteSchemaTable(schemaTable SchemaTable) (err error)
-	CreateDataDir(schemaTable SchemaTable) (dataDirPath string)
-	CreateMetadataDir(schemaTable SchemaTable) (metadataDirPath string)
+	DeleteSchemaTable(schemaTable IcebergSchemaTable) (err error)
+	CreateDataDir(schemaTable IcebergSchemaTable) (dataDirPath string)
+	CreateMetadataDir(schemaTable IcebergSchemaTable) (metadataDirPath string)
 	CreateParquet(dataDirPath string, pgSchemaColumns []PgSchemaColumn, loadRows func() [][]string) (parquetFile ParquetFile, err error)
 	CreateManifest(metadataDirPath string, parquetFile ParquetFile) (manifestFile ManifestFile, err error)
 	CreateManifestList(metadataDirPath string, parquetFile ParquetFile, manifestFile ManifestFile) (manifestListFile ManifestListFile, err error)

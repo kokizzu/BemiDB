@@ -10,9 +10,9 @@ func TestShouldSyncTable(t *testing.T) {
 			},
 		}
 		syncer := NewSyncer(config)
-		table := SchemaTable{Schema: "public", Table: "users"}
+		pgSchemaTable := PgSchemaTable{Schema: "public", Table: "users"}
 
-		if !syncer.shouldSyncTable(table) {
+		if !syncer.shouldSyncTable(pgSchemaTable) {
 			t.Error("Expected shouldSyncTable to return true when no filters are set")
 		}
 	})
@@ -26,13 +26,13 @@ func TestShouldSyncTable(t *testing.T) {
 		}
 		syncer := NewSyncer(config)
 
-		included := SchemaTable{Schema: "public", Table: "users"}
-		if !syncer.shouldSyncTable(included) {
+		pgSchemaTableIncluded := PgSchemaTable{Schema: "public", Table: "users"}
+		if !syncer.shouldSyncTable(pgSchemaTableIncluded) {
 			t.Error("Expected shouldSyncTable to return true for included table")
 		}
 
-		excluded := SchemaTable{Schema: "public", Table: "secrets"}
-		if syncer.shouldSyncTable(excluded) {
+		pgSchemaTableExcluded := PgSchemaTable{Schema: "public", Table: "secrets"}
+		if syncer.shouldSyncTable(pgSchemaTableExcluded) {
 			t.Error("Expected shouldSyncTable to return false for non-included table")
 		}
 	})
@@ -46,13 +46,13 @@ func TestShouldSyncTable(t *testing.T) {
 		}
 		syncer := NewSyncer(config)
 
-		included := SchemaTable{Schema: "public", Table: "users"}
-		if !syncer.shouldSyncTable(included) {
+		pgSchemaTableIncluded := PgSchemaTable{Schema: "public", Table: "users"}
+		if !syncer.shouldSyncTable(pgSchemaTableIncluded) {
 			t.Error("Expected shouldSyncTable to return true for non-excluded table")
 		}
 
-		excluded := SchemaTable{Schema: "public", Table: "secrets"}
-		if syncer.shouldSyncTable(excluded) {
+		pgSchemaTableExcluded := PgSchemaTable{Schema: "public", Table: "secrets"}
+		if syncer.shouldSyncTable(pgSchemaTableExcluded) {
 			t.Error("Expected shouldSyncTable to return false for excluded table")
 		}
 	})

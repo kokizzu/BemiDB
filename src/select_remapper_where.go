@@ -19,15 +19,15 @@ func NewSelectRemapperWhere(config *Config) *SelectRemapperWhere {
 }
 
 // WHERE [CONDITION]
-func (remapper *SelectRemapperWhere) RemapWhere(schemaTable SchemaTable, selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
+func (remapper *SelectRemapperWhere) RemapWhere(qSchemaTable QuerySchemaTable, selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
 	// FROM pg_catalog.pg_namespace -> FROM pg_catalog.pg_namespace WHERE nspname != 'main'
-	if remapper.parserTable.IsPgNamespaceTable(schemaTable) {
+	if remapper.parserTable.IsPgNamespaceTable(qSchemaTable) {
 		withoutMainSchemaWhereCondition := remapper.parserWhere.MakeExpressionNode("nspname", "!=", "main")
 		return remapper.appendWhereCondition(selectStatement, withoutMainSchemaWhereCondition)
 	}
 
 	// FROM pg_catalog.pg_statio_user_tables -> FROM pg_catalog.pg_statio_user_tables WHERE false
-	if remapper.parserTable.IsPgStatioUserTablesTable(schemaTable) {
+	if remapper.parserTable.IsPgStatioUserTablesTable(qSchemaTable) {
 		falseWhereCondition := remapper.parserWhere.MakeFalseConditionNode()
 		selectStatement = remapper.overrideWhereCondition(selectStatement, falseWhereCondition)
 		return selectStatement

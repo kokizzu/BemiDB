@@ -329,7 +329,7 @@ const (
 	}`
 )
 
-func (icebergWriter *IcebergWriter) Write(schemaTable SchemaTable, pgSchemaColumns []PgSchemaColumn, loadRows func() [][]string) {
+func (icebergWriter *IcebergWriter) Write(schemaTable IcebergSchemaTable, pgSchemaColumns []PgSchemaColumn, loadRows func() [][]string) {
 	err := icebergWriter.storage.DeleteSchemaTable(schemaTable)
 	PanicIfError(err)
 
@@ -353,7 +353,7 @@ func (icebergWriter *IcebergWriter) Write(schemaTable SchemaTable, pgSchemaColum
 	PanicIfError(err)
 }
 
-func (icebergWriter *IcebergWriter) DeleteSchemaTable(schemaTable SchemaTable) {
+func (icebergWriter *IcebergWriter) DeleteSchemaTable(schemaTable IcebergSchemaTable) {
 	err := icebergWriter.storage.DeleteSchemaTable(schemaTable)
 	PanicIfError(err)
 }

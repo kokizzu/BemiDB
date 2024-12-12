@@ -43,7 +43,7 @@ func (syncer *Syncer) SyncFromPostgres() {
 	_, err = conn.Exec(ctx, "BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE READ ONLY DEFERRABLE")
 	PanicIfError(err)
 
-	pgSchemaTables := []SchemaTable{}
+	pgSchemaTables := []PgSchemaTable{}
 	for _, schema := range syncer.listPgSchemas(conn) {
 		for _, pgSchemaTable := range syncer.listPgSchemaTables(conn, schema) {
 			if syncer.shouldSyncTable(pgSchemaTable) {
@@ -89,7 +89,7 @@ func (syncer *Syncer) urlEncodePassword(databaseUrl string) string {
 	return strings.Replace(databaseUrl, ":"+password+"@", ":"+url.QueryEscape(password)+"@", 1)
 }
 
-func (syncer *Syncer) shouldSyncTable(schemaTable SchemaTable) bool {
+func (syncer *Syncer) shouldSyncTable(schemaTable PgSchemaTable) bool {
 	tableId := fmt.Sprintf("%s.%s", schemaTable.Schema, schemaTable.Table)
 
 	if syncer.config.Pg.IncludeSchemas != nil {
@@ -133,8 +133,8 @@ func (syncer *Syncer) listPgSchemas(conn *pgx.Conn) []string {
 	return schemas
 }
 
-func (syncer *Syncer) listPgSchemaTables(conn *pgx.Conn, schema string) []SchemaTable {
-	var pgSchemaTables []SchemaTable
+func (syncer *Syncer) listPgSchemaTables(conn *pgx.Conn, schema string) []PgSchemaTable {
+	var pgSchemaTables []PgSchemaTable
 
 	tablesRows, err := conn.Query(
 		context.Background(),
@@ -152,7 +152,7 @@ func (syncer *Syncer) listPgSchemaTables(conn *pgx.Conn, schema string) []Schema
 	defer tablesRows.Close()
 
 	for tablesRows.Next() {
-		pgSchemaTable := SchemaTable{Schema: schema}
+		pgSchemaTable := PgSchemaTable{Schema: schema}
 		err = tablesRows.Scan(&pgSchemaTable.Table, &pgSchemaTable.ParentPartitionedTable)
 		PanicIfError(err)
 		pgSchemaTables = append(pgSchemaTables, pgSchemaTable)
@@ -161,7 +161,7 @@ func (syncer *Syncer) listPgSchemaTables(conn *pgx.Conn, schema string) []Schema
 	return pgSchemaTables
 }
 
-func (syncer *Syncer) syncFromPgTable(conn *pgx.Conn, pgSchemaTable SchemaTable) {
+func (syncer *Syncer) syncFromPgTable(conn *pgx.Conn, pgSchemaTable PgSchemaTable) {
 	LogInfo(syncer.config, "Syncing "+pgSchemaTable.String()+"...")
 
 	csvFile, err := syncer.exportPgTableToCsv(conn, pgSchemaTable)
@@ -176,7 +176,8 @@ func (syncer *Syncer) syncFromPgTable(conn *pgx.Conn, pgSchemaTable SchemaTable)
 	reachedEnd := false
 	totalRowCount := 0
 
-	syncer.icebergWriter.Write(pgSchemaTable, pgSchemaColumns, func() [][]string {
+	schemaTable := pgSchemaTable.ToIcebergSchemaTable()
+	syncer.icebergWriter.Write(schemaTable, pgSchemaColumns, func() [][]string {
 		if reachedEnd {
 			return [][]string{}
 		}
@@ -209,7 +210,7 @@ func (syncer *Syncer) syncFromPgTable(conn *pgx.Conn, pgSchemaTable SchemaTable)
 	})
 }
 
-func (syncer *Syncer) pgTableSchemaColumns(conn *pgx.Conn, pgSchemaTable SchemaTable, csvHeader []string) []PgSchemaColumn {
+func (syncer *Syncer) pgTableSchemaColumns(conn *pgx.Conn, pgSchemaTable PgSchemaTable, csvHeader []string) []PgSchemaColumn {
 	var pgSchemaColumns []PgSchemaColumn
 
 	rows, err := conn.Query(
@@ -258,7 +259,7 @@ func (syncer *Syncer) pgTableSchemaColumns(conn *pgx.Conn, pgSchemaTable SchemaT
 	return pgSchemaColumns
 }
 
-func (syncer *Syncer) exportPgTableToCsv(conn *pgx.Conn, pgSchemaTable SchemaTable) (csvFile *os.File, err error) {
+func (syncer *Syncer) exportPgTableToCsv(conn *pgx.Conn, pgSchemaTable PgSchemaTable) (csvFile *os.File, err error) {
 	tempFile, err := CreateTemporaryFile(pgSchemaTable.String())
 	PanicIfError(err)
 	defer DeleteTemporaryFile(tempFile)
@@ -274,12 +275,12 @@ func (syncer *Syncer) exportPgTableToCsv(conn *pgx.Conn, pgSchemaTable SchemaTab
 	return os.Open(tempFile.Name())
 }
 
-func (syncer *Syncer) deleteOldIcebergSchemaTables(pgSchemaTables []SchemaTable) {
-	var prefixedPgSchemaTables []SchemaTable
+func (syncer *Syncer) deleteOldIcebergSchemaTables(pgSchemaTables []PgSchemaTable) {
+	var prefixedPgSchemaTables []PgSchemaTable
 	for _, pgSchemaTable := range pgSchemaTables {
 		prefixedPgSchemaTables = append(
 			prefixedPgSchemaTables,
-			SchemaTable{Schema: syncer.config.Pg.SchemaPrefix + pgSchemaTable.Schema, Table: pgSchemaTable.Table},
+			PgSchemaTable{Schema: syncer.config.Pg.SchemaPrefix + pgSchemaTable.Schema, Table: pgSchemaTable.Table},
 		)
 	}
 

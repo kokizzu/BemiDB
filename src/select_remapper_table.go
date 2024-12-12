@@ -10,7 +10,7 @@ const (
 
 type SelectRemapperTable struct {
 	parserTable         *QueryParserTable
-	icebergSchemaTables []SchemaTable
+	icebergSchemaTables []IcebergSchemaTable
 	icebergReader       *IcebergReader
 	config              *Config
 }
@@ -30,56 +30,57 @@ func NewSelectRemapperTable(config *Config, icebergReader *IcebergReader) *Selec
 // FROM / JOIN [TABLE]
 func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node {
 	parser := remapper.parserTable
-	schemaTable := parser.NodeToSchemaTable(node)
+	qSchemaTable := parser.NodeToQuerySchemaTable(node)
 
 	// pg_catalog.pg_statio_user_tables -> return nothing
-	if parser.IsPgStatioUserTablesTable(schemaTable) {
-		tableNode := parser.MakePgStatioUserTablesNode(schemaTable.Alias)
+	if parser.IsPgStatioUserTablesTable(qSchemaTable) {
+		tableNode := parser.MakePgStatioUserTablesNode(qSchemaTable.Alias)
 		return remapper.overrideTable(node, tableNode)
 	}
 
 	// pg_catalog.pg_shadow -> return hard-coded credentials
-	if parser.IsPgShadowTable(schemaTable) {
-		tableNode := parser.MakePgShadowNode(remapper.config.User, remapper.config.EncryptedPassword, schemaTable.Alias)
+	if parser.IsPgShadowTable(qSchemaTable) {
+		tableNode := parser.MakePgShadowNode(remapper.config.User, remapper.config.EncryptedPassword, qSchemaTable.Alias)
 		return remapper.overrideTable(node, tableNode)
 	}
 
 	// pg_catalog.pg_roles -> return hard-coded role info
-	if parser.IsPgRolesTable(schemaTable) {
-		tableNode := parser.MakePgRolesNode(remapper.config.User, schemaTable.Alias)
+	if parser.IsPgRolesTable(qSchemaTable) {
+		tableNode := parser.MakePgRolesNode(remapper.config.User, qSchemaTable.Alias)
 		return remapper.overrideTable(node, tableNode)
 	}
 
 	// pg_catalog.pg_shdescription -> return nothing
-	if parser.IsPgShdescriptionTable(schemaTable) {
-		tableNode := parser.MakePgShdescriptionNode(schemaTable.Alias)
+	if parser.IsPgShdescriptionTable(qSchemaTable) {
+		tableNode := parser.MakePgShdescriptionNode(qSchemaTable.Alias)
 		return remapper.overrideTable(node, tableNode)
 	}
 
 	// pg_catalog.pg_* other system tables
-	if parser.IsTableFromPgCatalog(schemaTable) {
+	if parser.IsTableFromPgCatalog(qSchemaTable) {
 		return node
 	}
 
 	// information_schema.tables -> return Iceberg tables
-	if parser.IsInformationSchemaTablesTable(schemaTable) {
+	if parser.IsInformationSchemaTablesTable(qSchemaTable) {
 		remapper.reloadIceberSchemaTables()
 		if len(remapper.icebergSchemaTables) == 0 {
 			return node
 		}
-		tableNode := parser.MakeInformationSchemaTablesNode(remapper.config.Database, remapper.icebergSchemaTables, schemaTable.Alias)
+		tableNode := parser.MakeInformationSchemaTablesNode(remapper.config.Database, remapper.icebergSchemaTables, qSchemaTable.Alias)
 		return remapper.overrideTable(node, tableNode)
 	}
 
 	// information_schema.* other system tables
-	if parser.IsTableFromInformationSchema(schemaTable) {
+	if parser.IsTableFromInformationSchema(qSchemaTable) {
 		return node
 	}
 
 	// iceberg.table -> FROM iceberg_scan('iceberg/schema/table/metadata/v1.metadata.json', skip_schema_inference = true)
-	if schemaTable.Schema == "" {
-		schemaTable.Schema = PG_SCHEMA_PUBLIC
+	if qSchemaTable.Schema == "" {
+		qSchemaTable.Schema = PG_SCHEMA_PUBLIC
 	}
+	schemaTable := qSchemaTable.ToIcebergSchemaTable()
 	if !remapper.icebergSchemaTableExists(schemaTable) {
 		remapper.reloadIceberSchemaTables()
 		if !remapper.icebergSchemaTableExists(schemaTable) {
@@ -122,7 +123,7 @@ func (remapper *SelectRemapperTable) reloadIceberSchemaTables() {
 	remapper.icebergSchemaTables = icebergSchemaTables
 }
 
-func (remapper *SelectRemapperTable) icebergSchemaTableExists(schemaTable SchemaTable) bool {
+func (remapper *SelectRemapperTable) icebergSchemaTableExists(schemaTable IcebergSchemaTable) bool {
 	for _, icebergSchemaTable := range remapper.icebergSchemaTables {
 		if icebergSchemaTable == schemaTable {
 			return true
