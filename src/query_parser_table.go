@@ -10,6 +10,7 @@ const (
 	PG_TABLE_PG_SHADOW             = "pg_shadow"
 	PG_TABLE_PG_NAMESPACE          = "pg_namespace"
 	PG_TABLE_PG_ROLES              = "pg_roles"
+	PG_TABLE_PG_SHDESCRIPTION      = "pg_shdescription"
 
 	PG_SCHEMA_INFORMATION_SCHEMA = "information_schema"
 	PG_TABLE_TABLES              = "tables"
@@ -134,6 +135,19 @@ func (parser *QueryParserTable) MakePgRolesNode(user string) *pgQuery.Node {
 // pg_catalog.pg_namespace
 func (parser *QueryParserTable) IsPgNamespaceTable(schemaTable SchemaTable) bool {
 	return parser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_NAMESPACE
+}
+
+// pg_catalog.pg_shdescription
+func (parser *QueryParserTable) IsPgShdescriptionTable(schemaTable SchemaTable) bool {
+	return parser.isPgCatalogSchema(schemaTable) && schemaTable.Table == PG_TABLE_PG_SHDESCRIPTION
+}
+
+// pg_catalog.pg_shdescription -> return nothing
+func (parser *QueryParserTable) MakePgShdescriptionNode() *pgQuery.Node {
+	columns := PG_SHDESCRIPTION_VALUE_BY_COLUMN.Keys()
+	rowValues := PG_SHDESCRIPTION_VALUE_BY_COLUMN.Values()
+
+	return parser.utils.MakeSubselectNode(columns, [][]string{rowValues})
 }
 
 // Other system pg_* tables
@@ -419,6 +433,12 @@ var PG_ROLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 	{"rolvaliduntil", "NULL"},
 	{"rolbypassrls", "false"},
 	{"rolconfig", "NULL"},
+})
+
+var PG_SHDESCRIPTION_VALUE_BY_COLUMN = NewOrderedMap([][]string{
+	{"objoid", "0"},
+	{"classoid", "0"},
+	{"description", "NULL"},
 })
 
 type DuckDBKeyword struct {

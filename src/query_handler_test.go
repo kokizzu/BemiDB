@@ -52,6 +52,11 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"total_size"},
 			"values":      {},
 		},
+		// pg_shdescription
+		"SELECT * FROM pg_catalog.pg_shdescription": {
+			"description": {"objoid", "classoid", "description"},
+			"values":      {"0", "0", "NULL"},
+		},
 		// pg_roles
 		"SELECT * FROM pg_catalog.pg_roles": {
 			"description": {"oid", "rolname", "rolsuper", "rolinherit", "rolcreaterole", "rolcreatedb", "rolcanlogin", "rolreplication", "rolconnlimit", "rolpassword", "rolvaliduntil", "rolbypassrls", "rolconfig"},

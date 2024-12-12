@@ -50,6 +50,12 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 		return remapper.overrideTable(node, tableNode)
 	}
 
+	// pg_catalog.pg_shdescription -> return nothing
+	if parser.IsPgShdescriptionTable(schemaTable) {
+		tableNode := parser.MakePgShdescriptionNode()
+		return remapper.overrideTable(node, tableNode)
+	}
+
 	// pg_catalog.pg_* other system tables
 	if parser.IsTableFromPgCatalog(schemaTable) {
 		return node
