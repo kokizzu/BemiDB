@@ -32,16 +32,18 @@ type SelectRemapper struct {
 	remapperWhere  *SelectRemapperWhere
 	remapperSelect *SelectRemapperSelect
 	icebergReader  *IcebergReader
+	duckdb         *Duckdb
 	config         *Config
 }
 
-func NewSelectRemapper(config *Config, icebergReader *IcebergReader) *SelectRemapper {
+func NewSelectRemapper(config *Config, icebergReader *IcebergReader, duckdb *Duckdb) *SelectRemapper {
 	return &SelectRemapper{
 		parserTable:    NewQueryParserTable(config),
-		remapperTable:  NewSelectRemapperTable(config, icebergReader),
+		remapperTable:  NewSelectRemapperTable(config, icebergReader, duckdb),
 		remapperWhere:  NewSelectRemapperWhere(config),
 		remapperSelect: NewSelectRemapperSelect(config),
 		icebergReader:  icebergReader,
+		duckdb:         duckdb,
 		config:         config,
 	}
 }

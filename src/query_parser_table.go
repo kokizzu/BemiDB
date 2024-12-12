@@ -11,6 +11,7 @@ const (
 	PG_TABLE_PG_NAMESPACE          = "pg_namespace"
 	PG_TABLE_PG_ROLES              = "pg_roles"
 	PG_TABLE_PG_SHDESCRIPTION      = "pg_shdescription"
+	PG_TABLE_PG_CLASS              = "pg_class"
 
 	PG_SCHEMA_INFORMATION_SCHEMA = "information_schema"
 	PG_TABLE_TABLES              = "tables"
@@ -125,6 +126,11 @@ func (parser *QueryParserTable) MakePgShdescriptionNode(alias string) *pgQuery.N
 	return parser.utils.MakeSubselectNode(columns, [][]string{rowValues}, alias)
 }
 
+// pg_catalog.pg_class
+func (parser *QueryParserTable) IsPgClassTable(qSchemaTable QuerySchemaTable) bool {
+	return parser.isPgCatalogSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_PG_CLASS
+}
+
 // Other system pg_* tables
 func (parser *QueryParserTable) IsTableFromPgCatalog(qSchemaTable QuerySchemaTable) bool {
 	return parser.isPgCatalogSchema(qSchemaTable) &&
@@ -134,34 +140,6 @@ func (parser *QueryParserTable) IsTableFromPgCatalog(qSchemaTable QuerySchemaTab
 // information_schema.tables
 func (parser *QueryParserTable) IsInformationSchemaTablesTable(qSchemaTable QuerySchemaTable) bool {
 	return parser.IsTableFromInformationSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_TABLES
-}
-
-// information_schema.tables -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakeInformationSchemaTablesNode(database string, schemaAndTables []IcebergSchemaTable, alias string) *pgQuery.Node {
-	columns := PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN.Keys()
-	staticRowValues := PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN.Values()
-
-	var rowsValues [][]string
-
-	for _, schemaTable := range schemaAndTables {
-		rowValues := make([]string, len(staticRowValues))
-		copy(rowValues, staticRowValues)
-
-		for i, column := range columns {
-			switch column {
-			case "table_catalog":
-				rowValues[i] = database
-			case "table_schema":
-				rowValues[i] = schemaTable.Schema
-			case "table_name":
-				rowValues[i] = schemaTable.Table
-			}
-		}
-
-		rowsValues = append(rowsValues, rowValues)
-	}
-
-	return parser.utils.MakeSubselectNode(columns, rowsValues, alias)
 }
 
 // Other information_schema.* tables
@@ -405,21 +383,6 @@ var PG_SYSTEM_VIEWS = NewSet([]string{
 	"pg_statio_all_sequences",
 	"pg_statio_sys_sequences",
 	"pg_statio_user_sequences",
-})
-
-var PG_INFORMATION_SCHEMA_TABLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{
-	{"table_catalog", "bemidb"},
-	{"table_schema", "public"},
-	{"table_name", "bemidb_table"},
-	{"table_type", "BASE TABLE"},
-	{"self_referencing_column_name", "NULL"},
-	{"reference_generation", "NULL"},
-	{"user_defined_type_catalog", "NULL"},
-	{"user_defined_type_schema", "NULL"},
-	{"user_defined_type_name", "NULL"},
-	{"is_insertable_into", "YES"},
-	{"is_typed", "NO"},
-	{"commit_action", "NULL"},
 })
 
 var PG_STATIO_USER_TABLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{

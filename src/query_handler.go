@@ -161,7 +161,7 @@ func NewQueryHandler(config *Config, duckdb *Duckdb, icebergReader *IcebergReade
 	queryHandler := &QueryHandler{
 		duckdb:         duckdb,
 		icebergReader:  icebergReader,
-		selectRemapper: NewSelectRemapper(config, icebergReader),
+		selectRemapper: NewSelectRemapper(config, icebergReader, duckdb),
 		config:         config,
 	}
 

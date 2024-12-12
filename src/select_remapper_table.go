@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
@@ -12,19 +14,19 @@ type SelectRemapperTable struct {
 	parserTable         *QueryParserTable
 	icebergSchemaTables []IcebergSchemaTable
 	icebergReader       *IcebergReader
+	duckdb              *Duckdb
 	config              *Config
 }
 
-func NewSelectRemapperTable(config *Config, icebergReader *IcebergReader) *SelectRemapperTable {
-	icebergSchemaTables, err := icebergReader.SchemaTables()
-	PanicIfError(err)
-
-	return &SelectRemapperTable{
-		parserTable:         NewQueryParserTable(config),
-		icebergSchemaTables: icebergSchemaTables,
-		icebergReader:       icebergReader,
-		config:              config,
+func NewSelectRemapperTable(config *Config, icebergReader *IcebergReader, duckdb *Duckdb) *SelectRemapperTable {
+	remapper := &SelectRemapperTable{
+		parserTable:   NewQueryParserTable(config),
+		icebergReader: icebergReader,
+		duckdb:        duckdb,
+		config:        config,
 	}
+	remapper.reloadIceberSchemaTables()
+	return remapper
 }
 
 // FROM / JOIN [TABLE]
@@ -56,22 +58,24 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 		return remapper.overrideTable(node, tableNode)
 	}
 
-	// pg_catalog.pg_* other system tables
+	// pg_catalog.pg_class -> reload Iceberg tables
+	if parser.IsPgClassTable(qSchemaTable) {
+		remapper.reloadIceberSchemaTables()
+		return node
+	}
+
+	// pg_catalog.pg_* other system tables -> return as is
 	if parser.IsTableFromPgCatalog(qSchemaTable) {
 		return node
 	}
 
-	// information_schema.tables -> return Iceberg tables
+	// information_schema.tables -> reload Iceberg tables
 	if parser.IsInformationSchemaTablesTable(qSchemaTable) {
 		remapper.reloadIceberSchemaTables()
-		if len(remapper.icebergSchemaTables) == 0 {
-			return node
-		}
-		tableNode := parser.MakeInformationSchemaTablesNode(remapper.config.Database, remapper.icebergSchemaTables, qSchemaTable.Alias)
-		return remapper.overrideTable(node, tableNode)
+		return node
 	}
 
-	// information_schema.* other system tables
+	// information_schema.* other system tables -> return as is
 	if parser.IsTableFromInformationSchema(qSchemaTable) {
 		return node
 	}
@@ -120,6 +124,12 @@ func (remapper *SelectRemapperTable) overrideTable(node *pgQuery.Node, fromClaus
 func (remapper *SelectRemapperTable) reloadIceberSchemaTables() {
 	icebergSchemaTables, err := remapper.icebergReader.SchemaTables()
 	PanicIfError(err)
+
+	ctx := context.Background()
+	for _, icebergSchemaTable := range icebergSchemaTables {
+		remapper.duckdb.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS "+icebergSchemaTable.String()+" (id INT)", nil)
+	}
+
 	remapper.icebergSchemaTables = icebergSchemaTables
 }
 

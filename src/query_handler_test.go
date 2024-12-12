@@ -34,6 +34,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"oid", "typename"},
 			"values":      {},
 		},
+		"SELECT relname FROM pg_catalog.pg_class WHERE relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = 'public' LIMIT 1) LIMIT 1": {
+			"description": {"relname"},
+			"values":      {"test_table"},
+		},
 		// pg_namespace
 		"SELECT DISTINCT(nspname) FROM pg_catalog.pg_namespace WHERE nspname != 'information_schema' AND nspname != 'pg_catalog'": {
 			"description": {"nspname"},
@@ -68,12 +72,12 @@ func TestHandleQuery(t *testing.T) {
 		},
 		// Information schema
 		"SELECT * FROM information_schema.tables": {
-			"description": {"table_catalog", "table_schema", "table_name", "table_type", "self_referencing_column_name", "reference_generation", "user_defined_type_catalog", "user_defined_type_schema", "user_defined_type_name", "is_insertable_into", "is_typed", "commit_action"},
-			"values":      {"bemidb", "public", "test_table", "BASE TABLE", "NULL", "NULL", "NULL", "NULL", "NULL", "YES", "NO", "NULL"},
+			"description": {"table_catalog", "table_schema", "table_name", "table_type", "self_referencing_column_name", "reference_generation", "user_defined_type_catalog", "user_defined_type_schema", "user_defined_type_name", "is_insertable_into", "is_typed", "commit_action", "TABLE_COMMENT"},
+			"values":      {"memory", "public", "test_table", "BASE TABLE", "", "", "", "", "", "YES", "NO", "", ""},
 		},
 		"SELECT table_catalog, table_schema, table_name AS table FROM information_schema.tables": {
 			"description": {"table_catalog", "table_schema", "table"},
-			"values":      {"bemidb", "public", "test_table"},
+			"values":      {"memory", "public", "test_table"},
 		},
 		// SET
 		"SET client_encoding TO 'UTF8'": {
@@ -470,7 +474,7 @@ func TestHandleQuery(t *testing.T) {
 
 		expectedErrorMessage := strings.Join([]string{
 			"Catalog Error: Table with name non_existent_table does not exist!",
-			"Did you mean \"sqlite_temp_master\"?",
+			"Did you mean \"test_table\"?",
 			"LINE 1: SELECT * FROM non_existent_table",
 			"                      ^",
 		}, "\n")
