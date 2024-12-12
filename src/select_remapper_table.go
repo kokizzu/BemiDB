@@ -93,14 +93,22 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 
 // FROM [PG_FUNCTION()]
 func (remapper *SelectRemapperTable) RemapTableFunction(node *pgQuery.Node) *pgQuery.Node {
-	for _, functionCall := range remapper.parserTable.NodeToFunctionCalls(node) {
-		// pg_catalog.pg_get_keywords() -> hard-coded keywords
-		if remapper.parserTable.IsPgGetKeywordsFunction(functionCall) {
-			return remapper.parserTable.MakePgGetKeywordsNode(functionCall.Alias)
-		}
+	// pg_catalog.pg_get_keywords() -> hard-coded keywords
+	if remapper.parserTable.IsPgGetKeywordsFunction(node) {
+		return remapper.parserTable.MakePgGetKeywordsNode(node)
 	}
 
 	return node
+}
+
+// FROM PG_FUNCTION(PG_NESTED_FUNCTION())
+func (remapper *SelectRemapperTable) RemapNestedTableFunction(funcCallNode *pgQuery.FuncCall) *pgQuery.FuncCall {
+	// array_upper(values, 1) -> len(values)
+	if remapper.parserTable.IsArrayUpperFunction(funcCallNode) {
+		return remapper.parserTable.MakeArrayUpperNode(funcCallNode)
+	}
+
+	return funcCallNode
 }
 
 func (remapper *SelectRemapperTable) overrideTable(node *pgQuery.Node, fromClause *pgQuery.Node) *pgQuery.Node {

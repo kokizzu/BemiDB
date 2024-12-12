@@ -414,6 +414,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"index"},
 			"values":      {"1"},
 		},
+		"SELECT * FROM generate_series(1, array_upper(current_schemas(FALSE), 1)) AS series(index) LIMIT 1": {
+			"description": {"index"},
+			"values":      {"1"},
+		},
 		// Transformed JOIN's
 		"SELECT s.usename, r.rolconfig FROM pg_catalog.pg_shadow s LEFT JOIN pg_catalog.pg_roles r ON s.usename = r.rolname": {
 			"description": {"usename", "rolconfig"},

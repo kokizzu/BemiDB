@@ -42,6 +42,7 @@ func NewSelectRemapper(config *Config, icebergReader *IcebergReader) *SelectRema
 	}
 }
 
+// SELECT ...
 func (selectRemapper *SelectRemapper) RemapQueryTreeWithSelect(queryTree *pgQuery.ParseResult) *pgQuery.ParseResult {
 	selectStatement := queryTree.Stmts[0].Stmt.GetSelectStmt()
 	selectStatement = selectRemapper.remapSelectStatement(selectStatement, 0)
@@ -49,7 +50,7 @@ func (selectRemapper *SelectRemapper) RemapQueryTreeWithSelect(queryTree *pgQuer
 	return queryTree
 }
 
-// No-op
+// SET ... (no-op)
 func (selectRemapper *SelectRemapper) RemapQueryTreeWithSet(queryTree *pgQuery.ParseResult) *pgQuery.ParseResult {
 	setStatement := queryTree.Stmts[0].Stmt.GetVariableSetStmt()
 
@@ -70,46 +71,98 @@ func (selectRemapper *SelectRemapper) RemapQueryTreeWithSet(queryTree *pgQuery.P
 func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQuery.SelectStmt, indentLevel int) *pgQuery.SelectStmt {
 	selectStatement = selectRemapper.remapTypeCastsInSelect(selectStatement)
 
+	// UNION
 	if selectStatement.FromClause == nil && selectStatement.Larg != nil && selectStatement.Rarg != nil {
-		LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" UNION left")
+		selectRemapper.logTreeTraversal("UNION left", indentLevel)
 		leftSelectStatement := selectStatement.Larg
-		leftSelectStatement = selectRemapper.remapSelectStatement(leftSelectStatement, indentLevel+1)
+		leftSelectStatement = selectRemapper.remapSelectStatement(leftSelectStatement, indentLevel+1) // self-recursion
 
-		LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" UNION right")
+		selectRemapper.logTreeTraversal("UNION right", indentLevel)
 		rightSelectStatement := selectStatement.Rarg
-		rightSelectStatement = selectRemapper.remapSelectStatement(rightSelectStatement, indentLevel+1)
+		rightSelectStatement = selectRemapper.remapSelectStatement(rightSelectStatement, indentLevel+1) // self-recursion
 
 		return selectStatement
 	}
 
+	// JOIN
 	if len(selectStatement.FromClause) > 0 && selectStatement.FromClause[0].GetJoinExpr() != nil {
-		selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel)
-		selectRemapper.remapJoinExpressions(selectStatement.FromClause[0], indentLevel)
+		// SELECT
+		selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel)                                      // recursive
+		selectStatement.FromClause[0] = selectRemapper.remapJoinExpressions(selectStatement.FromClause[0], indentLevel) // recursive with self-recursion
 		return selectStatement
 	}
 
+	// FROM
 	if len(selectStatement.FromClause) > 0 {
+		// WHERE
 		if selectStatement.FromClause[0].GetRangeVar() != nil {
+			selectRemapper.logTreeTraversal("WHERE statements", indentLevel)
 			selectStatement = selectRemapper.remapperWhere.RemapWhere(selectStatement)
 		}
-		selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel)
+
+		// SELECT
+		selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel) // recursive
+
 		for i, fromNode := range selectStatement.FromClause {
 			if fromNode.GetRangeVar() != nil {
-				LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" SELECT statement")
+				selectRemapper.logTreeTraversal("FROM table", indentLevel)
 				selectStatement.FromClause[i] = selectRemapper.remapperTable.RemapTable(fromNode)
 			} else if fromNode.GetRangeSubselect() != nil {
-				selectRemapper.remapSelectStatement(fromNode.GetRangeSubselect().Subquery.GetSelectStmt(), indentLevel+1)
+				selectRemapper.logTreeTraversal("FROM subselect", indentLevel)
+				subSelectStatement := fromNode.GetRangeSubselect().Subquery.GetSelectStmt()
+				subSelectStatement = selectRemapper.remapSelectStatement(subSelectStatement, indentLevel+1) // self-recursion
 			}
 
 			if fromNode.GetRangeFunction() != nil {
-				selectStatement.FromClause[i] = selectRemapper.remapperTable.RemapTableFunction(fromNode)
+				selectStatement.FromClause[i] = selectRemapper.remapTableFunction(fromNode, indentLevel+1) // recursive
 			}
 		}
 		return selectStatement
 	}
 
-	selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel)
+	selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel) // recursive
 	return selectStatement
+}
+
+// FROM PG_FUNCTION()
+func (selectRemapper *SelectRemapper) remapTableFunction(fromNode *pgQuery.Node, indentLevel int) *pgQuery.Node {
+	selectRemapper.logTreeTraversal("FROM function()", indentLevel)
+
+	fromNode = selectRemapper.remapperTable.RemapTableFunction(fromNode)
+	if fromNode.GetRangeFunction() == nil {
+		return fromNode
+	}
+
+	for _, funcNode := range fromNode.GetRangeFunction().Functions {
+		for _, funcItemNode := range funcNode.GetList().Items {
+			funcCallNode := funcItemNode.GetFuncCall()
+			if funcCallNode == nil {
+				continue
+			}
+			funcCallNode = selectRemapper.remapTableFunctionArgs(funcCallNode, indentLevel+1) // recursive
+		}
+	}
+
+	return fromNode
+}
+
+// FROM PG_FUNCTION(PG_NESTED_FUNCTION())
+func (selectRemapper *SelectRemapper) remapTableFunctionArgs(funcCallNode *pgQuery.FuncCall, indentLevel int) *pgQuery.FuncCall {
+	selectRemapper.logTreeTraversal("FROM nested_function()", indentLevel)
+
+	for i, argNode := range funcCallNode.GetArgs() {
+		nestedFunctionCall := argNode.GetFuncCall()
+		if nestedFunctionCall == nil {
+			continue
+		}
+
+		nestedFunctionCall = selectRemapper.remapperTable.RemapNestedTableFunction(nestedFunctionCall)
+		nestedFunctionCall = selectRemapper.remapTableFunctionArgs(nestedFunctionCall, indentLevel+1) // recursive
+
+		funcCallNode.Args[i].Node = &pgQuery.Node_FuncCall{FuncCall: nestedFunctionCall}
+	}
+
+	return funcCallNode
 }
 
 func (selectRemapper *SelectRemapper) remapTypeCastsInSelect(selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
@@ -205,27 +258,27 @@ func (selectRemapper *SelectRemapper) remapTypeCastsInNode(node *pgQuery.Node) *
 }
 
 func (selectRemapper *SelectRemapper) remapJoinExpressions(node *pgQuery.Node, indentLevel int) *pgQuery.Node {
-	LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" JOIN left")
+	selectRemapper.logTreeTraversal("JOIN left", indentLevel+1)
 	leftJoinNode := node.GetJoinExpr().Larg
 	if leftJoinNode.GetJoinExpr() != nil {
-		leftJoinNode = selectRemapper.remapJoinExpressions(leftJoinNode, indentLevel+1)
+		leftJoinNode = selectRemapper.remapJoinExpressions(leftJoinNode, indentLevel+1) // self-recursion
 	} else if leftJoinNode.GetRangeVar() != nil {
 		leftJoinNode = selectRemapper.remapperTable.RemapTable(leftJoinNode)
 	} else if leftJoinNode.GetRangeSubselect() != nil {
 		leftSelectStatement := leftJoinNode.GetRangeSubselect().Subquery.GetSelectStmt()
-		leftSelectStatement = selectRemapper.remapSelectStatement(leftSelectStatement, indentLevel+1)
+		leftSelectStatement = selectRemapper.remapSelectStatement(leftSelectStatement, indentLevel+1) // parent-recursion
 	}
 	node.GetJoinExpr().Larg = leftJoinNode
 
-	LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" JOIN right")
+	selectRemapper.logTreeTraversal("JOIN right", indentLevel+1)
 	rightJoinNode := node.GetJoinExpr().Rarg
 	if rightJoinNode.GetJoinExpr() != nil {
-		rightJoinNode = selectRemapper.remapJoinExpressions(rightJoinNode, indentLevel+1)
+		rightJoinNode = selectRemapper.remapJoinExpressions(rightJoinNode, indentLevel+1) // self-recursion
 	} else if rightJoinNode.GetRangeVar() != nil {
 		rightJoinNode = selectRemapper.remapperTable.RemapTable(rightJoinNode)
 	} else if rightJoinNode.GetRangeSubselect() != nil {
 		rightSelectStatement := rightJoinNode.GetRangeSubselect().Subquery.GetSelectStmt()
-		rightSelectStatement = selectRemapper.remapSelectStatement(rightSelectStatement, indentLevel+1)
+		rightSelectStatement = selectRemapper.remapSelectStatement(rightSelectStatement, indentLevel+1) // parent-recursion
 	}
 	node.GetJoinExpr().Rarg = rightJoinNode
 
@@ -233,7 +286,7 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(node *pgQuery.Node, i
 }
 
 func (selectRemapper *SelectRemapper) remapSelect(selectStatement *pgQuery.SelectStmt, indentLevel int) *pgQuery.SelectStmt {
-	LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" SELECT functions")
+	selectRemapper.logTreeTraversal("SELECT statements", indentLevel+1)
 
 	for i, targetNode := range selectStatement.TargetList {
 		targetNode = selectRemapper.remapperSelect.RemapSelect(targetNode)
@@ -241,7 +294,7 @@ func (selectRemapper *SelectRemapper) remapSelect(selectStatement *pgQuery.Selec
 		// Recursively remap sub-selects
 		subSelectStatement := selectRemapper.remapperSelect.SubselectStatement(targetNode)
 		if subSelectStatement != nil {
-			subSelectStatement = selectRemapper.remapSelect(subSelectStatement, indentLevel+1)
+			subSelectStatement = selectRemapper.remapSelect(subSelectStatement, indentLevel+1) // self-recursion
 		}
 
 		selectStatement.TargetList[i] = targetNode
@@ -284,4 +337,8 @@ func (selectRemapper *SelectRemapper) remapTypecast(node *pgQuery.Node) *pgQuery
 		}
 	}
 	return node
+}
+
+func (selectRemapper *SelectRemapper) logTreeTraversal(label string, indentLevel int) {
+	LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel), label)
 }

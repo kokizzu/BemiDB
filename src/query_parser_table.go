@@ -16,17 +16,12 @@ const (
 	PG_TABLE_TABLES              = "tables"
 
 	PG_FUNCTION_PG_GET_KEYWORDS = "pg_get_keywords"
+	PG_FUNCTION_ARRAY_UPPER     = "array_upper"
 )
 
 type QueryParserTable struct {
 	config *Config
 	utils  *QueryUtils
-}
-
-type FunctionCall struct {
-	Schema   string
-	Function string
-	Alias 	string
 }
 
 func NewQueryParserTable(config *Config) *QueryParserTable {
@@ -37,55 +32,15 @@ func (parser *QueryParserTable) NodeToSchemaTable(node *pgQuery.Node) SchemaTabl
 	rangeVar := node.GetRangeVar()
 	var alias string
 
-
-		if rangeVar.Alias != nil {
-			alias = rangeVar.Alias.Aliasname
-		}
+	if rangeVar.Alias != nil {
+		alias = rangeVar.Alias.Aliasname
+	}
 
 	return SchemaTable{
 		Schema: rangeVar.Schemaname,
 		Table:  rangeVar.Relname,
 		Alias:  alias,
 	}
-}
-
-func (parser *QueryParserTable) NodeToFunctionCalls(node *pgQuery.Node) []FunctionCall {
-	var functionCalls []FunctionCall
-	rangeFunction := node.GetRangeFunction()
-
-	var alias string
-	if rangeFunction.Alias != nil {
-		alias = rangeFunction.Alias.Aliasname
-	}
-
-	for _, functionNode := range rangeFunction.Functions {
-		for _, item := range functionNode.GetList().Items {
-			funcCall := item.GetFuncCall()
-			if funcCall == nil {
-				continue
-			}
-
-			var functionCall FunctionCall
-
-			switch len(funcCall.Funcname) {
-			case 1:
-				functionCall = FunctionCall{
-					Function: funcCall.Funcname[0].GetString_().Sval,
-					Alias:    alias,
-				}
-			case 2:
-				functionCall = FunctionCall{
-					Schema:   funcCall.Funcname[0].GetString_().Sval,
-					Function: funcCall.Funcname[1].GetString_().Sval,
-					Alias:    alias,
-				}
-			}
-
-			functionCalls = append(functionCalls, functionCall)
-		}
-	}
-
-	return functionCalls
 }
 
 // pg_catalog.pg_statio_user_tables
@@ -242,12 +197,30 @@ func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string) *pgQuery.
 }
 
 // pg_catalog.pg_get_keywords()
-func (parser *QueryParserTable) IsPgGetKeywordsFunction(functionCall FunctionCall) bool {
-	return functionCall.Schema == PG_SCHEMA_PG_CATALOG && functionCall.Function == PG_FUNCTION_PG_GET_KEYWORDS
+func (parser *QueryParserTable) IsPgGetKeywordsFunction(node *pgQuery.Node) bool {
+	for _, funcNode := range node.GetRangeFunction().Functions {
+		for _, funcItemNode := range funcNode.GetList().Items {
+			funcCallNode := funcItemNode.GetFuncCall()
+			if funcCallNode == nil {
+				continue
+			}
+			if len(funcCallNode.Funcname) != 2 {
+				continue
+			}
+
+			schema := funcCallNode.Funcname[0].GetString_().Sval
+			function := funcCallNode.Funcname[1].GetString_().Sval
+			if schema == PG_SCHEMA_PG_CATALOG && function == PG_FUNCTION_PG_GET_KEYWORDS {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // pg_catalog.pg_get_keywords() -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakePgGetKeywordsNode(alias string) *pgQuery.Node {
+func (parser *QueryParserTable) MakePgGetKeywordsNode(node *pgQuery.Node) *pgQuery.Node {
 	columns := []string{"word", "catcode", "barelabel", "catdesc", "baredesc"}
 
 	var rows [][]string
@@ -277,7 +250,43 @@ func (parser *QueryParserTable) MakePgGetKeywordsNode(alias string) *pgQuery.Nod
 		rows = append(rows, row)
 	}
 
+	var alias string
+	if node.GetAlias() != nil {
+		alias = node.GetAlias().Aliasname
+	}
+
 	return parser.utils.MakeSubselectNode(columns, rows, alias)
+}
+
+// array_upper(array, 1)
+func (parser *QueryParserTable) IsArrayUpperFunction(funcCallNode *pgQuery.FuncCall) bool {
+	if len(funcCallNode.Funcname) != 1 {
+		return false
+	}
+
+	funcName := funcCallNode.Funcname[0].GetString_().Sval
+
+	if funcName == PG_FUNCTION_ARRAY_UPPER {
+		dimension := funcCallNode.Args[1].GetAConst().GetIval().Ival
+		if dimension == 1 {
+			return true
+		}
+	}
+
+	return false
+}
+
+// array_upper(array, 1) -> len(array)
+func (parser *QueryParserTable) MakeArrayUpperNode(funcCallNode *pgQuery.FuncCall) *pgQuery.FuncCall {
+	return pgQuery.MakeFuncCallNode(
+		[]*pgQuery.Node{
+			pgQuery.MakeStrNode("len"),
+		},
+		[]*pgQuery.Node{
+			funcCallNode.Args[0],
+		},
+		0,
+	).GetFuncCall()
 }
 
 func (parser *QueryParserTable) isPgCatalogSchema(schemaTable SchemaTable) bool {
