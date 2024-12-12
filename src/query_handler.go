@@ -260,6 +260,7 @@ func (queryHandler *QueryHandler) HandleBindQuery(message *pgproto3.Bind, prepar
 		}
 	}
 
+	LogDebug(queryHandler.config, "Bound variables:", variables)
 	preparedStatement.Variables = variables
 	preparedStatement.Portal = message.DestinationPortal
 

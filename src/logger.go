@@ -39,7 +39,13 @@ func LogInfo(config *Config, message ...interface{}) {
 }
 
 func LogDebug(config *Config, message ...interface{}) {
-	if config.LogLevel != LOG_LEVEL_ERROR && config.LogLevel != LOG_LEVEL_WARN && config.LogLevel != LOG_LEVEL_INFO {
+	if config.LogLevel == LOG_LEVEL_DEBUG || config.LogLevel == LOG_LEVEL_TRACE {
 		log.Println(append([]interface{}{"[DEBUG]"}, message...)...)
+	}
+}
+
+func LogTrace(config *Config, message ...interface{}) {
+	if config.LogLevel == LOG_LEVEL_TRACE {
+		log.Println(append([]interface{}{"[TRACE]"}, message...)...)
 	}
 }
