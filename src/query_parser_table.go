@@ -21,11 +21,11 @@ const (
 
 type QueryParserTable struct {
 	config *Config
-	utils  *QueryUtils
+	utils  *QueryParserUtils
 }
 
 func NewQueryParserTable(config *Config) *QueryParserTable {
-	return &QueryParserTable{config: config, utils: NewQueryUtils(config)}
+	return &QueryParserTable{config: config, utils: NewQueryParserUtils(config)}
 }
 
 func (parser *QueryParserTable) NodeToSchemaTable(node *pgQuery.Node) SchemaTable {

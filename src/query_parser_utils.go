@@ -4,15 +4,15 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
-type QueryUtils struct {
+type QueryParserUtils struct {
 	config *Config
 }
 
-func NewQueryUtils(config *Config) *QueryUtils {
-	return &QueryUtils{config: config}
+func NewQueryParserUtils(config *Config) *QueryParserUtils {
+	return &QueryParserUtils{config: config}
 }
 
-func (utils *QueryUtils) MakeSubselectNode(columns []string, rowsValues [][]string, alias string) *pgQuery.Node {
+func (utils *QueryParserUtils) MakeSubselectNode(columns []string, rowsValues [][]string, alias string) *pgQuery.Node {
 	var columnNodes []*pgQuery.Node
 	for _, column := range columns {
 		columnNodes = append(columnNodes, pgQuery.MakeStrNode(column))
@@ -52,7 +52,7 @@ func (utils *QueryUtils) MakeSubselectNode(columns []string, rowsValues [][]stri
 	}
 }
 
-func (utils *QueryUtils) MakeAConstBoolNode(val bool) *pgQuery.Node {
+func (utils *QueryParserUtils) MakeAConstBoolNode(val bool) *pgQuery.Node {
 	return &pgQuery.Node{
 		Node: &pgQuery.Node_AConst{
 			AConst: &pgQuery.A_Const{

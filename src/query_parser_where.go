@@ -6,11 +6,11 @@ import (
 
 type QueryParserWhere struct {
 	config *Config
-	utils  *QueryUtils
+	utils  *QueryParserUtils
 }
 
 func NewQueryParserWhere(config *Config) *QueryParserWhere {
-	return &QueryParserWhere{config: config, utils: NewQueryUtils(config)}
+	return &QueryParserWhere{config: config, utils: NewQueryParserUtils(config)}
 }
 
 // column != 'value'

@@ -6,11 +6,11 @@ const (
 
 type QueryParserSelect struct {
 	config *Config
-	utils  *QueryUtils
+	utils  *QueryParserUtils
 }
 
 func NewQueryParserSelect(config *Config) *QueryParserSelect {
-	return &QueryParserSelect{config: config, utils: NewQueryUtils(config)}
+	return &QueryParserSelect{config: config, utils: NewQueryParserUtils(config)}
 }
 
 // quote_ident()
