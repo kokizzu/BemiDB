@@ -215,6 +215,7 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(node *pgQuery.Node, i
 		leftSelectStatement := leftJoinNode.GetRangeSubselect().Subquery.GetSelectStmt()
 		leftSelectStatement = selectRemapper.remapSelectStatement(leftSelectStatement, indentLevel+1)
 	}
+	node.GetJoinExpr().Larg = leftJoinNode
 
 	LogDebug(selectRemapper.config, strings.Repeat(">", indentLevel+1)+" JOIN right")
 	rightJoinNode := node.GetJoinExpr().Rarg
@@ -226,6 +227,7 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(node *pgQuery.Node, i
 		rightSelectStatement := rightJoinNode.GetRangeSubselect().Subquery.GetSelectStmt()
 		rightSelectStatement = selectRemapper.remapSelectStatement(rightSelectStatement, indentLevel+1)
 	}
+	node.GetJoinExpr().Rarg = rightJoinNode
 
 	return node
 }
