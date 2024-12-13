@@ -39,6 +39,10 @@ func TestHandleQuery(t *testing.T) {
 		"SELECT pg_catalog.pg_get_expr(adbin, drelid, TRUE) AS def_value FROM pg_catalog.pg_attrdef": {
 			"description": {"def_value"},
 		},
+		"SELECT set_config('bytea_output', 'hex', false)": {
+			"description": {"set_config"},
+			"values":      {"hex"},
+		},
 		// PG system tables
 		"SELECT oid, typname AS typename FROM pg_type WHERE typname='geometry' OR typname='geography'": {
 			"description": {"oid", "typename"},

@@ -7,6 +7,7 @@ import (
 const (
 	PG_FUNCTION_QUOTE_INDENT = "quote_ident"
 	PG_FUNCTION_PG_GET_EXPR  = "pg_get_expr"
+	PG_FUNCTION_SET_CONFIG   = "set_config"
 )
 
 type QueryParserSelect struct {
@@ -66,6 +67,21 @@ func (parser *QueryParserSelect) RemoveThirdArgumentFromPgGetExpr(functionCall *
 	}
 
 	return functionCall
+}
+
+// set_config()
+func (parser *QueryParserSelect) IsSetConfigFunction(functionName string) bool {
+	return functionName == PG_FUNCTION_SET_CONFIG
+}
+
+// set_config(setting_name, new_value, is_local) -> new_value
+func (parser *QueryParserSelect) RemapSetConfigFunction(targetNode *pgQuery.Node, functionCall *pgQuery.FuncCall) {
+	valueNode := functionCall.Args[1]
+	settingName := functionCall.Args[0].GetAConst().GetSval().Sval
+	LogWarn(parser.config, "Unsupported set_config", settingName, ":", functionCall)
+
+	parser.OverrideTargetValue(targetNode, valueNode)
+	parser.SetDefaultTargetName(targetNode, PG_FUNCTION_SET_CONFIG)
 }
 
 func (parser *QueryParserSelect) OverrideFunctionCallArg(functionCall *pgQuery.FuncCall, index int, node *pgQuery.Node) {

@@ -36,6 +36,11 @@ func (remapper *SelectRemapperSelect) RemapSelect(targetNode *pgQuery.Node) *pgQ
 
 	originalFunctionName := remapper.parserSelect.FunctionName(functionCall)
 
+	if remapper.parserSelect.IsSetConfigFunction(originalFunctionName) {
+		remapper.parserSelect.RemapSetConfigFunction(targetNode, functionCall)
+		return targetNode
+	}
+
 	renamedNameFunction := remapper.remappedFunctionName(functionCall)
 	if renamedNameFunction != nil {
 		functionCall = renamedNameFunction
