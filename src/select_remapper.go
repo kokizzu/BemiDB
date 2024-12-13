@@ -38,28 +38,20 @@ func NewSelectRemapper(config *Config, icebergReader *IcebergReader, duckdb *Duc
 	}
 }
 
-// SELECT ...
-func (selectRemapper *SelectRemapper) RemapQueryTreeWithSelect(queryTree *pgQuery.ParseResult) *pgQuery.ParseResult {
-	selectStatement := queryTree.Stmts[0].Stmt.GetSelectStmt()
-	selectStatement = selectRemapper.remapSelectStatement(selectStatement, 0)
-
-	return queryTree
-}
-
 // SET ... (no-op)
-func (selectRemapper *SelectRemapper) RemapQueryTreeWithSet(queryTree *pgQuery.ParseResult) *pgQuery.ParseResult {
-	setStatement := queryTree.Stmts[0].Stmt.GetVariableSetStmt()
+func (selectRemapper *SelectRemapper) RemapSetStatement(stmt *pgQuery.RawStmt) *pgQuery.RawStmt {
+	setStatement := stmt.Stmt.GetVariableSetStmt()
 
 	if !KNOWN_SET_STATEMENTS.Contains(setStatement.Name) {
 		LogWarn(selectRemapper.config, "Unsupported SET ", setStatement.Name, ":", setStatement)
 	}
 
-	queryTree.Stmts[0].Stmt.GetVariableSetStmt().Name = "schema"
-	queryTree.Stmts[0].Stmt.GetVariableSetStmt().Args = []*pgQuery.Node{
+	stmt.Stmt.GetVariableSetStmt().Name = "schema"
+	stmt.Stmt.GetVariableSetStmt().Args = []*pgQuery.Node{
 		pgQuery.MakeAConstStrNode(PG_SCHEMA_PUBLIC, 0),
 	}
 
-	return queryTree
+	return stmt
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

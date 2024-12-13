@@ -371,37 +371,56 @@ func (queryHandler *QueryHandler) remapQuery(query string) (string, error) {
 		return "", err
 	}
 
-	var statementNode *pgQuery.Node
-	if len(queryTree.Stmts) > 0 {
-		statementNode = queryTree.Stmts[0].Stmt
-	} else {
+	if len(queryTree.Stmts) == 0 {
 		return FALLBACK_SQL_QUERY, nil
 	}
 
-	if statementNode != nil && statementNode.GetSelectStmt() != nil {
-		queryTree = queryHandler.selectRemapper.RemapQueryTreeWithSelect(queryTree)
-		return pgQuery.Deparse(queryTree)
-	}
-
-	if statementNode != nil && statementNode.GetVariableSetStmt() != nil {
-		queryTree = queryHandler.selectRemapper.RemapQueryTreeWithSet(queryTree)
-		return pgQuery.Deparse(queryTree)
-	}
-
-	if statementNode != nil && statementNode.GetDiscardStmt() != nil {
-		return FALLBACK_SQL_QUERY, nil
-	}
-
-	if statementNode != nil && statementNode.GetVariableShowStmt() != nil {
-		variableShowStmt := statementNode.GetVariableShowStmt()
-		if variableShowStmt.Name == "search_path" {
-			return `SELECT CONCAT('"$user", ', value) AS search_path FROM duckdb_settings() WHERE name = 'search_path';`, nil
+	for i, stmt := range queryTree.Stmts {
+		remappedStmt, err := queryHandler.remapStatement(stmt)
+		if err != nil {
+			return "", err
 		}
-		return FALLBACK_SQL_QUERY, nil
+		queryTree.Stmts[i] = remappedStmt
 	}
 
-	LogDebug(queryHandler.config, "Query tree:", queryTree)
-	return "", errors.New("Unsupported query type")
+	return pgQuery.Deparse(queryTree)
+}
+
+func (queryHandler *QueryHandler) remapStatement(stmt *pgQuery.RawStmt) (*pgQuery.RawStmt, error) {
+	node := stmt.Stmt
+
+	switch {
+
+	case node != nil && node.GetSelectStmt() != nil:
+		selectStmt := stmt.Stmt.GetSelectStmt()
+		remappedSelect := queryHandler.selectRemapper.remapSelectStatement(selectStmt, 0)
+		stmt.Stmt = &pgQuery.Node{
+			Node: &pgQuery.Node_SelectStmt{
+				SelectStmt: remappedSelect,
+			},
+		}
+		return stmt, nil
+
+	case node != nil && node.GetVariableSetStmt() != nil:
+		return queryHandler.selectRemapper.RemapSetStatement(stmt), nil
+
+	case node.GetDiscardStmt() != nil:
+		fallbackStmt, _ := pgQuery.Parse(FALLBACK_SQL_QUERY)
+		return fallbackStmt.Stmts[0], nil
+
+	case node != nil && node.GetVariableShowStmt() != nil:
+		variableShowStmt := node.GetVariableShowStmt()
+		if variableShowStmt.Name == "search_path" {
+			searchPathStmt, _ := pgQuery.Parse(`SELECT CONCAT('"$user", ', value) AS search_path FROM duckdb_settings() WHERE name = 'search_path'`)
+			return searchPathStmt.Stmts[0], nil
+		}
+		fallbackStmt, _ := pgQuery.Parse(FALLBACK_SQL_QUERY)
+		return fallbackStmt.Stmts[0], nil
+
+	default:
+		LogDebug(queryHandler.config, "Query tree:", stmt, node)
+		return nil, errors.New("unsupported query type")
+	}
 }
 
 func (queryHandler *QueryHandler) generateRowDescription(cols []*sql.ColumnType) *pgproto3.RowDescription {
