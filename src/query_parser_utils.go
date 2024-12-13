@@ -67,14 +67,3 @@ func (utils *QueryParserUtils) MakeAConstBoolNode(val bool) *pgQuery.Node {
 		},
 	}
 }
-
-func (utils *QueryParserUtils) MakeResTargetNode(val *pgQuery.Node, name string) *pgQuery.Node {
-	return &pgQuery.Node{
-		Node: &pgQuery.Node_ResTarget{
-			ResTarget: &pgQuery.ResTarget{
-				Name: name,
-				Val:  val,
-			},
-		},
-	}
-}

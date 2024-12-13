@@ -149,8 +149,8 @@ func (parser *QueryParserTable) IsTableFromInformationSchema(qSchemaTable QueryS
 }
 
 // iceberg.table -> FROM iceberg_scan('path', skip_schema_inference = true)
-func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string) *pgQuery.Node {
-	return pgQuery.MakeSimpleRangeFunctionNode([]*pgQuery.Node{
+func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string, alias string) *pgQuery.Node {
+	node := pgQuery.MakeSimpleRangeFunctionNode([]*pgQuery.Node{
 		pgQuery.MakeListNode([]*pgQuery.Node{
 			pgQuery.MakeFuncCallNode(
 				[]*pgQuery.Node{
@@ -173,6 +173,36 @@ func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string) *pgQuery.
 			),
 		}),
 	})
+	if alias == "" {
+		return node
+	}
+
+	// DuckDB doesn't support aliases on iceberg_scan() functions, so we need to wrap it in a nested select that can have an alias
+	return &pgQuery.Node{
+		Node: &pgQuery.Node_RangeSubselect{
+			RangeSubselect: &pgQuery.RangeSubselect{
+				Subquery: &pgQuery.Node{
+					Node: &pgQuery.Node_SelectStmt{
+						SelectStmt: &pgQuery.SelectStmt{
+							TargetList: []*pgQuery.Node{
+								pgQuery.MakeResTargetNodeWithVal(
+									pgQuery.MakeColumnRefNode(
+										[]*pgQuery.Node{pgQuery.MakeAStarNode()},
+										0,
+									),
+									0,
+								),
+							},
+							FromClause: []*pgQuery.Node{node},
+						},
+					},
+				},
+				Alias: &pgQuery.Alias{
+					Aliasname: alias,
+				},
+			},
+		},
+	}
 }
 
 // pg_catalog.pg_get_keywords()
@@ -299,73 +329,90 @@ func (parser *QueryParserTable) MakePgShowAllSettingsNode(node *pgQuery.Node) *p
 					Node: &pgQuery.Node_SelectStmt{
 						SelectStmt: &pgQuery.SelectStmt{
 							TargetList: []*pgQuery.Node{
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("name")}, 0),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"name",
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("name")}, 0),
+									0,
 								),
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"setting",
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
+									0,
 								),
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeAConstStrNode("", 0),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"unit",
+									pgQuery.MakeAConstStrNode("", 0),
+									0,
 								),
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeAConstStrNode("Settings", 0),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"category",
+									pgQuery.MakeAConstStrNode("Settings", 0),
+									0,
 								),
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("description")}, 0),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"short_desc",
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("description")}, 0),
+									0,
 								),
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeAConstStrNode("", 0),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"extra_desc",
+									pgQuery.MakeAConstStrNode("", 0),
+									0,
 								),
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("scope")}, 0),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"context",
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("scope")}, 0),
+									0,
 								),
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("input_type")}, 0),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"vartype",
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("input_type")}, 0),
+									0,
 								),
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeAConstStrNode("default", 0),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"source",
+									pgQuery.MakeAConstStrNode("default", 0),
+									0,
 								),
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeAConstStrNode("", 0),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"min_val",
-								),
-								parser.utils.MakeResTargetNode(
 									pgQuery.MakeAConstStrNode("", 0),
+									0,
+								),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"max_val",
-								),
-								parser.utils.MakeResTargetNode(
 									pgQuery.MakeAConstStrNode("", 0),
+									0,
+								),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"enumvals",
-								),
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
-									"boot_val",
-								),
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
-									"reset_val",
-								),
-								parser.utils.MakeResTargetNode(
 									pgQuery.MakeAConstStrNode("", 0),
+									0,
+								),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
+									"boot_val",
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
+									0,
+								),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
+									"reset_val",
+									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
+									0,
+								),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"sourcefile",
+									pgQuery.MakeAConstStrNode("", 0),
+									0,
 								),
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeAConstStrNode("0", 0),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"sourceline",
+									pgQuery.MakeAConstStrNode("0", 0),
+									0,
 								),
-								parser.utils.MakeResTargetNode(
-									pgQuery.MakeAConstStrNode("f", 0),
+								pgQuery.MakeResTargetNodeWithNameAndVal(
 									"pending_restart",
+									pgQuery.MakeAConstStrNode("f", 0),
+									0,
 								),
 							},
 							FromClause: []*pgQuery.Node{

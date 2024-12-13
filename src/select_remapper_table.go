@@ -92,7 +92,7 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 		}
 	}
 	icebergPath := remapper.icebergReader.MetadataFilePath(schemaTable)
-	tableNode := parser.MakeIcebergTableNode(icebergPath)
+	tableNode := parser.MakeIcebergTableNode(icebergPath, qSchemaTable.Alias)
 	return remapper.overrideTable(node, tableNode)
 }
 
