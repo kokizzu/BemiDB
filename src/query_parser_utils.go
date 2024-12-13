@@ -4,6 +4,10 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
+const (
+	DEFAULT_ALIAS = "t"
+)
+
 type QueryParserUtils struct {
 	config *Config
 }
@@ -12,25 +16,23 @@ func NewQueryParserUtils(config *Config) *QueryParserUtils {
 	return &QueryParserUtils{config: config}
 }
 
-func (utils *QueryParserUtils) MakeSubselectNode(columns []string, rowsValues [][]string, alias string) *pgQuery.Node {
-	var columnNodes []*pgQuery.Node
-	for _, column := range columns {
-		columnNodes = append(columnNodes, pgQuery.MakeStrNode(column))
+func (utils *QueryParserUtils) MakeSubselectWithRowsNode(columns []string, rowsValues [][]string, alias string) *pgQuery.Node {
+	columnNodes := make([]*pgQuery.Node, len(columns))
+	for i, column := range columns {
+		columnNodes[i] = pgQuery.MakeStrNode(column)
 	}
 
-	var rowsValuesNodes []*pgQuery.Node
-	for _, rowValues := range rowsValues {
-		var rowValuesNodes []*pgQuery.Node
-		for _, value := range rowValues {
-			rowValuesNodes = append(rowValuesNodes, pgQuery.MakeAConstStrNode(value, 0))
+	rowsValuesNodes := make([]*pgQuery.Node, len(rowsValues))
+	for rowsIndex, rowValues := range rowsValues {
+		rowValuesNodes := make([]*pgQuery.Node, len(rowValues))
+		for rowIndex, value := range rowValues {
+			rowValuesNodes[rowIndex] = pgQuery.MakeAConstStrNode(value, 0)
 		}
-
-		rowsValuesNodes = append(rowsValuesNodes, pgQuery.MakeListNode(rowValuesNodes))
+		rowsValuesNodes[rowsIndex] = pgQuery.MakeListNode(rowValuesNodes)
 	}
 
-	aliasName := alias
-	if aliasName == "" {
-		aliasName = "t"
+	if alias == "" {
+		alias = DEFAULT_ALIAS
 	}
 
 	return &pgQuery.Node{
@@ -44,8 +46,70 @@ func (utils *QueryParserUtils) MakeSubselectNode(columns []string, rowsValues []
 					},
 				},
 				Alias: &pgQuery.Alias{
-					Aliasname: aliasName,
+					Aliasname: alias,
 					Colnames:  columnNodes,
+				},
+			},
+		},
+	}
+}
+
+func (utils *QueryParserUtils) MakeSubselectWithoutRowsNode(columns []string, alias string) *pgQuery.Node {
+	columnNodes := make([]*pgQuery.Node, len(columns))
+	for i, column := range columns {
+		columnNodes[i] = pgQuery.MakeStrNode(column)
+	}
+
+	targetList := make([]*pgQuery.Node, len(columns))
+	for i, _ := range columns {
+		targetList[i] = pgQuery.MakeResTargetNodeWithVal(
+			utils.MakeAConstBoolNode(false),
+			0,
+		)
+	}
+
+	if alias == "" {
+		alias = DEFAULT_ALIAS
+	}
+
+	return &pgQuery.Node{
+		Node: &pgQuery.Node_RangeSubselect{
+			RangeSubselect: &pgQuery.RangeSubselect{
+				Subquery: &pgQuery.Node{
+					Node: &pgQuery.Node_SelectStmt{
+						SelectStmt: &pgQuery.SelectStmt{
+							TargetList:  targetList,
+							WhereClause: utils.MakeAConstBoolNode(false),
+						},
+					},
+				},
+				Alias: &pgQuery.Alias{
+					Aliasname: alias,
+					Colnames:  columnNodes,
+				},
+			},
+		},
+	}
+}
+
+func (utils *QueryParserUtils) MakeSubselectFromNode(targetList []*pgQuery.Node, fromNode *pgQuery.Node, alias string) *pgQuery.Node {
+	if alias == "" {
+		alias = DEFAULT_ALIAS
+	}
+
+	return &pgQuery.Node{
+		Node: &pgQuery.Node_RangeSubselect{
+			RangeSubselect: &pgQuery.RangeSubselect{
+				Subquery: &pgQuery.Node{
+					Node: &pgQuery.Node_SelectStmt{
+						SelectStmt: &pgQuery.SelectStmt{
+							TargetList: targetList,
+							FromClause: []*pgQuery.Node{fromNode},
+						},
+					},
+				},
+				Alias: &pgQuery.Alias{
+					Aliasname: alias,
 				},
 			},
 		},

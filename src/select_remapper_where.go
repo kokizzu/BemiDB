@@ -20,17 +20,18 @@ func NewSelectRemapperWhere(config *Config) *SelectRemapperWhere {
 
 // WHERE [CONDITION]
 func (remapper *SelectRemapperWhere) RemapWhere(qSchemaTable QuerySchemaTable, selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
-	// FROM pg_catalog.pg_namespace -> FROM pg_catalog.pg_namespace WHERE nspname != 'main'
-	if remapper.parserTable.IsPgNamespaceTable(qSchemaTable) {
-		withoutMainSchemaWhereCondition := remapper.parserWhere.MakeExpressionNode("nspname", "!=", "main")
-		return remapper.parserWhere.AppendWhereCondition(selectStatement, withoutMainSchemaWhereCondition)
-	}
-
-	// FROM pg_catalog.pg_statio_user_tables -> FROM pg_catalog.pg_statio_user_tables WHERE false
-	if remapper.parserTable.IsPgStatioUserTablesTable(qSchemaTable) {
-		falseWhereCondition := remapper.parserWhere.MakeFalseConditionNode()
-		selectStatement = remapper.parserWhere.OverrideWhereCondition(selectStatement, falseWhereCondition)
-		return selectStatement
+	if remapper.parserTable.IsTableFromPgCatalog(qSchemaTable) {
+		switch qSchemaTable.Table {
+		case PG_TABLE_PG_NAMESPACE:
+			// FROM pg_catalog.pg_namespace -> FROM pg_catalog.pg_namespace WHERE nspname != 'main'
+			withoutMainSchemaWhereCondition := remapper.parserWhere.MakeExpressionNode("nspname", "!=", "main")
+			return remapper.parserWhere.AppendWhereCondition(selectStatement, withoutMainSchemaWhereCondition)
+		case PG_TABLE_PG_STATIO_USER_TABLES:
+			// FROM pg_catalog.pg_statio_user_tables -> FROM pg_catalog.pg_statio_user_tables WHERE false
+			falseWhereCondition := remapper.parserWhere.MakeFalseConditionNode()
+			selectStatement = remapper.parserWhere.OverrideWhereCondition(selectStatement, falseWhereCondition)
+			return selectStatement
+		}
 	}
 
 	return selectStatement

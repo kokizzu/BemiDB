@@ -6,15 +6,7 @@ import (
 
 const (
 	// PG_SCHEMA_PG_CATALOG = "pg_catalog" Already defined in pg_schema_column.go
-	PG_TABLE_PG_STATIO_USER_TABLES = "pg_statio_user_tables"
-	PG_TABLE_PG_SHADOW             = "pg_shadow"
-	PG_TABLE_PG_NAMESPACE          = "pg_namespace"
-	PG_TABLE_PG_ROLES              = "pg_roles"
-	PG_TABLE_PG_SHDESCRIPTION      = "pg_shdescription"
-	PG_TABLE_PG_CLASS              = "pg_class"
-
 	PG_SCHEMA_INFORMATION_SCHEMA = "information_schema"
-	PG_TABLE_TABLES              = "tables"
 
 	PG_FUNCTION_PG_GET_KEYWORDS      = "pg_get_keywords"
 	PG_FUNCTION_ARRAY_UPPER          = "array_upper"
@@ -45,22 +37,8 @@ func (parser *QueryParserTable) NodeToQuerySchemaTable(node *pgQuery.Node) Query
 	}
 }
 
-// pg_catalog.pg_statio_user_tables
-func (parser *QueryParserTable) IsPgStatioUserTablesTable(qSchemaTable QuerySchemaTable) bool {
-	return parser.isPgCatalogSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_PG_STATIO_USER_TABLES
-}
-
-// pg_catalog.pg_statio_user_tables -> return nothing
-func (parser *QueryParserTable) MakePgStatioUserTablesNode(alias string) *pgQuery.Node {
-	columns := PG_STATIO_USER_TABLES_VALUE_BY_COLUMN.Keys()
-	rowValues := PG_STATIO_USER_TABLES_VALUE_BY_COLUMN.Values()
-
-	return parser.utils.MakeSubselectNode(columns, [][]string{rowValues}, alias)
-}
-
-// pg_catalog.pg_shadow
-func (parser *QueryParserTable) IsPgShadowTable(qSchemaTable QuerySchemaTable) bool {
-	return parser.isPgCatalogSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_PG_SHADOW
+func (parser *QueryParserTable) MakeEmptyTableNode(columns []string, alias string) *pgQuery.Node {
+	return parser.utils.MakeSubselectWithoutRowsNode(columns, alias)
 }
 
 // pg_catalog.pg_shadow -> VALUES(values...) t(columns...)
@@ -82,12 +60,7 @@ func (parser *QueryParserTable) MakePgShadowNode(user string, encryptedPassword 
 	}
 	rowsValues = append(rowsValues, rowValues)
 
-	return parser.utils.MakeSubselectNode(columns, rowsValues, alias)
-}
-
-// pg_catalog.pg_roles
-func (parser *QueryParserTable) IsPgRolesTable(qSchemaTable QuerySchemaTable) bool {
-	return parser.isPgCatalogSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_PG_ROLES
+	return parser.utils.MakeSubselectWithRowsNode(columns, rowsValues, alias)
 }
 
 // pg_catalog.pg_roles -> VALUES(values...) t(columns...)
@@ -106,41 +79,13 @@ func (parser *QueryParserTable) MakePgRolesNode(user string, alias string) *pgQu
 	}
 	rowsValues = append(rowsValues, rowValues)
 
-	return parser.utils.MakeSubselectNode(columns, rowsValues, alias)
+	return parser.utils.MakeSubselectWithRowsNode(columns, rowsValues, alias)
 }
 
-// pg_catalog.pg_namespace
-func (parser *QueryParserTable) IsPgNamespaceTable(qSchemaTable QuerySchemaTable) bool {
-	return parser.isPgCatalogSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_PG_NAMESPACE
-}
-
-// pg_catalog.pg_shdescription
-func (parser *QueryParserTable) IsPgShdescriptionTable(qSchemaTable QuerySchemaTable) bool {
-	return parser.isPgCatalogSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_PG_SHDESCRIPTION
-}
-
-// pg_catalog.pg_shdescription -> return nothing
-func (parser *QueryParserTable) MakePgShdescriptionNode(alias string) *pgQuery.Node {
-	columns := PG_SHDESCRIPTION_VALUE_BY_COLUMN.Keys()
-	rowValues := PG_SHDESCRIPTION_VALUE_BY_COLUMN.Values()
-
-	return parser.utils.MakeSubselectNode(columns, [][]string{rowValues}, alias)
-}
-
-// pg_catalog.pg_class
-func (parser *QueryParserTable) IsPgClassTable(qSchemaTable QuerySchemaTable) bool {
-	return parser.isPgCatalogSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_PG_CLASS
-}
-
-// Other system pg_* tables
+// System pg_* tables
 func (parser *QueryParserTable) IsTableFromPgCatalog(qSchemaTable QuerySchemaTable) bool {
 	return parser.isPgCatalogSchema(qSchemaTable) &&
 		(PG_SYSTEM_TABLES.Contains(qSchemaTable.Table) || PG_SYSTEM_VIEWS.Contains(qSchemaTable.Table))
-}
-
-// information_schema.tables
-func (parser *QueryParserTable) IsInformationSchemaTablesTable(qSchemaTable QuerySchemaTable) bool {
-	return parser.IsTableFromInformationSchema(qSchemaTable) && qSchemaTable.Table == PG_TABLE_TABLES
 }
 
 // Other information_schema.* tables
@@ -178,31 +123,14 @@ func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string, alias str
 	}
 
 	// DuckDB doesn't support aliases on iceberg_scan() functions, so we need to wrap it in a nested select that can have an alias
-	return &pgQuery.Node{
-		Node: &pgQuery.Node_RangeSubselect{
-			RangeSubselect: &pgQuery.RangeSubselect{
-				Subquery: &pgQuery.Node{
-					Node: &pgQuery.Node_SelectStmt{
-						SelectStmt: &pgQuery.SelectStmt{
-							TargetList: []*pgQuery.Node{
-								pgQuery.MakeResTargetNodeWithVal(
-									pgQuery.MakeColumnRefNode(
-										[]*pgQuery.Node{pgQuery.MakeAStarNode()},
-										0,
-									),
-									0,
-								),
-							},
-							FromClause: []*pgQuery.Node{node},
-						},
-					},
-				},
-				Alias: &pgQuery.Alias{
-					Aliasname: alias,
-				},
-			},
-		},
-	}
+	selectStarNode := pgQuery.MakeResTargetNodeWithVal(
+		pgQuery.MakeColumnRefNode(
+			[]*pgQuery.Node{pgQuery.MakeAStarNode()},
+			0,
+		),
+		0,
+	)
+	return parser.utils.MakeSubselectFromNode([]*pgQuery.Node{selectStarNode}, node, alias)
 }
 
 // pg_catalog.pg_get_keywords()
@@ -264,7 +192,7 @@ func (parser *QueryParserTable) MakePgGetKeywordsNode(node *pgQuery.Node) *pgQue
 		alias = node.GetAlias().Aliasname
 	}
 
-	return parser.utils.MakeSubselectNode(columns, rows, alias)
+	return parser.utils.MakeSubselectWithRowsNode(columns, rows, alias)
 }
 
 // array_upper(array, 1)
@@ -322,119 +250,111 @@ func (parser *QueryParserTable) IsPgShowAllSettingsFunction(node *pgQuery.Node) 
 
 // pg_show_all_settings() -> duckdb_settings() mapped to pg format
 func (parser *QueryParserTable) MakePgShowAllSettingsNode(node *pgQuery.Node) *pgQuery.Node {
-	return &pgQuery.Node{
-		Node: &pgQuery.Node_RangeSubselect{
-			RangeSubselect: &pgQuery.RangeSubselect{
-				Subquery: &pgQuery.Node{
-					Node: &pgQuery.Node_SelectStmt{
-						SelectStmt: &pgQuery.SelectStmt{
-							TargetList: []*pgQuery.Node{
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"name",
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("name")}, 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"setting",
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"unit",
-									pgQuery.MakeAConstStrNode("", 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"category",
-									pgQuery.MakeAConstStrNode("Settings", 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"short_desc",
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("description")}, 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"extra_desc",
-									pgQuery.MakeAConstStrNode("", 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"context",
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("scope")}, 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"vartype",
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("input_type")}, 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"source",
-									pgQuery.MakeAConstStrNode("default", 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"min_val",
-									pgQuery.MakeAConstStrNode("", 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"max_val",
-									pgQuery.MakeAConstStrNode("", 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"enumvals",
-									pgQuery.MakeAConstStrNode("", 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"boot_val",
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"reset_val",
-									pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"sourcefile",
-									pgQuery.MakeAConstStrNode("", 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"sourceline",
-									pgQuery.MakeAConstStrNode("0", 0),
-									0,
-								),
-								pgQuery.MakeResTargetNodeWithNameAndVal(
-									"pending_restart",
-									pgQuery.MakeAConstStrNode("f", 0),
-									0,
-								),
-							},
-							FromClause: []*pgQuery.Node{
-								pgQuery.MakeSimpleRangeFunctionNode([]*pgQuery.Node{
-									pgQuery.MakeListNode([]*pgQuery.Node{
-										pgQuery.MakeFuncCallNode(
-											[]*pgQuery.Node{
-												pgQuery.MakeStrNode("duckdb_settings"),
-											},
-											nil,
-											0,
-										),
-									}),
-								}),
-							},
-						},
-					},
-				},
-				Alias: node.GetAlias(),
-			},
-		},
+	targetList := []*pgQuery.Node{
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"name",
+			pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("name")}, 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"setting",
+			pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"unit",
+			pgQuery.MakeAConstStrNode("", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"category",
+			pgQuery.MakeAConstStrNode("Settings", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"short_desc",
+			pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("description")}, 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"extra_desc",
+			pgQuery.MakeAConstStrNode("", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"context",
+			pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("scope")}, 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"vartype",
+			pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("input_type")}, 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"source",
+			pgQuery.MakeAConstStrNode("default", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"min_val",
+			pgQuery.MakeAConstStrNode("", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"max_val",
+			pgQuery.MakeAConstStrNode("", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"enumvals",
+			pgQuery.MakeAConstStrNode("", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"boot_val",
+			pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"reset_val",
+			pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("value")}, 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"sourcefile",
+			pgQuery.MakeAConstStrNode("", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"sourceline",
+			pgQuery.MakeAConstStrNode("0", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"pending_restart",
+			pgQuery.MakeAConstStrNode("f", 0),
+			0,
+		),
 	}
+	fromNode := pgQuery.MakeSimpleRangeFunctionNode([]*pgQuery.Node{
+		pgQuery.MakeListNode([]*pgQuery.Node{
+			pgQuery.MakeFuncCallNode(
+				[]*pgQuery.Node{
+					pgQuery.MakeStrNode("duckdb_settings"),
+				},
+				nil,
+				0,
+			),
+		}),
+	})
+
+	var alias string
+	if node.GetAlias() != nil {
+		alias = node.GetAlias().Aliasname
+	}
+
+	return parser.utils.MakeSubselectFromNode(targetList, fromNode, alias)
 }
 
 func (parser *QueryParserTable) isPgCatalogSchema(qSchemaTable QuerySchemaTable) bool {
@@ -486,6 +406,7 @@ var PG_SYSTEM_TABLES = NewSet([]string{
 	"pg_range",
 	"pg_replication_origin",
 	"pg_rewrite",
+	"pg_roles",
 	"pg_seclabel",
 	"pg_sequence",
 	"pg_shadow",
@@ -555,20 +476,6 @@ var PG_SYSTEM_VIEWS = NewSet([]string{
 	"pg_statio_user_sequences",
 })
 
-var PG_STATIO_USER_TABLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{
-	{"relid", "0"},
-	{"schemaname", "public"},
-	{"relname", "bemidb_table"},
-	{"heap_blks_read", "0"},
-	{"heap_blks_hit", "0"},
-	{"idx_blks_read", "0"},
-	{"idx_blks_hit", "0"},
-	{"toast_blks_read", "0"},
-	{"toast_blks_hit", "0"},
-	{"tidx_blks_read", "0"},
-	{"tidx_blks_hit", "0"},
-})
-
 var PG_SHADOW_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 	{"usename", "bemidb"},
 	{"usesysid", "10"},
@@ -595,12 +502,6 @@ var PG_ROLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 	{"rolvaliduntil", "NULL"},
 	{"rolbypassrls", "false"},
 	{"rolconfig", "NULL"},
-})
-
-var PG_SHDESCRIPTION_VALUE_BY_COLUMN = NewOrderedMap([][]string{
-	{"objoid", "0"},
-	{"classoid", "0"},
-	{"description", "NULL"},
 })
 
 type DuckDBKeyword struct {

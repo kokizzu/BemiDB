@@ -65,24 +65,21 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"nspname"},
 			"values":      {"public"},
 		},
-		// pg_statio_user_tables
 		"SELECT pg_total_relation_size(relid) AS total_size FROM pg_catalog.pg_statio_user_tables WHERE schemaname = 'public'": {
 			"description": {"total_size"},
-			"values":      {},
 		},
 		"SELECT pg_total_relation_size(relid) AS total_size FROM pg_catalog.pg_statio_user_tables WHERE schemaname = 'public' UNION SELECT NULL AS total_size FROM pg_catalog.pg_proc p LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public'": {
 			"description": {"total_size"},
-			"values":      {},
 		},
-		// pg_shdescription
 		"SELECT * FROM pg_catalog.pg_shdescription": {
 			"description": {"objoid", "classoid", "description"},
-			"values":      {"0", "0", "NULL"},
 		},
-		// pg_roles
 		"SELECT * FROM pg_catalog.pg_roles": {
 			"description": {"oid", "rolname", "rolsuper", "rolinherit", "rolcreaterole", "rolcreatedb", "rolcanlogin", "rolreplication", "rolconnlimit", "rolpassword", "rolvaliduntil", "rolbypassrls", "rolconfig"},
 			"values":      {"10", "bemidb", "true", "true", "true", "true", "true", "false", "-1", "NULL", "NULL", "false", "NULL"},
+		},
+		"SELECT * FROM pg_catalog.pg_inherits": {
+			"description": {"inhrelid", "inhparent", "inhseqno", "inhdetachpending"},
 		},
 		// Information schema
 		"SELECT * FROM information_schema.tables": {

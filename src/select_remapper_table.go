@@ -8,6 +8,16 @@ import (
 
 const (
 	PG_SCHEMA_PUBLIC = "public"
+
+	PG_TABLE_PG_INHERITS           = "pg_inherits"
+	PG_TABLE_PG_SHDESCRIPTION      = "pg_shdescription"
+	PG_TABLE_PG_STATIO_USER_TABLES = "pg_statio_user_tables"
+	PG_TABLE_PG_SHADOW             = "pg_shadow"
+	PG_TABLE_PG_NAMESPACE          = "pg_namespace"
+	PG_TABLE_PG_ROLES              = "pg_roles"
+	PG_TABLE_PG_CLASS              = "pg_class"
+
+	PG_TABLE_TABLES = "tables"
 )
 
 type SelectRemapperTable struct {
@@ -34,50 +44,50 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 	parser := remapper.parserTable
 	qSchemaTable := parser.NodeToQuerySchemaTable(node)
 
-	// pg_catalog.pg_statio_user_tables -> return nothing
-	if parser.IsPgStatioUserTablesTable(qSchemaTable) {
-		tableNode := parser.MakePgStatioUserTablesNode(qSchemaTable.Alias)
-		return remapper.overrideTable(node, tableNode)
-	}
-
-	// pg_catalog.pg_shadow -> return hard-coded credentials
-	if parser.IsPgShadowTable(qSchemaTable) {
-		tableNode := parser.MakePgShadowNode(remapper.config.User, remapper.config.EncryptedPassword, qSchemaTable.Alias)
-		return remapper.overrideTable(node, tableNode)
-	}
-
-	// pg_catalog.pg_roles -> return hard-coded role info
-	if parser.IsPgRolesTable(qSchemaTable) {
-		tableNode := parser.MakePgRolesNode(remapper.config.User, qSchemaTable.Alias)
-		return remapper.overrideTable(node, tableNode)
-	}
-
-	// pg_catalog.pg_shdescription -> return nothing
-	if parser.IsPgShdescriptionTable(qSchemaTable) {
-		tableNode := parser.MakePgShdescriptionNode(qSchemaTable.Alias)
-		return remapper.overrideTable(node, tableNode)
-	}
-
-	// pg_catalog.pg_class -> reload Iceberg tables
-	if parser.IsPgClassTable(qSchemaTable) {
-		remapper.reloadIceberSchemaTables()
-		return node
-	}
-
-	// pg_catalog.pg_* other system tables -> return as is
+	// pg_catalog.pg_* system tables
 	if parser.IsTableFromPgCatalog(qSchemaTable) {
-		return node
+		switch qSchemaTable.Table {
+		case PG_TABLE_PG_SHADOW:
+			// pg_catalog.pg_shadow -> return hard-coded credentials
+			tableNode := parser.MakePgShadowNode(remapper.config.User, remapper.config.EncryptedPassword, qSchemaTable.Alias)
+			return remapper.overrideTable(node, tableNode)
+		case PG_TABLE_PG_ROLES:
+			// pg_catalog.pg_roles -> return hard-coded role info
+			tableNode := parser.MakePgRolesNode(remapper.config.User, qSchemaTable.Alias)
+			return remapper.overrideTable(node, tableNode)
+		case PG_TABLE_PG_CLASS:
+			// pg_catalog.pg_class -> reload Iceberg tables
+			remapper.reloadIceberSchemaTables()
+			return node
+		case PG_TABLE_PG_INHERITS:
+			// pg_catalog.pg_inherits -> return nothing
+			tableNode := parser.MakeEmptyTableNode(PG_INHERITS_COLUMNS, qSchemaTable.Alias)
+			return remapper.overrideTable(node, tableNode)
+		case PG_TABLE_PG_SHDESCRIPTION:
+			// pg_catalog.pg_shdescription -> return nothing
+			tableNode := parser.MakeEmptyTableNode(PG_SHDESCRIPTION_COLUMNS, qSchemaTable.Alias)
+			return remapper.overrideTable(node, tableNode)
+		case PG_TABLE_PG_STATIO_USER_TABLES:
+			// pg_catalog.pg_statio_user_tables -> return nothing
+			tableNode := parser.MakeEmptyTableNode(PG_STATIO_USER_TABLES_COLUMNS, qSchemaTable.Alias)
+			return remapper.overrideTable(node, tableNode)
+		default:
+			// pg_catalog.pg_* other system tables -> return as is
+			return node
+		}
 	}
 
-	// information_schema.tables -> reload Iceberg tables
-	if parser.IsInformationSchemaTablesTable(qSchemaTable) {
-		remapper.reloadIceberSchemaTables()
-		return node
-	}
-
-	// information_schema.* other system tables -> return as is
+	// information_schema.* system tables
 	if parser.IsTableFromInformationSchema(qSchemaTable) {
-		return node
+		switch qSchemaTable.Table {
+		case PG_TABLE_TABLES:
+			// information_schema.tables -> reload Iceberg tables
+			remapper.reloadIceberSchemaTables()
+			return node
+		default:
+			// information_schema.* other system tables -> return as is
+			return node
+		}
 	}
 
 	// iceberg.table -> FROM iceberg_scan('iceberg/schema/table/metadata/v1.metadata.json', skip_schema_inference = true)
@@ -145,4 +155,31 @@ func (remapper *SelectRemapperTable) icebergSchemaTableExists(schemaTable Iceber
 		}
 	}
 	return false
+}
+
+var PG_INHERITS_COLUMNS = []string{
+	"inhrelid",
+	"inhparent",
+	"inhseqno",
+	"inhdetachpending",
+}
+
+var PG_SHDESCRIPTION_COLUMNS = []string{
+	"objoid",
+	"classoid",
+	"description",
+}
+
+var PG_STATIO_USER_TABLES_COLUMNS = []string{
+	"relid",
+	"schemaname",
+	"relname",
+	"heap_blks_read",
+	"heap_blks_hit",
+	"idx_blks_read",
+	"idx_blks_hit",
+	"toast_blks_read",
+	"toast_blks_hit",
+	"tidx_blks_read",
+	"tidx_blks_hit",
 }
