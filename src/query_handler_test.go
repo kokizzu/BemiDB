@@ -338,6 +338,14 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"tsvector_column"},
 			"values":      {""},
 		},
+		"SELECT xml_column FROM public.test_table WHERE xml_column IS NOT NULL": {
+			"description": {"xml_column"},
+			"values":      {"<root><child>text</child></root>"},
+		},
+		"SELECT xml_column FROM public.test_table WHERE xml_column IS NULL": {
+			"description": {"xml_column"},
+			"values":      {""},
+		},
 		"SELECT pg_snapshot_column FROM public.test_table WHERE pg_snapshot_column IS NOT NULL": {
 			"description": {"pg_snapshot_column"},
 			"values":      {"2784:2784:"},
