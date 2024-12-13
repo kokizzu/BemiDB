@@ -28,9 +28,12 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"setting"},
 			"values":      {"nulls_last"},
 		},
-		// pg_get_partkeydef
 		"SELECT pg_catalog.pg_get_partkeydef(c.oid) FROM pg_catalog.pg_class c LIMIT 1": {
 			"description": {"pg_get_partkeydef"},
+			"values":      {""},
+		},
+		"SELECT pg_tablespace_location(t.oid) loc FROM pg_catalog.pg_tablespace": {
+			"description": {"loc"},
 			"values":      {""},
 		},
 		// PG system tables

@@ -4,6 +4,17 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
+var REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME = map[string]string{
+	"version":                            "PostgreSQL " + PG_VERSION + ", compiled by Bemi",
+	"pg_get_userbyid":                    "bemidb",
+	"pg_get_function_identity_arguments": "",
+	"pg_total_relation_size":             "0",
+	"pg_table_size":                      "0",
+	"pg_indexes_size":                    "0",
+	"pg_get_partkeydef":                  "",
+	"pg_tablespace_location":             "",
+}
+
 type SelectRemapperSelect struct {
 	parserSelect *QueryParserSelect
 	config       *Config
