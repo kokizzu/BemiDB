@@ -36,6 +36,9 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"loc"},
 			"values":      {""},
 		},
+		"SELECT pg_catalog.pg_get_expr(adbin, drelid, TRUE) AS def_value FROM pg_catalog.pg_attrdef": {
+			"description": {"def_value"},
+		},
 		// PG system tables
 		"SELECT oid, typname AS typename FROM pg_type WHERE typname='geometry' OR typname='geography'": {
 			"description": {"oid", "typename"},

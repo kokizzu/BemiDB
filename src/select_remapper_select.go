@@ -29,30 +29,31 @@ func NewSelectRemapperSelect(config *Config) *SelectRemapperSelect {
 
 // SELECT [PG_FUNCTION()]
 func (remapper *SelectRemapperSelect) RemapSelect(targetNode *pgQuery.Node) *pgQuery.Node {
-	target := targetNode.GetResTarget()
-
-	if target.Val.GetFuncCall() != nil {
-		functionCall := target.Val.GetFuncCall()
-		originalFunctionName := functionCall.Funcname[len(functionCall.Funcname)-1].GetString_().Sval
-
-		renamedFunctionCall := remapper.remappedFunctionName(functionCall)
-		if renamedFunctionCall != nil {
-			functionCall = renamedFunctionCall
-			if target.Name == "" {
-				target.Name = originalFunctionName
-			}
-		}
-
-		constantNode := remapper.remappedConstantNode(functionCall)
-		if constantNode != nil {
-			target.Val = constantNode
-			if target.Name == "" {
-				target.Name = originalFunctionName
-			}
-		}
-
-		functionCall = remapper.remapFunctionCallArgs(functionCall)
+	functionCall := remapper.parserSelect.FunctionCall(targetNode)
+	if functionCall == nil {
+		return targetNode
 	}
+
+	originalFunctionName := remapper.parserSelect.FunctionName(functionCall)
+
+	renamedNameFunction := remapper.remappedFunctionName(functionCall)
+	if renamedNameFunction != nil {
+		functionCall = renamedNameFunction
+		remapper.parserSelect.SetDefaultTargetName(targetNode, originalFunctionName)
+	}
+
+	remappedArgsFunction := remapper.remappedFunctionArgs(functionCall)
+	if remappedArgsFunction != nil {
+		functionCall = remappedArgsFunction
+	}
+
+	constantNode := remapper.remappedToConstant(functionCall)
+	if constantNode != nil {
+		remapper.parserSelect.OverrideTargetValue(targetNode, constantNode)
+		remapper.parserSelect.SetDefaultTargetName(targetNode, originalFunctionName)
+	}
+
+	functionCall = remapper.remapNestedFunctionCalls(functionCall) // recursive
 
 	return targetNode
 }
@@ -68,46 +69,53 @@ func (remapper *SelectRemapperSelect) SubselectStatement(targetNode *pgQuery.Nod
 }
 
 func (remapper *SelectRemapperSelect) remappedFunctionName(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
-	functionName := functionCall.Funcname[len(functionCall.Funcname)-1].GetString_().Sval
+	functionName := remapper.parserSelect.FunctionName(functionCall)
 
+	// quote_ident(str) -> concat("\""+str+"\"")
 	if remapper.parserSelect.IsQuoteIdentFunction(functionName) {
-		functionCall.Funcname[0] = pgQuery.MakeStrNode("concat")
-		argConstant := functionCall.Args[0].GetAConst()
-		if argConstant != nil {
-			str := argConstant.GetSval().Sval
-			str = "\"" + str + "\""
-			functionCall.Args[0] = pgQuery.MakeAConstStrNode(str, 0)
-		}
-
-		return functionCall
+		return remapper.parserSelect.RemapQuoteIdentToConcat(functionCall)
 	}
 
 	return nil
 }
 
-func (remapper *SelectRemapperSelect) remapFunctionCallArgs(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
-	for i, arg := range functionCall.Args {
-		if arg.GetFuncCall() != nil {
-			argFunctionCall := arg.GetFuncCall()
+func (remapper *SelectRemapperSelect) remappedFunctionArgs(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
+	functionName := remapper.parserSelect.FunctionName(functionCall)
 
-			renamedFunctionCall := remapper.remappedFunctionName(argFunctionCall)
-			if renamedFunctionCall != nil {
-				argFunctionCall = renamedFunctionCall
-			}
+	// pg_get_expr(pg_node_tree, relation_oid, pretty_bool) -> pg_get_expr(pg_node_tree, relation_oid)
+	if remapper.parserSelect.IsPgGetExprFunction(functionName) {
+		return remapper.parserSelect.RemoveThirdArgumentFromPgGetExpr(functionCall)
+	}
 
-			constantNode := remapper.remappedConstantNode(argFunctionCall)
-			if constantNode != nil {
-				functionCall.Args[i] = constantNode
-			}
-			argFunctionCall = remapper.remapFunctionCallArgs(argFunctionCall)
+	return nil
+}
+
+func (remapper *SelectRemapperSelect) remapNestedFunctionCalls(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
+	nestedFunctionCalls := remapper.parserSelect.NestedFunctionCalls(functionCall)
+
+	for i, nestedFunctionCall := range nestedFunctionCalls {
+		if nestedFunctionCall == nil {
+			continue
 		}
+
+		renamedFunctionCall := remapper.remappedFunctionName(nestedFunctionCall)
+		if renamedFunctionCall != nil {
+			nestedFunctionCall = renamedFunctionCall
+		}
+
+		constantNode := remapper.remappedToConstant(nestedFunctionCall)
+		if constantNode != nil {
+			remapper.parserSelect.OverrideFunctionCallArg(functionCall, i, constantNode)
+		}
+
+		nestedFunctionCall = remapper.remapNestedFunctionCalls(nestedFunctionCall)
 	}
 
 	return functionCall
 }
 
-func (remapper *SelectRemapperSelect) remappedConstantNode(functionCall *pgQuery.FuncCall) *pgQuery.Node {
-	functionName := functionCall.Funcname[len(functionCall.Funcname)-1].GetString_().Sval
+func (remapper *SelectRemapperSelect) remappedToConstant(functionCall *pgQuery.FuncCall) *pgQuery.Node {
+	functionName := remapper.parserSelect.FunctionName(functionCall)
 	constant, ok := REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME[functionName]
 	if ok {
 		return pgQuery.MakeAConstStrNode(constant, 0)
