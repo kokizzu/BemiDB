@@ -53,7 +53,9 @@ func (syncer *Syncer) SyncFromPostgres() {
 		}
 	}
 
-	syncer.deleteOldIcebergSchemaTables(pgSchemaTables)
+	if syncer.config.Pg.SchemaPrefix == "" {
+		syncer.deleteOldIcebergSchemaTables(pgSchemaTables)
+	}
 }
 
 // Example:
