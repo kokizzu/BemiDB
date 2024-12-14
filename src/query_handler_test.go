@@ -52,6 +52,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"relname"},
 			"values":      {"test_table"},
 		},
+		"SELECT oid FROM pg_catalog.pg_extension": {
+			"description": {"oid"},
+			"values":      {"13823"},
+		},
 		// pg_namespace
 		"SELECT DISTINCT(nspname) FROM pg_catalog.pg_namespace WHERE nspname != 'information_schema' AND nspname != 'pg_catalog'": {
 			"description": {"nspname"},

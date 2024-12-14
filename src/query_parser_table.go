@@ -82,6 +82,14 @@ func (parser *QueryParserTable) MakePgRolesNode(user string, alias string) *pgQu
 	return parser.utils.MakeSubselectWithRowsNode(columns, rowsValues, alias)
 }
 
+// pg_catalog.pg_extension -> VALUES(values...) t(columns...)
+func (parser *QueryParserTable) MakePgExtensionNode(alias string) *pgQuery.Node {
+    columns := PG_EXTENSION_VALUE_BY_COLUMN.Keys()
+    staticRowValues := PG_EXTENSION_VALUE_BY_COLUMN.Values()
+    rowsValues := [][]string{staticRowValues}
+    return parser.utils.MakeSubselectWithRowsNode(columns, rowsValues, alias)
+}
+
 // System pg_* tables
 func (parser *QueryParserTable) IsTableFromPgCatalog(qSchemaTable QuerySchemaTable) bool {
 	return parser.isPgCatalogSchema(qSchemaTable) &&
@@ -502,6 +510,17 @@ var PG_ROLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 	{"rolvaliduntil", "NULL"},
 	{"rolbypassrls", "false"},
 	{"rolconfig", "NULL"},
+})
+
+var PG_EXTENSION_VALUE_BY_COLUMN = NewOrderedMap([][]string{
+    {"oid", "13823"},
+    {"extname", "plpgsql"},
+    {"extowner", "10"},
+    {"extnamespace", "11"},
+    {"extrelocatable", "false"},
+    {"extversion", "1.0"},
+    {"extconfig", "NULL"},
+    {"extcondition", "NULL"},
 })
 
 type DuckDBKeyword struct {

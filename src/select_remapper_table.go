@@ -16,6 +16,7 @@ const (
 	PG_TABLE_PG_NAMESPACE          = "pg_namespace"
 	PG_TABLE_PG_ROLES              = "pg_roles"
 	PG_TABLE_PG_CLASS              = "pg_class"
+	PG_TABLE_PG_EXTENSION          = "pg_extension"
 
 	PG_TABLE_TABLES = "tables"
 )
@@ -70,6 +71,10 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 		case PG_TABLE_PG_STATIO_USER_TABLES:
 			// pg_catalog.pg_statio_user_tables -> return nothing
 			tableNode := parser.MakeEmptyTableNode(PG_STATIO_USER_TABLES_COLUMNS, qSchemaTable.Alias)
+			return remapper.overrideTable(node, tableNode)
+		case PG_TABLE_PG_EXTENSION:
+			// pg_catalog.pg_extension -> return hard-coded extension info
+			tableNode := parser.MakePgExtensionNode(qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		default:
 			// pg_catalog.pg_* other system tables -> return as is
