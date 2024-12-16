@@ -68,6 +68,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"oid", "datname", "datdba"},
 			"values":      {"1146", "memory", ""},
 		},
+		"SELECT * FROM pg_catalog.pg_stat_gssapi": {
+			"description": {"pid", "gss_authenticated", "principal", "encrypted", "credentials_delegated"},
+			"values":      {},
+		},
 		// pg_namespace
 		"SELECT DISTINCT(nspname) FROM pg_catalog.pg_namespace WHERE nspname != 'information_schema' AND nspname != 'pg_catalog'": {
 			"description": {"nspname"},
