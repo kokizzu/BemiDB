@@ -60,6 +60,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"slot_name"},
 			"values":      {},
 		},
+		"SELECT oid, datname, datdba FROM pg_catalog.pg_database where oid = 1146": {
+			"description": {"oid", "datname", "datdba"},
+			"values":      {"1146", "memory", ""},
+		},
 		// pg_namespace
 		"SELECT DISTINCT(nspname) FROM pg_catalog.pg_namespace WHERE nspname != 'information_schema' AND nspname != 'pg_catalog'": {
 			"description": {"nspname"},

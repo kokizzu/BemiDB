@@ -18,6 +18,7 @@ const (
 	PG_TABLE_PG_CLASS              = "pg_class"
 	PG_TABLE_PG_EXTENSION          = "pg_extension"
 	PG_TABLE_PG_REPLICATION_SLOTS  = "pg_replication_slots"
+	PG_TABLE_PG_DATABASE           = "pg_database"
 
 	PG_TABLE_TABLES = "tables"
 )
@@ -80,6 +81,10 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 		case PG_TABLE_PG_REPLICATION_SLOTS:
 			// pg_replication_slots -> return nothing
 			tableNode := parser.MakeEmptyTableNode(PG_REPLICATION_SLOTS_COLUMNS, qSchemaTable.Alias)
+			return remapper.overrideTable(node, tableNode)
+		case PG_TABLE_PG_DATABASE:
+			// pg_catalog.pg_database -> extend with additional Postgres columns
+			tableNode := parser.MakePgDatabaseNode(qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		default:
 			// pg_catalog.pg_* other system tables -> return as is
