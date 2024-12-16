@@ -43,6 +43,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"set_config"},
 			"values":      {"hex"},
 		},
+		"SELECT pg_catalog.pg_encoding_to_char(6)": {
+			"description": {"pg_encoding_to_char"},
+			"values":      {"UTF8"},
+		},
 		// PG system tables
 		"SELECT oid, typname AS typename FROM pg_type WHERE typname='geometry' OR typname='geography'": {
 			"description": {"oid", "typename"},

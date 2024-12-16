@@ -13,6 +13,7 @@ var REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME = map[string]string{
 	"pg_indexes_size":                    "0",
 	"pg_get_partkeydef":                  "",
 	"pg_tablespace_location":             "",
+	"pg_encoding_to_char":                "UTF8",
 }
 
 type SelectRemapperSelect struct {
