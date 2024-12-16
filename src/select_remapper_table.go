@@ -17,6 +17,7 @@ const (
 	PG_TABLE_PG_ROLES              = "pg_roles"
 	PG_TABLE_PG_CLASS              = "pg_class"
 	PG_TABLE_PG_EXTENSION          = "pg_extension"
+	PG_TABLE_PG_REPLICATION_SLOTS  = "pg_replication_slots"
 
 	PG_TABLE_TABLES = "tables"
 )
@@ -75,6 +76,10 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 		case PG_TABLE_PG_EXTENSION:
 			// pg_catalog.pg_extension -> return hard-coded extension info
 			tableNode := parser.MakePgExtensionNode(qSchemaTable.Alias)
+			return remapper.overrideTable(node, tableNode)
+		case PG_TABLE_PG_REPLICATION_SLOTS:
+			// pg_replication_slots -> return nothing
+			tableNode := parser.MakeEmptyTableNode(PG_REPLICATION_SLOTS_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		default:
 			// pg_catalog.pg_* other system tables -> return as is
@@ -187,4 +192,23 @@ var PG_STATIO_USER_TABLES_COLUMNS = []string{
 	"toast_blks_hit",
 	"tidx_blks_read",
 	"tidx_blks_hit",
+}
+
+var PG_REPLICATION_SLOTS_COLUMNS = []string{
+	"slot_name",
+	"plugin",
+	"slot_type",
+	"datoid",
+	"database",
+	"temporary",
+	"active",
+	"active_pid",
+	"xmin",
+	"catalog_xmin",
+	"restart_lsn",
+	"confirmed_flush_lsn",
+	"wal_status",
+	"safe_wal_size",
+	"two_phase",
+	"conflicting",
 }

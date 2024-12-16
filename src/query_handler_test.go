@@ -56,6 +56,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"oid"},
 			"values":      {"13823"},
 		},
+		"SELECT slot_name FROM pg_replication_slots": {
+			"description": {"slot_name"},
+			"values":      {},
+		},
 		// pg_namespace
 		"SELECT DISTINCT(nspname) FROM pg_catalog.pg_namespace WHERE nspname != 'information_schema' AND nspname != 'pg_catalog'": {
 			"description": {"nspname"},

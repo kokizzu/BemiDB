@@ -413,6 +413,7 @@ var PG_SYSTEM_TABLES = NewSet([]string{
 	"pg_publication_rel",
 	"pg_range",
 	"pg_replication_origin",
+	"pg_replication_slots",
 	"pg_rewrite",
 	"pg_roles",
 	"pg_seclabel",
