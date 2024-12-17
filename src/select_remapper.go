@@ -130,45 +130,45 @@ func (selectRemapper *SelectRemapper) hasCaseExpressions(selectStatement *pgQuer
 }
 
 func (selectRemapper *SelectRemapper) remapCaseExpressions(selectStatement *pgQuery.SelectStmt, indentLevel int) *pgQuery.SelectStmt {
-    for _, target := range selectStatement.TargetList {
-        if caseExpr := target.GetResTarget().Val.GetCaseExpr(); caseExpr != nil {
-            for _, when := range caseExpr.Args {
-                if whenClause := when.GetCaseWhen(); whenClause != nil {
-                    if whenClause.Expr != nil {
-                        if aExpr := whenClause.Expr.GetAExpr(); aExpr != nil {
-                            if subLink := aExpr.Lexpr.GetSubLink(); subLink != nil {
-                                selectRemapper.traceTreeTraversal("CASE WHEN left", indentLevel+1)
-                                subSelect := subLink.Subselect.GetSelectStmt()
-                                subSelect = selectRemapper.remapSelectStatement(subSelect, indentLevel+1)
-                            }
-                            if subLink := aExpr.Rexpr.GetSubLink(); subLink != nil {
-                                selectRemapper.traceTreeTraversal("CASE WHEN right", indentLevel+1)
-                                subSelect := subLink.Subselect.GetSelectStmt()
-                                subSelect = selectRemapper.remapSelectStatement(subSelect, indentLevel+1)
-                            }
-                        }
-                    }
+	for _, target := range selectStatement.TargetList {
+		if caseExpr := target.GetResTarget().Val.GetCaseExpr(); caseExpr != nil {
+			for _, when := range caseExpr.Args {
+				if whenClause := when.GetCaseWhen(); whenClause != nil {
+					if whenClause.Expr != nil {
+						if aExpr := whenClause.Expr.GetAExpr(); aExpr != nil {
+							if subLink := aExpr.Lexpr.GetSubLink(); subLink != nil {
+								selectRemapper.traceTreeTraversal("CASE WHEN left", indentLevel+1)
+								subSelect := subLink.Subselect.GetSelectStmt()
+								subSelect = selectRemapper.remapSelectStatement(subSelect, indentLevel+1)
+							}
+							if subLink := aExpr.Rexpr.GetSubLink(); subLink != nil {
+								selectRemapper.traceTreeTraversal("CASE WHEN right", indentLevel+1)
+								subSelect := subLink.Subselect.GetSelectStmt()
+								subSelect = selectRemapper.remapSelectStatement(subSelect, indentLevel+1)
+							}
+						}
+					}
 
-                    if whenClause.Result != nil {
-                        if subLink := whenClause.Result.GetSubLink(); subLink != nil {
-                            selectRemapper.traceTreeTraversal("CASE THEN", indentLevel+1)
-                            subSelect := subLink.Subselect.GetSelectStmt()
-                            subSelect = selectRemapper.remapSelectStatement(subSelect, indentLevel+1)
-                        }
-                    }
-                }
-            }
+					if whenClause.Result != nil {
+						if subLink := whenClause.Result.GetSubLink(); subLink != nil {
+							selectRemapper.traceTreeTraversal("CASE THEN", indentLevel+1)
+							subSelect := subLink.Subselect.GetSelectStmt()
+							subSelect = selectRemapper.remapSelectStatement(subSelect, indentLevel+1)
+						}
+					}
+				}
+			}
 
-            if caseExpr.Defresult != nil {
-                if subLink := caseExpr.Defresult.GetSubLink(); subLink != nil {
-                    selectRemapper.traceTreeTraversal("CASE ELSE", indentLevel+1)
-                    subSelect := subLink.Subselect.GetSelectStmt()
-                    subSelect = selectRemapper.remapSelectStatement(subSelect, indentLevel+1)
-                }
-            }
-        }
-    }
-    return selectStatement
+			if caseExpr.Defresult != nil {
+				if subLink := caseExpr.Defresult.GetSubLink(); subLink != nil {
+					selectRemapper.traceTreeTraversal("CASE ELSE", indentLevel+1)
+					subSelect := subLink.Subselect.GetSelectStmt()
+					subSelect = selectRemapper.remapSelectStatement(subSelect, indentLevel+1)
+				}
+			}
+		}
+	}
+	return selectStatement
 }
 
 // FROM PG_FUNCTION()

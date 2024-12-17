@@ -84,114 +84,114 @@ func (parser *QueryParserTable) MakePgRolesNode(user string, alias string) *pgQu
 
 // pg_catalog.pg_extension -> VALUES(values...) t(columns...)
 func (parser *QueryParserTable) MakePgExtensionNode(alias string) *pgQuery.Node {
-    columns := PG_EXTENSION_VALUE_BY_COLUMN.Keys()
-    staticRowValues := PG_EXTENSION_VALUE_BY_COLUMN.Values()
-    rowsValues := [][]string{staticRowValues}
-    return parser.utils.MakeSubselectWithRowsNode(columns, rowsValues, alias)
+	columns := PG_EXTENSION_VALUE_BY_COLUMN.Keys()
+	staticRowValues := PG_EXTENSION_VALUE_BY_COLUMN.Values()
+	rowsValues := [][]string{staticRowValues}
+	return parser.utils.MakeSubselectWithRowsNode(columns, rowsValues, alias)
 }
 
 // pg_catalog.pg_database -> VALUES(values...) t(columns...)
 func (parser *QueryParserTable) MakePgDatabaseNode(alias string) *pgQuery.Node {
-    targetList := []*pgQuery.Node{
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "oid",
-            pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("oid")}, 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "datname",
-            pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("datname")}, 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "datdba",
-            pgQuery.MakeAConstStrNode("", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "encoding",
-            pgQuery.MakeAConstStrNode("6", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "datlocprovider",
-            pgQuery.MakeAConstStrNode("c", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "datistemplate",
-            pgQuery.MakeAConstStrNode("f", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "datallowconn",
-            pgQuery.MakeAConstStrNode("t", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "datconnlimit",
-            pgQuery.MakeAConstStrNode("-1", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "datfrozenxid",
-            pgQuery.MakeAConstStrNode("722", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "datminmxid",
-            pgQuery.MakeAConstStrNode("1", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "dattablespace",
-            pgQuery.MakeAConstStrNode("1663", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "datcollate",
-            pgQuery.MakeAConstStrNode("en_US.UTF-8", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "datctype",
-            pgQuery.MakeAConstStrNode("en_US.UTF-8", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "daticulocale",
-            pgQuery.MakeAConstStrNode("", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "daticurules",
-            pgQuery.MakeAConstStrNode("", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "datcollversion",
-            pgQuery.MakeAConstStrNode("", 0),
-            0,
-        ),
-        pgQuery.MakeResTargetNodeWithNameAndVal(
-            "datacl",
-            pgQuery.MakeAConstStrNode("", 0),
-            0,
-        ),
-    }
+	targetList := []*pgQuery.Node{
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"oid",
+			pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("oid")}, 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"datname",
+			pgQuery.MakeColumnRefNode([]*pgQuery.Node{pgQuery.MakeStrNode("datname")}, 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"datdba",
+			pgQuery.MakeAConstStrNode("", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"encoding",
+			pgQuery.MakeAConstStrNode("6", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"datlocprovider",
+			pgQuery.MakeAConstStrNode("c", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"datistemplate",
+			pgQuery.MakeAConstStrNode("f", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"datallowconn",
+			pgQuery.MakeAConstStrNode("t", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"datconnlimit",
+			pgQuery.MakeAConstStrNode("-1", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"datfrozenxid",
+			pgQuery.MakeAConstStrNode("722", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"datminmxid",
+			pgQuery.MakeAConstStrNode("1", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"dattablespace",
+			pgQuery.MakeAConstStrNode("1663", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"datcollate",
+			pgQuery.MakeAConstStrNode("en_US.UTF-8", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"datctype",
+			pgQuery.MakeAConstStrNode("en_US.UTF-8", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"daticulocale",
+			pgQuery.MakeAConstStrNode("", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"daticurules",
+			pgQuery.MakeAConstStrNode("", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"datcollversion",
+			pgQuery.MakeAConstStrNode("", 0),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"datacl",
+			pgQuery.MakeAConstStrNode("", 0),
+			0,
+		),
+	}
 
-    fromClause := &pgQuery.Node{
-        Node: &pgQuery.Node_RangeVar{
-            RangeVar: &pgQuery.RangeVar{
-                Schemaname:     "pg_catalog",
-                Relname:        "pg_database",
-                Inh:           true,
-                Relpersistence: "p",
-            },
-        },
-    }
+	fromClause := &pgQuery.Node{
+		Node: &pgQuery.Node_RangeVar{
+			RangeVar: &pgQuery.RangeVar{
+				Schemaname:     "pg_catalog",
+				Relname:        "pg_database",
+				Inh:            true,
+				Relpersistence: "p",
+			},
+		},
+	}
 
-    return parser.utils.MakeSubselectFromNode(targetList, fromClause, alias)
+	return parser.utils.MakeSubselectFromNode(targetList, fromClause, alias)
 }
 
 // System pg_* tables
@@ -618,14 +618,14 @@ var PG_ROLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 })
 
 var PG_EXTENSION_VALUE_BY_COLUMN = NewOrderedMap([][]string{
-    {"oid", "13823"},
-    {"extname", "plpgsql"},
-    {"extowner", "10"},
-    {"extnamespace", "11"},
-    {"extrelocatable", "false"},
-    {"extversion", "1.0"},
-    {"extconfig", "NULL"},
-    {"extcondition", "NULL"},
+	{"oid", "13823"},
+	{"extname", "plpgsql"},
+	{"extowner", "10"},
+	{"extnamespace", "11"},
+	{"extrelocatable", "false"},
+	{"extversion", "1.0"},
+	{"extconfig", "NULL"},
+	{"extcondition", "NULL"},
 })
 
 type DuckDBKeyword struct {

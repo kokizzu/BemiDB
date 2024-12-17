@@ -47,6 +47,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"pg_encoding_to_char"},
 			"values":      {"UTF8"},
 		},
+		"SELECT pg_backend_pid()": {
+			"description": {"pg_backend_pid"},
+			"values":      {"0"},
+		},
 		// PG system tables
 		"SELECT oid, typname AS typename FROM pg_type WHERE typname='geometry' OR typname='geography'": {
 			"description": {"oid", "typename"},
@@ -670,70 +674,70 @@ func TestHandleExecuteQuery(t *testing.T) {
 }
 
 func TestHandleMultipleQueries(t *testing.T) {
-    t.Run("Handles multiple SET statements", func(t *testing.T) {
-        query := `SET client_encoding TO 'UTF8';
+	t.Run("Handles multiple SET statements", func(t *testing.T) {
+		query := `SET client_encoding TO 'UTF8';
 SET client_min_messages TO 'warning';
 SET standard_conforming_strings = on;`
-        queryHandler := initQueryHandler()
+		queryHandler := initQueryHandler()
 
-        messages, err := queryHandler.HandleQuery(query)
+		messages, err := queryHandler.HandleQuery(query)
 
-        testNoError(t, err)
-        testMessageTypes(t, messages, []pgproto3.Message{
-            &pgproto3.RowDescription{},
-            &pgproto3.CommandComplete{},
-        })
-    })
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.RowDescription{},
+			&pgproto3.CommandComplete{},
+		})
+	})
 
-    t.Run("Handles mixed SET and SELECT statements", func(t *testing.T) {
-        query := `SET client_encoding TO 'UTF8';
+	t.Run("Handles mixed SET and SELECT statements", func(t *testing.T) {
+		query := `SET client_encoding TO 'UTF8';
 SELECT passwd FROM pg_shadow WHERE usename='bemidb';`
-        queryHandler := initQueryHandler()
+		queryHandler := initQueryHandler()
 
-        messages, err := queryHandler.HandleQuery(query)
+		messages, err := queryHandler.HandleQuery(query)
 
-        testNoError(t, err)
-        testMessageTypes(t, messages, []pgproto3.Message{
-            &pgproto3.RowDescription{},
-            &pgproto3.DataRow{},
-            &pgproto3.CommandComplete{},
-        })
-        testDataRowValues(t, messages[1], []string{"bemidb-encrypted"})
-    })
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.RowDescription{},
+			&pgproto3.DataRow{},
+			&pgproto3.CommandComplete{},
+		})
+		testDataRowValues(t, messages[1], []string{"bemidb-encrypted"})
+	})
 
-    t.Run("Handles multiple SELECT statements", func(t *testing.T) {
-        query := `SELECT passwd FROM pg_shadow WHERE usename='bemidb';
+	t.Run("Handles multiple SELECT statements", func(t *testing.T) {
+		query := `SELECT passwd FROM pg_shadow WHERE usename='bemidb';
 SELECT passwd FROM pg_shadow WHERE usename='bemidb';`
-        queryHandler := initQueryHandler()
+		queryHandler := initQueryHandler()
 
-        messages, err := queryHandler.HandleQuery(query)
+		messages, err := queryHandler.HandleQuery(query)
 
-        testNoError(t, err)
-        testMessageTypes(t, messages, []pgproto3.Message{
-            &pgproto3.RowDescription{},
-            &pgproto3.DataRow{},
-            &pgproto3.CommandComplete{},
-        })
-        testDataRowValues(t, messages[1], []string{"bemidb-encrypted"})
-    })
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.RowDescription{},
+			&pgproto3.DataRow{},
+			&pgproto3.CommandComplete{},
+		})
+		testDataRowValues(t, messages[1], []string{"bemidb-encrypted"})
+	})
 
-    t.Run("Handles error in any of multiple statements", func(t *testing.T) {
-        query := `SET client_encoding TO 'UTF8';
+	t.Run("Handles error in any of multiple statements", func(t *testing.T) {
+		query := `SET client_encoding TO 'UTF8';
 SELECT * FROM non_existent_table;
 SET standard_conforming_strings = on;`
-        queryHandler := initQueryHandler()
+		queryHandler := initQueryHandler()
 
-        _, err := queryHandler.HandleQuery(query)
+		_, err := queryHandler.HandleQuery(query)
 
-        if (err == nil) {
-            t.Error("Expected an error for non-existent table, got nil")
-            return
-        }
+		if err == nil {
+			t.Error("Expected an error for non-existent table, got nil")
+			return
+		}
 
-        if !strings.Contains(err.Error(), "non_existent_table") {
-            t.Errorf("Expected error message to contain 'non_existent_table', got: %s", err.Error())
-        }
-    })
+		if !strings.Contains(err.Error(), "non_existent_table") {
+			t.Errorf("Expected error message to contain 'non_existent_table', got: %s", err.Error())
+		}
+	})
 }
 
 func initQueryHandler() *QueryHandler {
