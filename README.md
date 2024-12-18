@@ -51,7 +51,7 @@ Sync data from a Postgres database:
 ./bemidb --pg-database-url postgres://postgres:postgres@localhost:5432/dbname sync
 ```
 
-Run BemiDB database:
+Then run BemiDB database:
 
 ```sh
 ./bemidb start
@@ -61,7 +61,7 @@ Run Postgres queries on top of the BemiDB database:
 
 ```sh
 # List all tables
-psql postgres://localhost:54321/bemidb -c "SELECT * FROM information_schema.tables"
+psql postgres://localhost:54321/bemidb -c "SELECT table_schema, table_name FROM information_schema.tables"
 
 # Query a table
 psql postgres://localhost:54321/bemidb -c "SELECT COUNT(*) FROM [table_name]"
@@ -294,7 +294,6 @@ SELECT * FROM [TABLE] WHERE [JSON_COLUMN]->>'[JSON_KEY]' = '[JSON_VALUE]';
 - [ ] Iceberg table compaction and partitioning.
 - [ ] Cache layer for frequently accessed data.
 - [ ] Materialized views.
-- [ ] Support for custom S3-compatible endpoints.
 
 ## Alternatives
 

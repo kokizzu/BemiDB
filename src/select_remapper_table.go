@@ -84,8 +84,8 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 			tableNode := parser.MakeEmptyTableNode(PG_REPLICATION_SLOTS_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		case PG_TABLE_PG_DATABASE:
-			// pg_catalog.pg_database -> extend with additional Postgres columns
-			tableNode := parser.MakePgDatabaseNode(qSchemaTable.Alias)
+			// pg_catalog.pg_database -> return hard-coded database info
+			tableNode := parser.MakePgDatabaseNode(remapper.config.Database, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		case PG_TABLE_PG_STAT_GSSAPI:
 			// pg_catalog.pg_stat_gssapi -> return nothing

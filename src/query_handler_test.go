@@ -70,7 +70,7 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"SELECT oid, datname, datdba FROM pg_catalog.pg_database where oid = 1146": {
 			"description": {"oid", "datname", "datdba"},
-			"values":      {"1146", "memory", ""},
+			"values":      {"1146", "bemidb", "10"},
 		},
 		"SELECT * FROM pg_catalog.pg_stat_gssapi": {
 			"description": {"pid", "gss_authenticated", "principal", "encrypted", "credentials_delegated"},
