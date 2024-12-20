@@ -37,8 +37,8 @@ func (parser *QueryParserTable) NodeToQuerySchemaTable(node *pgQuery.Node) Query
 	}
 }
 
-func (parser *QueryParserTable) MakeEmptyTableNode(columns []string, alias string) *pgQuery.Node {
-	return parser.utils.MakeSubselectWithoutRowsNode(columns, alias)
+func (parser *QueryParserTable) MakeEmptyTableNode(tableName string, columns []string, alias string) *pgQuery.Node {
+	return parser.utils.MakeSubselectWithoutRowsNode(tableName, columns, alias)
 }
 
 // pg_catalog.pg_shadow -> VALUES(values...) t(columns...)
@@ -60,7 +60,7 @@ func (parser *QueryParserTable) MakePgShadowNode(user string, encryptedPassword 
 	}
 	rowsValues = append(rowsValues, rowValues)
 
-	return parser.utils.MakeSubselectWithRowsNode(columns, rowsValues, alias)
+	return parser.utils.MakeSubselectWithRowsNode(PG_TABLE_PG_SHADOW, columns, rowsValues, alias)
 }
 
 // pg_catalog.pg_roles -> VALUES(values...) t(columns...)
@@ -79,7 +79,7 @@ func (parser *QueryParserTable) MakePgRolesNode(user string, alias string) *pgQu
 	}
 	rowsValues = append(rowsValues, rowValues)
 
-	return parser.utils.MakeSubselectWithRowsNode(columns, rowsValues, alias)
+	return parser.utils.MakeSubselectWithRowsNode(PG_TABLE_PG_ROLES, columns, rowsValues, alias)
 }
 
 // pg_catalog.pg_extension -> VALUES(values...) t(columns...)
@@ -87,7 +87,7 @@ func (parser *QueryParserTable) MakePgExtensionNode(alias string) *pgQuery.Node 
 	columns := PG_EXTENSION_VALUE_BY_COLUMN.Keys()
 	staticRowValues := PG_EXTENSION_VALUE_BY_COLUMN.Values()
 	rowsValues := [][]string{staticRowValues}
-	return parser.utils.MakeSubselectWithRowsNode(columns, rowsValues, alias)
+	return parser.utils.MakeSubselectWithRowsNode(PG_TABLE_PG_EXTENSION, columns, rowsValues, alias)
 }
 
 // pg_catalog.pg_database -> VALUES(values...) t(columns...)
@@ -105,7 +105,7 @@ func (parser *QueryParserTable) MakePgDatabaseNode(database string, alias string
 	}
 	rowsValues = append(rowsValues, rowValues)
 
-	return parser.utils.MakeSubselectWithRowsNode(columns, rowsValues, alias)
+	return parser.utils.MakeSubselectWithRowsNode(PG_TABLE_PG_DATABASE, columns, rowsValues, alias)
 }
 
 // System pg_* tables
@@ -120,7 +120,7 @@ func (parser *QueryParserTable) IsTableFromInformationSchema(qSchemaTable QueryS
 }
 
 // iceberg.table -> FROM iceberg_scan('path', skip_schema_inference = true)
-func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string, alias string) *pgQuery.Node {
+func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string, qSchemaTable QuerySchemaTable) *pgQuery.Node {
 	node := pgQuery.MakeSimpleRangeFunctionNode([]*pgQuery.Node{
 		pgQuery.MakeListNode([]*pgQuery.Node{
 			pgQuery.MakeFuncCallNode(
@@ -144,9 +144,6 @@ func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string, alias str
 			),
 		}),
 	})
-	if alias == "" {
-		return node
-	}
 
 	// DuckDB doesn't support aliases on iceberg_scan() functions, so we need to wrap it in a nested select that can have an alias
 	selectStarNode := pgQuery.MakeResTargetNodeWithVal(
@@ -156,7 +153,7 @@ func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string, alias str
 		),
 		0,
 	)
-	return parser.utils.MakeSubselectFromNode([]*pgQuery.Node{selectStarNode}, node, alias)
+	return parser.utils.MakeSubselectFromNode(qSchemaTable.Table, []*pgQuery.Node{selectStarNode}, node, qSchemaTable.Alias)
 }
 
 // pg_catalog.pg_get_keywords()
@@ -218,7 +215,7 @@ func (parser *QueryParserTable) MakePgGetKeywordsNode(node *pgQuery.Node) *pgQue
 		alias = node.GetAlias().Aliasname
 	}
 
-	return parser.utils.MakeSubselectWithRowsNode(columns, rows, alias)
+	return parser.utils.MakeSubselectWithRowsNode(PG_FUNCTION_PG_GET_KEYWORDS, columns, rows, alias)
 }
 
 // array_upper(array, 1)
@@ -380,7 +377,7 @@ func (parser *QueryParserTable) MakePgShowAllSettingsNode(node *pgQuery.Node) *p
 		alias = node.GetAlias().Aliasname
 	}
 
-	return parser.utils.MakeSubselectFromNode(targetList, fromNode, alias)
+	return parser.utils.MakeSubselectFromNode(PG_FUNCTION_PG_SHOW_ALL_SETTINGS, targetList, fromNode, alias)
 }
 
 func (parser *QueryParserTable) isPgCatalogSchema(qSchemaTable QuerySchemaTable) bool {

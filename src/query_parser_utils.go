@@ -4,10 +4,6 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
-const (
-	DEFAULT_ALIAS = "t"
-)
-
 type QueryParserUtils struct {
 	config *Config
 }
@@ -16,7 +12,7 @@ func NewQueryParserUtils(config *Config) *QueryParserUtils {
 	return &QueryParserUtils{config: config}
 }
 
-func (utils *QueryParserUtils) MakeSubselectWithRowsNode(columns []string, rowsValues [][]string, alias string) *pgQuery.Node {
+func (utils *QueryParserUtils) MakeSubselectWithRowsNode(tableName string, columns []string, rowsValues [][]string, alias string) *pgQuery.Node {
 	columnNodes := make([]*pgQuery.Node, len(columns))
 	for i, column := range columns {
 		columnNodes[i] = pgQuery.MakeStrNode(column)
@@ -32,7 +28,7 @@ func (utils *QueryParserUtils) MakeSubselectWithRowsNode(columns []string, rowsV
 	}
 
 	if alias == "" {
-		alias = DEFAULT_ALIAS
+		alias = tableName
 	}
 
 	return &pgQuery.Node{
@@ -54,7 +50,7 @@ func (utils *QueryParserUtils) MakeSubselectWithRowsNode(columns []string, rowsV
 	}
 }
 
-func (utils *QueryParserUtils) MakeSubselectWithoutRowsNode(columns []string, alias string) *pgQuery.Node {
+func (utils *QueryParserUtils) MakeSubselectWithoutRowsNode(tableName string, columns []string, alias string) *pgQuery.Node {
 	columnNodes := make([]*pgQuery.Node, len(columns))
 	for i, column := range columns {
 		columnNodes[i] = pgQuery.MakeStrNode(column)
@@ -69,7 +65,7 @@ func (utils *QueryParserUtils) MakeSubselectWithoutRowsNode(columns []string, al
 	}
 
 	if alias == "" {
-		alias = DEFAULT_ALIAS
+		alias = tableName
 	}
 
 	return &pgQuery.Node{
@@ -92,9 +88,9 @@ func (utils *QueryParserUtils) MakeSubselectWithoutRowsNode(columns []string, al
 	}
 }
 
-func (utils *QueryParserUtils) MakeSubselectFromNode(targetList []*pgQuery.Node, fromNode *pgQuery.Node, alias string) *pgQuery.Node {
+func (utils *QueryParserUtils) MakeSubselectFromNode(tableName string, targetList []*pgQuery.Node, fromNode *pgQuery.Node, alias string) *pgQuery.Node {
 	if alias == "" {
-		alias = DEFAULT_ALIAS
+		alias = tableName
 	}
 
 	return &pgQuery.Node{

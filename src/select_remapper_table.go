@@ -66,15 +66,15 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 			return node
 		case PG_TABLE_PG_INHERITS:
 			// pg_catalog.pg_inherits -> return nothing
-			tableNode := parser.MakeEmptyTableNode(PG_INHERITS_COLUMNS, qSchemaTable.Alias)
+			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_INHERITS, PG_INHERITS_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		case PG_TABLE_PG_SHDESCRIPTION:
 			// pg_catalog.pg_shdescription -> return nothing
-			tableNode := parser.MakeEmptyTableNode(PG_SHDESCRIPTION_COLUMNS, qSchemaTable.Alias)
+			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_SHDESCRIPTION, PG_SHDESCRIPTION_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		case PG_TABLE_PG_STATIO_USER_TABLES:
 			// pg_catalog.pg_statio_user_tables -> return nothing
-			tableNode := parser.MakeEmptyTableNode(PG_STATIO_USER_TABLES_COLUMNS, qSchemaTable.Alias)
+			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_STATIO_USER_TABLES, PG_STATIO_USER_TABLES_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		case PG_TABLE_PG_EXTENSION:
 			// pg_catalog.pg_extension -> return hard-coded extension info
@@ -82,7 +82,7 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 			return remapper.overrideTable(node, tableNode)
 		case PG_TABLE_PG_REPLICATION_SLOTS:
 			// pg_replication_slots -> return nothing
-			tableNode := parser.MakeEmptyTableNode(PG_REPLICATION_SLOTS_COLUMNS, qSchemaTable.Alias)
+			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_REPLICATION_SLOTS, PG_REPLICATION_SLOTS_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		case PG_TABLE_PG_DATABASE:
 			// pg_catalog.pg_database -> return hard-coded database info
@@ -90,11 +90,11 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 			return remapper.overrideTable(node, tableNode)
 		case PG_TABLE_PG_STAT_GSSAPI:
 			// pg_catalog.pg_stat_gssapi -> return nothing
-			tableNode := parser.MakeEmptyTableNode(PG_STAT_GSSAPI_COLUMNS, qSchemaTable.Alias)
+			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_GSSAPI, PG_STAT_GSSAPI_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		case PG_TABLE_PG_AUTH_MEMBERS:
 			// pg_catalog.pg_auth_members -> return empty table
-			tableNode := parser.MakeEmptyTableNode(PG_AUTH_MEMBERS_COLUMNS, qSchemaTable.Alias)
+			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_AUTH_MEMBERS, PG_AUTH_MEMBERS_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		default:
 			// pg_catalog.pg_* other system tables -> return as is
@@ -127,7 +127,7 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 		}
 	}
 	icebergPath := remapper.icebergReader.MetadataFilePath(schemaTable)
-	tableNode := parser.MakeIcebergTableNode(icebergPath, qSchemaTable.Alias)
+	tableNode := parser.MakeIcebergTableNode(icebergPath, qSchemaTable)
 	return remapper.overrideTable(node, tableNode)
 }
 

@@ -149,6 +149,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"bit_column"},
 			"values":      {"1"},
 		},
+		"SELECT test_table.bit_column FROM public.test_table WHERE bit_column IS NOT NULL": {
+			"description": {"bit_column"},
+			"values":      {"1"},
+		},
 		"SELECT bit_column FROM public.test_table WHERE bit_column IS NULL": {
 			"description": {"bit_column"},
 			"values":      {""},
@@ -468,6 +472,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"word", "catcode", "barelabel", "catdesc", "baredesc"},
 			"values":      {"abort", "U", "t", "unreserved", "can be bare label"},
 		},
+		"SELECT pg_get_keywords.word FROM pg_catalog.pg_get_keywords() LIMIT 1": {
+			"description": {"word"},
+			"values":      {"abort"},
+		},
 		"SELECT * FROM generate_series(1, 2) AS series(index) LIMIT 1": {
 			"description": {"index"},
 			"values":      {"1"},
@@ -519,6 +527,51 @@ func TestHandleQuery(t *testing.T) {
 		"WITH RECURSIVE simple_cte AS (SELECT oid, rolname FROM pg_roles WHERE rolname = 'postgres' UNION ALL SELECT oid, rolname FROM pg_roles) SELECT * FROM simple_cte": {
 			"description": {"oid", "rolname"},
 			"values":      {"10", "bemidb"},
+		},
+		// Table alias
+		"SELECT pg_shadow.usename FROM pg_shadow": {
+			"description": {"usename"},
+			"values":      {"bemidb"},
+		},
+		"SELECT pg_roles.rolname FROM pg_roles": {
+			"description": {"rolname"},
+			"values":      {"bemidb"},
+		},
+		"SELECT pg_extension.extname FROM pg_extension": {
+			"description": {"extname"},
+			"values":      {"plpgsql"},
+		},
+		"SELECT pg_database.datname FROM pg_database": {
+			"description": {"datname"},
+			"values":      {"bemidb"},
+		},
+		"SELECT pg_inherits.inhrelid FROM pg_inherits": {
+			"description": {"inhrelid"},
+			"values":      {},
+		},
+		"SELECT pg_shdescription.objoid FROM pg_shdescription": {
+			"description": {"objoid"},
+			"values":      {},
+		},
+		"SELECT pg_statio_user_tables.relid FROM pg_statio_user_tables": {
+			"description": {"relid"},
+			"values":      {},
+		},
+		"SELECT pg_replication_slots.slot_name FROM pg_replication_slots": {
+			"description": {"slot_name"},
+			"values":      {},
+		},
+		"SELECT pg_stat_gssapi.pid FROM pg_stat_gssapi": {
+			"description": {"pid"},
+			"values":      {},
+		},
+		"SELECT pg_auth_members.oid FROM pg_auth_members": {
+			"description": {"oid"},
+			"values":      {},
+		},
+		"SELECT tables.table_name FROM information_schema.tables": {
+			"description": {"table_name"},
+			"values":      {"test_table"},
 		},
 	}
 
@@ -582,7 +635,7 @@ func TestHandleParseQuery(t *testing.T) {
 			&pgproto3.ParseComplete{},
 		})
 
-		remappedQuery := "SELECT usename, passwd FROM (VALUES ('bemidb', '10', 'FALSE', 'FALSE', 'TRUE', 'FALSE', 'bemidb-encrypted', 'NULL', 'NULL')) t(usename, usesysid, usecreatedb, usesuper, userepl, usebypassrls, passwd, valuntil, useconfig) WHERE usename = $1"
+		remappedQuery := "SELECT usename, passwd FROM (VALUES ('bemidb', '10', 'FALSE', 'FALSE', 'TRUE', 'FALSE', 'bemidb-encrypted', 'NULL', 'NULL')) pg_shadow(usename, usesysid, usecreatedb, usesuper, userepl, usebypassrls, passwd, valuntil, useconfig) WHERE usename = $1"
 		if preparedStatement.Query != remappedQuery {
 			t.Errorf("Expected the prepared statement query to be %v, got %v", remappedQuery, preparedStatement.Query)
 		}
