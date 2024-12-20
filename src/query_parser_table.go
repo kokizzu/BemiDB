@@ -108,6 +108,16 @@ func (parser *QueryParserTable) MakePgDatabaseNode(database string, alias string
 	return parser.utils.MakeSubselectWithRowsNode(PG_TABLE_PG_DATABASE, columns, rowsValues, alias)
 }
 
+// pg_catalog.pg_user -> VALUES(values...) t(columns...)
+func (parser *QueryParserTable) MakePgUserNode(user string, alias string) *pgQuery.Node {
+    columns := PG_USER_VALUE_BY_COLUMN.Keys()
+    rowValues := PG_USER_VALUE_BY_COLUMN.Values()
+
+    rowValues[0] = user
+
+    return parser.utils.MakeSubselectWithRowsNode(PG_TABLE_PG_USER, columns, [][]string{rowValues}, alias)
+}
+
 // System pg_* tables
 func (parser *QueryParserTable) IsTableFromPgCatalog(qSchemaTable QuerySchemaTable) bool {
 	return parser.isPgCatalogSchema(qSchemaTable) &&
@@ -426,6 +436,7 @@ var PG_SYSTEM_TABLES = NewSet([]string{
 	"pg_publication",
 	"pg_publication_namespace",
 	"pg_publication_rel",
+	"pg_user",
 	"pg_range",
 	"pg_replication_origin",
 	"pg_replication_slots",
@@ -557,6 +568,18 @@ var PG_DATABASE_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 	{"daticurules", "NULL"},
 	{"datcollversion", "NULL"},
 	{"datacl", "NULL"},
+})
+
+var PG_USER_VALUE_BY_COLUMN = NewOrderedMap([][]string{
+	{"usename", "bemidb"},
+	{"usesysid", "10"},
+	{"usecreatedb", "t"},
+	{"usesuper", "t"},
+	{"userepl", "t"},
+	{"usebypassrls", "t"},
+	{"passwd", ""},
+	{"valuntil", "NULL"},
+	{"useconfig", "NULL"},
 })
 
 type DuckDBKeyword struct {

@@ -21,6 +21,7 @@ const (
 	PG_TABLE_PG_DATABASE           = "pg_database"
 	PG_TABLE_PG_STAT_GSSAPI        = "pg_stat_gssapi"
 	PG_TABLE_PG_AUTH_MEMBERS       = "pg_auth_members"
+	PG_TABLE_PG_USER               = "pg_user"
 
 	PG_TABLE_TABLES = "tables"
 )
@@ -95,6 +96,10 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 		case PG_TABLE_PG_AUTH_MEMBERS:
 			// pg_catalog.pg_auth_members -> return empty table
 			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_AUTH_MEMBERS, PG_AUTH_MEMBERS_COLUMNS, qSchemaTable.Alias)
+			return remapper.overrideTable(node, tableNode)
+		case PG_TABLE_PG_USER:
+			// pg_catalog.pg_user -> return hard-coded user info
+			tableNode := parser.MakePgUserNode(remapper.config.User, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		default:
 			// pg_catalog.pg_* other system tables -> return as is

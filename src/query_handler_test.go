@@ -76,6 +76,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"pid", "gss_authenticated", "principal", "encrypted", "credentials_delegated"},
 			"values":      {},
 		},
+		"SELECT * FROM pg_catalog.pg_user": {
+			"description": {"usename", "usesysid", "usecreatedb", "usesuper", "userepl", "usebypassrls", "passwd", "valuntil", "useconfig"},
+			"values":      {"bemidb", "10", "t", "t", "t", "t", "", "NULL", "NULL"},
+		},
 		// pg_namespace
 		"SELECT DISTINCT(nspname) FROM pg_catalog.pg_namespace WHERE nspname != 'information_schema' AND nspname != 'pg_catalog'": {
 			"description": {"nspname"},
