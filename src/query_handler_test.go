@@ -512,6 +512,11 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"gss_authenticated", "encrypted"},
 			"values":      {},
 		},
+		// WITH
+		"WITH RECURSIVE simple_cte AS (SELECT oid, rolname FROM pg_roles WHERE rolname = 'postgres' UNION ALL SELECT oid, rolname FROM pg_roles) SELECT * FROM simple_cte": {
+			"description": {"oid", "rolname"},
+			"values":      {"10", "bemidb"},
+		},
 	}
 
 	for query, responses := range responsesByQuery {

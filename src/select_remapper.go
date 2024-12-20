@@ -88,6 +88,16 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 		selectStatement = selectRemapper.remapperWhere.RemapWhereExpressions(selectStatement, selectStatement.WhereClause, indentLevel)
 	}
 
+	// WITH
+	if selectStatement.WithClause != nil {
+		selectRemapper.traceTreeTraversal("WITH CTE's", indentLevel)
+		for _, cte := range selectStatement.WithClause.Ctes {
+			if cteSelect := cte.GetCommonTableExpr().Ctequery.GetSelectStmt(); cteSelect != nil {
+				selectRemapper.remapSelectStatement(cteSelect, indentLevel+1) // recursive
+			}
+		}
+	}
+
 	// FROM
 	if len(selectStatement.FromClause) > 0 {
 		for i, fromNode := range selectStatement.FromClause {
