@@ -62,7 +62,7 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 	// CASE
 	if hasCaseExpr := selectRemapper.hasCaseExpressions(selectStatement); hasCaseExpr {
 		selectRemapper.traceTreeTraversal("CASE expressions", indentLevel)
-		return selectRemapper.remapCaseExpressions(selectStatement, indentLevel)
+		selectRemapper.remapCaseExpressions(selectStatement, indentLevel)
 	}
 
 	// UNION
@@ -74,16 +74,11 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 		selectRemapper.traceTreeTraversal("UNION right", indentLevel)
 		rightSelectStatement := selectStatement.Rarg
 		rightSelectStatement = selectRemapper.remapSelectStatement(rightSelectStatement, indentLevel+1) // self-recursion
-
-		return selectStatement
 	}
 
 	// JOIN
 	if len(selectStatement.FromClause) > 0 && selectStatement.FromClause[0].GetJoinExpr() != nil {
-		// SELECT
-		selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel)                                                         // recursive
 		selectStatement.FromClause[0] = selectRemapper.remapJoinExpressions(selectStatement, selectStatement.FromClause[0], indentLevel+1) // recursive with self-recursion
-		return selectStatement
 	}
 
 	// WHERE
@@ -93,10 +88,6 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 
 	// FROM
 	if len(selectStatement.FromClause) > 0 {
-		// SELECT
-		selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel) // recursive
-
-		// FROM
 		for i, fromNode := range selectStatement.FromClause {
 			if fromNode.GetRangeVar() != nil {
 				// WHERE
@@ -118,7 +109,6 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 				selectStatement.FromClause[i] = selectRemapper.remapTableFunction(fromNode, indentLevel+1) // recursive
 			}
 		}
-		return selectStatement
 	}
 
 	selectStatement = selectRemapper.remapSelect(selectStatement, indentLevel) // recursive
