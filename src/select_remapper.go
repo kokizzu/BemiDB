@@ -86,6 +86,11 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 		return selectStatement
 	}
 
+	// WHERE
+	if selectStatement.WhereClause != nil {
+		selectStatement = selectRemapper.remapperWhere.RemapWhereExpressions(selectStatement, selectStatement.WhereClause, indentLevel)
+	}
+
 	// FROM
 	if len(selectStatement.FromClause) > 0 {
 		// SELECT
@@ -97,7 +102,7 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 				// WHERE
 				selectRemapper.traceTreeTraversal("WHERE statements", indentLevel)
 				qSchemaTable := selectRemapper.parserTable.NodeToQuerySchemaTable(fromNode)
-				selectStatement = selectRemapper.remapperWhere.RemapWhere(qSchemaTable, selectStatement)
+				selectStatement = selectRemapper.remapperWhere.RemapWhereClauseForTable(qSchemaTable, selectStatement)
 				// TABLE
 				selectRemapper.traceTreeTraversal("FROM table", indentLevel)
 				selectStatement.FromClause[i] = selectRemapper.remapperTable.RemapTable(fromNode)
@@ -313,7 +318,7 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(selectStatement *pgQu
 		// WHERE
 		selectRemapper.traceTreeTraversal("WHERE left", indentLevel+1)
 		qSchemaTable := selectRemapper.parserTable.NodeToQuerySchemaTable(leftJoinNode)
-		selectStatement = selectRemapper.remapperWhere.RemapWhere(qSchemaTable, selectStatement)
+		selectStatement = selectRemapper.remapperWhere.RemapWhereClauseForTable(qSchemaTable, selectStatement)
 		// TABLE
 		selectRemapper.traceTreeTraversal("TABLE left", indentLevel+1)
 		leftJoinNode = selectRemapper.remapperTable.RemapTable(leftJoinNode)
@@ -331,7 +336,7 @@ func (selectRemapper *SelectRemapper) remapJoinExpressions(selectStatement *pgQu
 		// WHERE
 		selectRemapper.traceTreeTraversal("WHERE right", indentLevel+1)
 		qSchemaTable := selectRemapper.parserTable.NodeToQuerySchemaTable(rightJoinNode)
-		selectStatement = selectRemapper.remapperWhere.RemapWhere(qSchemaTable, selectStatement)
+		selectStatement = selectRemapper.remapperWhere.RemapWhereClauseForTable(qSchemaTable, selectStatement)
 		// TABLE
 		selectRemapper.traceTreeTraversal("TABLE right", indentLevel+1)
 		rightJoinNode = selectRemapper.remapperTable.RemapTable(rightJoinNode)
