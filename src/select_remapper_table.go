@@ -20,6 +20,7 @@ const (
 	PG_TABLE_PG_REPLICATION_SLOTS  = "pg_replication_slots"
 	PG_TABLE_PG_DATABASE           = "pg_database"
 	PG_TABLE_PG_STAT_GSSAPI        = "pg_stat_gssapi"
+	PG_TABLE_PG_AUTH_MEMBERS       = "pg_auth_members"
 
 	PG_TABLE_TABLES = "tables"
 )
@@ -90,6 +91,10 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 		case PG_TABLE_PG_STAT_GSSAPI:
 			// pg_catalog.pg_stat_gssapi -> return nothing
 			tableNode := parser.MakeEmptyTableNode(PG_STAT_GSSAPI_COLUMNS, qSchemaTable.Alias)
+			return remapper.overrideTable(node, tableNode)
+		case PG_TABLE_PG_AUTH_MEMBERS:
+			// pg_catalog.pg_auth_members -> return empty table
+			tableNode := parser.MakeEmptyTableNode(PG_AUTH_MEMBERS_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		default:
 			// pg_catalog.pg_* other system tables -> return as is
@@ -229,4 +234,14 @@ var PG_STAT_GSSAPI_COLUMNS = []string{
 	"principal",
 	"encrypted",
 	"credentials_delegated",
+}
+
+var PG_AUTH_MEMBERS_COLUMNS = []string{
+	"oid",
+	"roleid",
+	"member",
+	"grantor",
+	"admin_option",
+	"inherit_option",
+	"set_option",
 }

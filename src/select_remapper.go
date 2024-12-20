@@ -64,7 +64,7 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 	// CASE
 	if hasCaseExpr := selectRemapper.hasCaseExpressions(selectStatement); hasCaseExpr {
 		selectRemapper.traceTreeTraversal("CASE expressions", indentLevel)
-		selectRemapper.remapCaseExpressions(selectStatement, indentLevel)
+		selectRemapper.remapCaseExpressions(selectStatement, indentLevel) // recursive
 	}
 
 	// UNION
@@ -93,7 +93,7 @@ func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQu
 		selectRemapper.traceTreeTraversal("WITH CTE's", indentLevel)
 		for _, cte := range selectStatement.WithClause.Ctes {
 			if cteSelect := cte.GetCommonTableExpr().Ctequery.GetSelectStmt(); cteSelect != nil {
-				selectRemapper.remapSelectStatement(cteSelect, indentLevel+1) // recursive
+				selectRemapper.remapSelectStatement(cteSelect, indentLevel+1) // self-recursion
 			}
 		}
 	}
