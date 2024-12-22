@@ -61,6 +61,15 @@ func (selectRemapper *SelectRemapper) RemapSetStatement(stmt *pgQuery.RawStmt) *
 func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQuery.SelectStmt, indentLevel int) *pgQuery.SelectStmt {
 	selectStatement = selectRemapper.remapTypeCastsInSelect(selectStatement)
 
+	// Target Sublinks's
+	for _, target := range selectStatement.TargetList {
+		if subLink := target.GetResTarget().Val.GetSubLink(); subLink != nil {
+			selectRemapper.traceTreeTraversal("Target SubLink", indentLevel)
+			subSelect := subLink.Subselect.GetSelectStmt()
+			selectRemapper.remapSelectStatement(subSelect, indentLevel+1) // self-recursion
+		}
+	}
+
 	// CASE
 	if hasCaseExpr := selectRemapper.hasCaseExpressions(selectStatement); hasCaseExpr {
 		selectRemapper.traceTreeTraversal("CASE expressions", indentLevel)

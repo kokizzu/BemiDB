@@ -585,6 +585,11 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"table_name"},
 			"values":      {"test_table"},
 		},
+		// Sublink's in target list
+		"SELECT x.usename, (SELECT passwd FROM pg_shadow WHERE usename = x.usename) as password FROM pg_shadow x WHERE x.usename = 'bemidb'": {
+			"description": {"usename", "password"},
+			"values":      {"bemidb", "bemidb-encrypted"},
+		},
 	}
 
 	for query, responses := range responsesByQuery {
