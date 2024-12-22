@@ -8,6 +8,7 @@ const (
 	PG_FUNCTION_QUOTE_INDENT = "quote_ident"
 	PG_FUNCTION_PG_GET_EXPR  = "pg_get_expr"
 	PG_FUNCTION_SET_CONFIG   = "set_config"
+	PG_FUNCTION_ROW_TO_JSON  = "row_to_json"
 )
 
 type QueryParserSelect struct {
@@ -82,6 +83,17 @@ func (parser *QueryParserSelect) RemapSetConfigFunction(targetNode *pgQuery.Node
 
 	parser.OverrideTargetValue(targetNode, valueNode)
 	parser.SetDefaultTargetName(targetNode, PG_FUNCTION_SET_CONFIG)
+}
+
+// row_to_json()
+func (parser *QueryParserSelect) IsRowToJsonFunction(functionName string) bool {
+	return functionName == PG_FUNCTION_ROW_TO_JSON
+}
+
+// row_to_json() -> to_json()
+func (parser *QueryParserSelect) RemapRowToJson(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
+	functionCall.Funcname = []*pgQuery.Node{pgQuery.MakeStrNode("to_json")}
+	return functionCall
 }
 
 func (parser *QueryParserSelect) OverrideFunctionCallArg(functionCall *pgQuery.FuncCall, index int, node *pgQuery.Node) {

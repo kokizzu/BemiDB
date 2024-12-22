@@ -55,6 +55,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"pg_is_in_recovery"},
 			"values":      {"f"},
 		},
+		"SELECT row_to_json(t) FROM (SELECT usename, passwd FROM pg_shadow WHERE usename='bemidb') t": {
+			"description": {"row_to_json"},
+			"values":      {`{"usename":"bemidb","passwd":"bemidb-encrypted"}`},
+		},
 		// PG system tables
 		"SELECT oid, typname AS typename FROM pg_type WHERE typname='geometry' OR typname='geography'": {
 			"description": {"oid", "typename"},
