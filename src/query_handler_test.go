@@ -80,6 +80,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"usename", "usesysid", "usecreatedb", "usesuper", "userepl", "usebypassrls", "passwd", "valuntil", "useconfig"},
 			"values":      {"bemidb", "10", "t", "t", "t", "t", "", "NULL", "NULL"},
 		},
+		"SELECT datid FROM pg_catalog.pg_stat_activity": {
+			"description": {"datid"},
+			"values":      {},
+		},
 		// pg_namespace
 		"SELECT DISTINCT(nspname) FROM pg_catalog.pg_namespace WHERE nspname != 'information_schema' AND nspname != 'pg_catalog'": {
 			"description": {"nspname"},

@@ -22,6 +22,7 @@ const (
 	PG_TABLE_PG_STAT_GSSAPI        = "pg_stat_gssapi"
 	PG_TABLE_PG_AUTH_MEMBERS       = "pg_auth_members"
 	PG_TABLE_PG_USER               = "pg_user"
+	PG_TABLE_PG_STAT_ACTIVITY      = "pg_stat_activity"
 
 	PG_TABLE_TABLES = "tables"
 )
@@ -100,6 +101,10 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 		case PG_TABLE_PG_USER:
 			// pg_catalog.pg_user -> return hard-coded user info
 			tableNode := parser.MakePgUserNode(remapper.config.User, qSchemaTable.Alias)
+			return remapper.overrideTable(node, tableNode)
+		case PG_TABLE_PG_STAT_ACTIVITY:
+			// pg_stat_activity -> return empty table
+			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_ACTIVITY, PG_STAT_ACTIVITY_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		default:
 			// pg_catalog.pg_* other system tables -> return as is
@@ -249,4 +254,27 @@ var PG_AUTH_MEMBERS_COLUMNS = []string{
 	"admin_option",
 	"inherit_option",
 	"set_option",
+}
+
+var PG_STAT_ACTIVITY_COLUMNS = []string{
+	"datid",
+	"datname",
+	"pid",
+	"usesysid",
+	"usename",
+	"application_name",
+	"client_addr",
+	"client_hostname",
+	"client_port",
+	"backend_start",
+	"xact_start",
+	"query_start",
+	"state_change",
+	"wait_event_type",
+	"wait_event",
+	"state",
+	"backend_xid",
+	"backend_xmin",
+	"query",
+	"backend_type",
 }

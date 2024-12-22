@@ -110,12 +110,12 @@ func (parser *QueryParserTable) MakePgDatabaseNode(database string, alias string
 
 // pg_catalog.pg_user -> VALUES(values...) t(columns...)
 func (parser *QueryParserTable) MakePgUserNode(user string, alias string) *pgQuery.Node {
-    columns := PG_USER_VALUE_BY_COLUMN.Keys()
-    rowValues := PG_USER_VALUE_BY_COLUMN.Values()
+	columns := PG_USER_VALUE_BY_COLUMN.Keys()
+	rowValues := PG_USER_VALUE_BY_COLUMN.Values()
 
-    rowValues[0] = user
+	rowValues[0] = user
 
-    return parser.utils.MakeSubselectWithRowsNode(PG_TABLE_PG_USER, columns, [][]string{rowValues}, alias)
+	return parser.utils.MakeSubselectWithRowsNode(PG_TABLE_PG_USER, columns, [][]string{rowValues}, alias)
 }
 
 // System pg_* tables
