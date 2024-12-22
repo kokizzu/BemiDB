@@ -51,6 +51,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"pg_backend_pid"},
 			"values":      {"0"},
 		},
+		"SELECT * from pg_is_in_recovery()": {
+			"description": {"pg_is_in_recovery"},
+			"values":      {"f"},
+		},
 		// PG system tables
 		"SELECT oid, typname AS typename FROM pg_type WHERE typname='geometry' OR typname='geography'": {
 			"description": {"oid", "typename"},

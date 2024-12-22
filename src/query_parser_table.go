@@ -11,6 +11,7 @@ const (
 	PG_FUNCTION_PG_GET_KEYWORDS      = "pg_get_keywords"
 	PG_FUNCTION_ARRAY_UPPER          = "array_upper"
 	PG_FUNCTION_PG_SHOW_ALL_SETTINGS = "pg_show_all_settings"
+	PG_FUNCTION_PG_IS_IN_RECOVERY    = "pg_is_in_recovery"
 )
 
 type QueryParserTable struct {
@@ -388,6 +389,49 @@ func (parser *QueryParserTable) MakePgShowAllSettingsNode(node *pgQuery.Node) *p
 	}
 
 	return parser.utils.MakeSubselectFromNode(PG_FUNCTION_PG_SHOW_ALL_SETTINGS, targetList, fromNode, alias)
+}
+
+// pg_is_in_recovery()
+func (parser *QueryParserTable) IsPgIsInRecoveryFunction(node *pgQuery.Node) bool {
+	for _, funcNode := range node.GetRangeFunction().Functions {
+		for _, funcItemNode := range funcNode.GetList().Items {
+			funcCallNode := funcItemNode.GetFuncCall()
+			if funcCallNode == nil {
+				continue
+			}
+
+			if len(funcCallNode.Funcname) == 1 {
+				function := funcCallNode.Funcname[0].GetString_().Sval
+				if function == PG_FUNCTION_PG_IS_IN_RECOVERY {
+					return true
+				}
+			}
+
+			if len(funcCallNode.Funcname) == 2 {
+				schema := funcCallNode.Funcname[0].GetString_().Sval
+				function := funcCallNode.Funcname[1].GetString_().Sval
+				if schema == PG_SCHEMA_PG_CATALOG && function == PG_FUNCTION_PG_IS_IN_RECOVERY {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// pg_is_in_recovery() -> 'f'::bool
+func (parser *QueryParserTable) MakePgIsInRecoveryNode(node *pgQuery.Node) *pgQuery.Node {
+	var alias string
+	if node.GetAlias() != nil {
+		alias = node.GetAlias().Aliasname
+	}
+
+	return parser.utils.MakeSubselectWithRowsNode(
+		PG_FUNCTION_PG_IS_IN_RECOVERY,
+		[]string{"pg_is_in_recovery"},
+		[][]string{{"f"}},
+		alias,
+	)
 }
 
 func (parser *QueryParserTable) isPgCatalogSchema(qSchemaTable QuerySchemaTable) bool {

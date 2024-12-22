@@ -143,14 +143,21 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 
 // FROM [PG_FUNCTION()]
 func (remapper *SelectRemapperTable) RemapTableFunction(node *pgQuery.Node) *pgQuery.Node {
+	parser := remapper.parserTable
+
 	// pg_catalog.pg_get_keywords() -> hard-coded keywords
-	if remapper.parserTable.IsPgGetKeywordsFunction(node) {
-		return remapper.parserTable.MakePgGetKeywordsNode(node)
+	if parser.IsPgGetKeywordsFunction(node) {
+		return parser.MakePgGetKeywordsNode(node)
 	}
 
 	// pg_show_all_settings() -> duckdb_settings()
-	if remapper.parserTable.IsPgShowAllSettingsFunction(node) {
-		return remapper.parserTable.MakePgShowAllSettingsNode(node)
+	if parser.IsPgShowAllSettingsFunction(node) {
+		return parser.MakePgShowAllSettingsNode(node)
+	}
+
+	// pg_is_in_recovery() -> 'f'::bool
+	if parser.IsPgIsInRecoveryFunction(node) {
+		return parser.MakePgIsInRecoveryNode(node)
 	}
 
 	return node
