@@ -393,7 +393,7 @@ func (queryHandler *QueryHandler) remapStatement(stmt *pgQuery.RawStmt) (*pgQuer
 
 	case node != nil && node.GetSelectStmt() != nil:
 		selectStmt := stmt.Stmt.GetSelectStmt()
-		remappedSelect := queryHandler.selectRemapper.remapSelectStatement(selectStmt, 0)
+		remappedSelect := queryHandler.selectRemapper.remapSelectStatement(selectStmt, 1)
 		stmt.Stmt = &pgQuery.Node{
 			Node: &pgQuery.Node_SelectStmt{
 				SelectStmt: remappedSelect,
