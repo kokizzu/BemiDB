@@ -478,6 +478,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"word"},
 			"values":      {"abort"},
 		},
+		"SELECT t.x FROM (VALUES (1::int2, 'pg_type'::regclass)) t(x, y)": {
+			"description": {"x"},
+			"values":      {"1"},
+		},
 		// SHOW
 		"SHOW search_path": {
 			"description": {"search_path"},

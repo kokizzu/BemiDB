@@ -444,6 +444,9 @@ func (queryHandler *QueryHandler) generateDataRow(rows *sql.Rows, cols []*sql.Co
 	valuePtrs := make([]interface{}, len(cols))
 	for i, col := range cols {
 		switch col.ScanType().String() {
+		case "int16":
+			var value sql.NullInt16
+			valuePtrs[i] = &value
 		case "int32":
 			var value sql.NullInt32
 			valuePtrs[i] = &value
@@ -487,6 +490,12 @@ func (queryHandler *QueryHandler) generateDataRow(rows *sql.Rows, cols []*sql.Co
 	var values [][]byte
 	for i, valuePtr := range valuePtrs {
 		switch value := valuePtr.(type) {
+		case *sql.NullInt16:
+			if value.Valid {
+				values = append(values, []byte(strconv.Itoa(int(value.Int16))))
+			} else {
+				values = append(values, nil)
+			}
 		case *sql.NullInt32:
 			if value.Valid {
 				values = append(values, []byte(strconv.Itoa(int(value.Int32))))
