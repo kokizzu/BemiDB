@@ -268,17 +268,23 @@ func (parser *QueryParserTable) IsPgShowAllSettingsFunction(node *pgQuery.Node) 
 			if funcCallNode == nil {
 				continue
 			}
-			if len(funcCallNode.Funcname) != 1 {
-				continue
+
+			if len(funcCallNode.Funcname) == 1 {
+				function := funcCallNode.Funcname[0].GetString_().Sval
+				if function == PG_FUNCTION_PG_SHOW_ALL_SETTINGS {
+					return true
+				}
 			}
 
-			function := funcCallNode.Funcname[0].GetString_().Sval
-			if function == PG_FUNCTION_PG_SHOW_ALL_SETTINGS {
-				return true
+			if len(funcCallNode.Funcname) == 2 {
+				schema := funcCallNode.Funcname[0].GetString_().Sval
+				function := funcCallNode.Funcname[1].GetString_().Sval
+				if schema == PG_SCHEMA_PG_CATALOG && function == PG_FUNCTION_PG_SHOW_ALL_SETTINGS {
+					return true
+				}
 			}
 		}
 	}
-
 	return false
 }
 
