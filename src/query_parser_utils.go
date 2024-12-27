@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strconv"
+
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
@@ -13,18 +15,26 @@ func NewQueryParserUtils(config *Config) *QueryParserUtils {
 }
 
 func (utils *QueryParserUtils) MakeSubselectWithRowsNode(tableName string, columns []string, rowsValues [][]string, alias string) *pgQuery.Node {
+	parserType := NewQueryParserType(utils.config)
+
 	columnNodes := make([]*pgQuery.Node, len(columns))
 	for i, column := range columns {
 		columnNodes[i] = pgQuery.MakeStrNode(column)
 	}
 
-	rowsValuesNodes := make([]*pgQuery.Node, len(rowsValues))
-	for rowsIndex, rowValues := range rowsValues {
-		rowValuesNodes := make([]*pgQuery.Node, len(rowValues))
-		for rowIndex, value := range rowValues {
-			rowValuesNodes[rowIndex] = pgQuery.MakeAConstStrNode(value, 0)
+	selectStmt := &pgQuery.SelectStmt{}
+
+	for _, row := range rowsValues {
+		var rowList []*pgQuery.Node
+		for _, val := range row {
+			constNode := pgQuery.MakeAConstStrNode(val, 0)
+			if _, err := strconv.ParseInt(val, 10, 64); err == nil {
+				constNode = parserType.MakeCaseTypeCastNode(constNode, "int8")
+			}
+			rowList = append(rowList, constNode)
 		}
-		rowsValuesNodes[rowsIndex] = pgQuery.MakeListNode(rowValuesNodes)
+		selectStmt.ValuesLists = append(selectStmt.ValuesLists,
+			&pgQuery.Node{Node: &pgQuery.Node_List{List: &pgQuery.List{Items: rowList}}})
 	}
 
 	if alias == "" {
@@ -36,9 +46,7 @@ func (utils *QueryParserUtils) MakeSubselectWithRowsNode(tableName string, colum
 			RangeSubselect: &pgQuery.RangeSubselect{
 				Subquery: &pgQuery.Node{
 					Node: &pgQuery.Node_SelectStmt{
-						SelectStmt: &pgQuery.SelectStmt{
-							ValuesLists: rowsValuesNodes,
-						},
+						SelectStmt: selectStmt,
 					},
 				},
 				Alias: &pgQuery.Alias{

@@ -598,6 +598,11 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"usename", "password"},
 			"values":      {"bemidb", "bemidb-encrypted"},
 		},
+		// Type comparisons
+		"SELECT db.oid AS did, db.datname AS name, ta.spcname AS spcname, db.datallowconn, db.datistemplate AS is_template, pg_catalog.has_database_privilege(db.oid, 'CREATE') AS cancreate, datdba AS owner, descr.description FROM pg_catalog.pg_database db LEFT OUTER JOIN pg_catalog.pg_tablespace ta ON db.dattablespace = ta.oid LEFT OUTER JOIN pg_catalog.pg_shdescription descr ON (db.oid = descr.objoid AND descr.classoid = 'pg_database'::regclass) WHERE db.oid > 1145::OID OR db.datname IN ('postgres', 'edb') ORDER BY datname": {
+			"description": {"did", "name", "spcname", "datallowconn", "is_template", "cancreate", "owner", "description"},
+			"values":      {"1146", "bemidb", "", "TRUE", "FALSE", "true", "10", ""},
+		},
 	}
 
 	for query, responses := range responsesByQuery {
@@ -660,7 +665,7 @@ func TestHandleParseQuery(t *testing.T) {
 			&pgproto3.ParseComplete{},
 		})
 
-		remappedQuery := "SELECT usename, passwd FROM (VALUES ('bemidb', '10', 'FALSE', 'FALSE', 'TRUE', 'FALSE', 'bemidb-encrypted', 'NULL', 'NULL')) pg_shadow(usename, usesysid, usecreatedb, usesuper, userepl, usebypassrls, passwd, valuntil, useconfig) WHERE usename = $1"
+		remappedQuery := "SELECT usename, passwd FROM (VALUES ('bemidb', '10'::int8, 'FALSE', 'FALSE', 'TRUE', 'FALSE', 'bemidb-encrypted', 'NULL', 'NULL')) pg_shadow(usename, usesysid, usecreatedb, usesuper, userepl, usebypassrls, passwd, valuntil, useconfig) WHERE usename = $1"
 		if preparedStatement.Query != remappedQuery {
 			t.Errorf("Expected the prepared statement query to be %v, got %v", remappedQuery, preparedStatement.Query)
 		}
