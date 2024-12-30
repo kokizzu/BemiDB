@@ -170,6 +170,10 @@ func (selectRemapper *SelectRemapper) remapCaseExpressions(selectStatement *pgQu
 							subSelect := subLink.Subselect.GetSelectStmt()
 							subSelect = selectRemapper.remapSelectStatement(subSelect, indentLevel+1)
 						}
+						if funcCall := whenClause.Result.GetFuncCall(); funcCall != nil {
+							selectRemapper.traceTreeTraversal("CASE THEN function", indentLevel+1)
+							whenClause.Result = selectRemapper.remapperSelect.remappedToConstant(funcCall)
+						}
 					}
 				}
 			}
@@ -179,6 +183,10 @@ func (selectRemapper *SelectRemapper) remapCaseExpressions(selectStatement *pgQu
 					selectRemapper.traceTreeTraversal("CASE ELSE", indentLevel+1)
 					subSelect := subLink.Subselect.GetSelectStmt()
 					subSelect = selectRemapper.remapSelectStatement(subSelect, indentLevel+1)
+				}
+				if funcCall := caseExpr.Defresult.GetFuncCall(); funcCall != nil {
+					selectRemapper.traceTreeTraversal("CASE ELSE function", indentLevel+1)
+					caseExpr.Defresult = selectRemapper.remapperSelect.remappedToConstant(funcCall)
 				}
 			}
 		}

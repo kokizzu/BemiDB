@@ -542,6 +542,10 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"id", "name", "is_superuser", "can_create_role"},
 			"values":      {},
 		},
+		"SELECT CASE WHEN TRUE THEN pg_catalog.pg_is_in_recovery() END AS CASE": {
+			"description": {"case"},
+			"values":      {"f"},
+		},
 		// WHERE pg functions
 		"SELECT gss_authenticated, encrypted FROM (SELECT false, false, false, false, false WHERE false) t(pid, gss_authenticated, principal, encrypted, credentials_delegated) WHERE pid = pg_backend_pid()": {
 			"description": {"gss_authenticated", "encrypted"},
