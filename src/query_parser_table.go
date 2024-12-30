@@ -601,7 +601,7 @@ var PG_EXTENSION_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 })
 
 var PG_DATABASE_VALUE_BY_COLUMN = NewOrderedMap([][]string{
-	{"oid", "1146"},
+	{"oid", "16388"},
 	{"datname", "bemidb"},
 	{"datdba", "10"},
 	{"encoding", "6"},

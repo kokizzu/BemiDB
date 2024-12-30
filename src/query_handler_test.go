@@ -80,9 +80,9 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"slot_name"},
 			"values":      {},
 		},
-		"SELECT oid, datname, datdba FROM pg_catalog.pg_database where oid = 1146": {
+		"SELECT oid, datname, datdba FROM pg_catalog.pg_database where oid = 16388": {
 			"description": {"oid", "datname", "datdba"},
-			"values":      {"1146", "bemidb", "10"},
+			"values":      {"16388", "bemidb", "10"},
 		},
 		"SELECT * FROM pg_catalog.pg_stat_gssapi": {
 			"description": {"pid", "gss_authenticated", "principal", "encrypted", "credentials_delegated"},
@@ -609,7 +609,7 @@ func TestHandleQuery(t *testing.T) {
 		// Type comparisons
 		"SELECT db.oid AS did, db.datname AS name, ta.spcname AS spcname, db.datallowconn, db.datistemplate AS is_template, pg_catalog.has_database_privilege(db.oid, 'CREATE') AS cancreate, datdba AS owner, descr.description FROM pg_catalog.pg_database db LEFT OUTER JOIN pg_catalog.pg_tablespace ta ON db.dattablespace = ta.oid LEFT OUTER JOIN pg_catalog.pg_shdescription descr ON (db.oid = descr.objoid AND descr.classoid = 'pg_database'::regclass) WHERE db.oid > 1145::OID OR db.datname IN ('postgres', 'edb') ORDER BY datname": {
 			"description": {"did", "name", "spcname", "datallowconn", "is_template", "cancreate", "owner", "description"},
-			"values":      {"1146", "bemidb", "", "TRUE", "FALSE", "true", "10", ""},
+			"values":      {"16388", "bemidb", "", "TRUE", "FALSE", "true", "10", ""},
 		},
 	}
 
