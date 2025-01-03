@@ -5,10 +5,11 @@ import (
 )
 
 const (
-	PG_FUNCTION_QUOTE_INDENT = "quote_ident"
-	PG_FUNCTION_PG_GET_EXPR  = "pg_get_expr"
-	PG_FUNCTION_SET_CONFIG   = "set_config"
-	PG_FUNCTION_ROW_TO_JSON  = "row_to_json"
+	PG_FUNCTION_QUOTE_INDENT    = "quote_ident"
+	PG_FUNCTION_PG_GET_EXPR     = "pg_get_expr"
+	PG_FUNCTION_SET_CONFIG      = "set_config"
+	PG_FUNCTION_ROW_TO_JSON     = "row_to_json"
+	PG_FUNCTION_ARRAY_TO_STRING = "array_to_string"
 )
 
 type QueryParserSelect struct {
@@ -93,6 +94,20 @@ func (parser *QueryParserSelect) IsRowToJsonFunction(functionName string) bool {
 // row_to_json() -> to_json()
 func (parser *QueryParserSelect) RemapRowToJson(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
 	functionCall.Funcname = []*pgQuery.Node{pgQuery.MakeStrNode("to_json")}
+	return functionCall
+}
+
+// array_to_string()
+func (parser *QueryParserSelect) IsArrayToStringFunction(functionName string) bool {
+	return functionName == PG_FUNCTION_ARRAY_TO_STRING
+}
+
+// array_to_string() -> main.array_to_string()
+func (parser *QueryParserSelect) RemapArrayToString(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
+	functionCall.Funcname = []*pgQuery.Node{
+		pgQuery.MakeStrNode("main"),
+		pgQuery.MakeStrNode("array_to_string"),
+	}
 	return functionCall
 }
 

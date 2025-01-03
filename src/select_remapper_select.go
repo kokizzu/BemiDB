@@ -80,6 +80,10 @@ func (remapper *SelectRemapperSelect) SubselectStatement(targetNode *pgQuery.Nod
 func (remapper *SelectRemapperSelect) remappedFunctionName(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
 	functionName := remapper.parserSelect.FunctionName(functionCall)
 
+	if remapper.parserSelect.IsArrayToStringFunction(functionName) {
+		return remapper.parserSelect.RemapArrayToString(functionCall)
+	}
+
 	if remapper.parserSelect.IsRowToJsonFunction(functionName) {
 		return remapper.parserSelect.RemapRowToJson(functionCall)
 	}

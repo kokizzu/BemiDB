@@ -81,6 +81,21 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {""},
 		},
+		"SELECT main.array_to_string('[1, 2, 3]', '') as str": {
+			"description": {"str"},
+			"types":       {Uint32ToString(pgtype.TextOID)},
+			"values":      {"123"},
+		},
+		"SELECT pg_catalog.array_to_string('[1, 2, 3]', '') as str": {
+			"description": {"str"},
+			"types":       {Uint32ToString(pgtype.TextOID)},
+			"values":      {"123"},
+		},
+		"SELECT array_to_string('[1, 2, 3]', '') as str": {
+			"description": {"str"},
+			"types":       {Uint32ToString(pgtype.TextOID)},
+			"values":      {"123"},
+		},
 		// PG system tables
 		"SELECT oid, typname AS typename FROM pg_type WHERE typname='geometry' OR typname='geography'": {
 			"description": {"oid", "typename"},
