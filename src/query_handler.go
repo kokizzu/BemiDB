@@ -428,6 +428,9 @@ func (queryHandler *QueryHandler) columnTypeOid(col *sql.ColumnType) uint32 {
 	case "UINTEGER[]":
 		return pgtype.XIDArrayOID
 	case "BIGINT":
+		if isSystemTableOidColumn(col.Name()) {
+			return pgtype.OIDOID
+		}
 		return pgtype.Int8OID
 	case "BIGINT[]":
 		return pgtype.Int8ArrayOID
@@ -474,6 +477,21 @@ func (queryHandler *QueryHandler) columnTypeOid(col *sql.ColumnType) uint32 {
 
 		panic("Unsupported column type: " + col.DatabaseTypeName())
 	}
+}
+
+func isSystemTableOidColumn(colName string) bool {
+	oidColumns := map[string]bool{
+		"oid":          true,
+		"tableoid":     true,
+		"relnamespace": true,
+		"relowner":     true,
+		"relfilenode":  true,
+		"did":          true,
+		"objoid":       true,
+		"classoid":     true,
+	}
+
+	return oidColumns[colName]
 }
 
 func (queryHandler *QueryHandler) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pgproto3.DataRow, error) {

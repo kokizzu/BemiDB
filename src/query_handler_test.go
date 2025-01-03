@@ -79,7 +79,7 @@ func TestHandleQuery(t *testing.T) {
 		// PG system tables
 		"SELECT oid, typname AS typename FROM pg_type WHERE typname='geometry' OR typname='geography'": {
 			"description": {"oid", "typename"},
-			"types":       {Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.TextOID)},
+			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID)},
 			"values":      {},
 		},
 		"SELECT relname FROM pg_catalog.pg_class WHERE relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = 'public' LIMIT 1) LIMIT 1": {
@@ -89,7 +89,7 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"SELECT oid FROM pg_catalog.pg_extension": {
 			"description": {"oid"},
-			"types":       {Uint32ToString(pgtype.Int8OID)},
+			"types":       {Uint32ToString(pgtype.OIDOID)},
 			"values":      {"13823"},
 		},
 		"SELECT slot_name FROM pg_replication_slots": {
@@ -99,7 +99,7 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"SELECT oid, datname, datdba FROM pg_catalog.pg_database where oid = 16388": {
 			"description": {"oid", "datname", "datdba"},
-			"types":       {Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int8OID)},
+			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int8OID)},
 			"values":      {"16388", "bemidb", "10"},
 		},
 		"SELECT * FROM pg_catalog.pg_stat_gssapi": {
@@ -148,7 +148,7 @@ func TestHandleQuery(t *testing.T) {
 		"SELECT * FROM pg_catalog.pg_roles": {
 			"description": {"oid", "rolname", "rolsuper", "rolinherit", "rolcreaterole", "rolcreatedb", "rolcanlogin", "rolreplication", "rolconnlimit", "rolpassword", "rolvaliduntil", "rolbypassrls", "rolconfig"},
 			"types": {
-				Uint32ToString(pgtype.Int8OID),
+				Uint32ToString(pgtype.OIDOID),
 				Uint32ToString(pgtype.TextOID),
 				Uint32ToString(pgtype.TextOID),
 				Uint32ToString(pgtype.TextOID),
@@ -572,32 +572,32 @@ func TestHandleQuery(t *testing.T) {
 		// Typecasts
 		"SELECT objoid, classoid, objsubid, description FROM pg_description WHERE classoid = 'pg_class'::regclass": {
 			"description": {"objoid", "classoid", "objsubid", "description"},
-			"types":       {Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int4OID), Uint32ToString(pgtype.TextOID)},
+			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int4OID), Uint32ToString(pgtype.TextOID)},
 			"values":      {},
 		},
 		"SELECT d.objoid, d.classoid, c.relname, d.description FROM pg_description d JOIN pg_class c ON d.classoid = 'pg_class'::regclass": {
 			"description": {"objoid", "classoid", "relname", "description"},
-			"types":       {Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID)},
+			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID)},
 			"values":      {},
 		},
 		"SELECT objoid, classoid, objsubid, description FROM (SELECT * FROM pg_description WHERE classoid = 'pg_class'::regclass) d": {
 			"description": {"objoid", "classoid", "objsubid", "description"},
-			"types":       {Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int4OID), Uint32ToString(pgtype.TextOID)},
+			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int4OID), Uint32ToString(pgtype.TextOID)},
 			"values":      {},
 		},
 		"SELECT objoid, classoid, objsubid, description FROM pg_description WHERE (classoid = 'pg_class'::regclass AND objsubid = 0) OR classoid = 'pg_type'::regclass": {
 			"description": {"objoid", "classoid", "objsubid", "description"},
-			"types":       {Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int4OID), Uint32ToString(pgtype.TextOID)},
+			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int4OID), Uint32ToString(pgtype.TextOID)},
 			"values":      {},
 		},
 		"SELECT objoid, classoid, objsubid, description FROM pg_description WHERE classoid IN ('pg_class'::regclass, 'pg_type'::regclass)": {
 			"description": {"objoid", "classoid", "objsubid", "description"},
-			"types":       {Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int4OID), Uint32ToString(pgtype.TextOID)},
+			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int4OID), Uint32ToString(pgtype.TextOID)},
 			"values":      {},
 		},
 		"SELECT objoid FROM pg_description WHERE classoid = CASE WHEN true THEN 'pg_class'::regclass ELSE 'pg_type'::regclass END": {
 			"description": {"objoid"},
-			"types":       {Uint32ToString(pgtype.Int8OID)},
+			"types":       {Uint32ToString(pgtype.OIDOID)},
 			"values":      {},
 		},
 		"SELECT word FROM (VALUES ('abort', 'U', 't', 'unreserved', 'can be bare label')) t(word, catcode, barelabel, catdesc, baredesc) WHERE word <> ALL('{a,abs,absolute,action}'::text[])": {
@@ -645,7 +645,7 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"SELECT a.oid, pd.description FROM pg_catalog.pg_roles a LEFT JOIN pg_catalog.pg_shdescription pd ON a.oid = pd.objoid": {
 			"description": {"oid", "description"},
-			"types":       {Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.BoolOID)},
 			"values":      {"10", ""},
 		},
 		// CASE
@@ -693,7 +693,7 @@ func TestHandleQuery(t *testing.T) {
 		// WITH
 		"WITH RECURSIVE simple_cte AS (SELECT oid, rolname FROM pg_roles WHERE rolname = 'postgres' UNION ALL SELECT oid, rolname FROM pg_roles) SELECT * FROM simple_cte": {
 			"description": {"oid", "rolname"},
-			"types":       {Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.TextOID)},
+			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID)},
 			"values":      {"10", "bemidb"},
 		},
 		// Table alias
@@ -762,7 +762,7 @@ func TestHandleQuery(t *testing.T) {
 		"SELECT db.oid AS did, db.datname AS name, ta.spcname AS spcname, db.datallowconn, db.datistemplate AS is_template, pg_catalog.has_database_privilege(db.oid, 'CREATE') AS cancreate, datdba AS owner, descr.description FROM pg_catalog.pg_database db LEFT OUTER JOIN pg_catalog.pg_tablespace ta ON db.dattablespace = ta.oid LEFT OUTER JOIN pg_catalog.pg_shdescription descr ON (db.oid = descr.objoid AND descr.classoid = 'pg_database'::regclass) WHERE db.oid > 1145::OID OR db.datname IN ('postgres', 'edb') ORDER BY datname": {
 			"description": {"did", "name", "spcname", "datallowconn", "is_template", "cancreate", "owner", "description"},
 			"types": {
-				Uint32ToString(pgtype.Int8OID),
+				Uint32ToString(pgtype.OIDOID),
 				Uint32ToString(pgtype.TextOID),
 				Uint32ToString(pgtype.TextOID),
 				Uint32ToString(pgtype.TextOID),
