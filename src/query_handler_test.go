@@ -76,6 +76,11 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {`{"usename":"bemidb","passwd":"bemidb-encrypted"}`},
 		},
+		"SELECT current_setting('default_tablespace')": {
+			"description": {"current_setting"},
+			"types":       {Uint32ToString(pgtype.TextOID)},
+			"values":      {""},
+		},
 		// PG system tables
 		"SELECT oid, typname AS typename FROM pg_type WHERE typname='geometry' OR typname='geography'": {
 			"description": {"oid", "typename"},
