@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"strings"
 
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
@@ -14,7 +15,10 @@ var KNOWN_SET_STATEMENTS = NewSet([]string{
 	"timezone",                    // SET SESSION timezone TO 'UTC'
 	"extra_float_digits",          // SET extra_float_digits = 3
 	"application_name",            // SET application_name = 'psql'
+	"datestyle",                   // SET datestyle TO 'ISO'
 })
+
+var FALLBACK_QUERY_TREE, _ = pgQuery.Parse(FALLBACK_SQL_QUERY)
 
 type SelectRemapper struct {
 	parserTable    *QueryParserTable
@@ -40,8 +44,56 @@ func NewSelectRemapper(config *Config, icebergReader *IcebergReader, duckdb *Duc
 	}
 }
 
+func (selectRemapper *SelectRemapper) RemapSelectStatements(statements []*pgQuery.RawStmt) ([]*pgQuery.RawStmt, error) {
+	if len(statements) == 0 {
+		return FALLBACK_QUERY_TREE.Stmts, nil
+	}
+
+	for i, stmt := range statements {
+		node := stmt.Stmt
+
+		switch {
+		// Empty query
+		case node == nil:
+			return nil, errors.New("empty query")
+
+		// SELECT ...
+		case node.GetSelectStmt() != nil:
+			remappedSelect := selectRemapper.remapSelectStatement(stmt.Stmt.GetSelectStmt(), 1)
+			stmt.Stmt = &pgQuery.Node{Node: &pgQuery.Node_SelectStmt{SelectStmt: remappedSelect}}
+			statements[i] = stmt
+
+		// SET ...
+		case node.GetVariableSetStmt() != nil:
+			statements[i] = selectRemapper.remapSetStatement(stmt)
+
+		// DISCARD ALL
+		case node.GetDiscardStmt() != nil:
+			statements[i] = FALLBACK_QUERY_TREE.Stmts[0]
+
+		// SHOW ...
+		case node.GetVariableShowStmt() != nil:
+			if node.GetVariableShowStmt().Name == "search_path" {
+				searchPathStmt, _ := pgQuery.Parse(`SELECT CONCAT('"$user", ', value) AS search_path FROM duckdb_settings() WHERE name = 'search_path'`)
+				statements[i] = searchPathStmt.Stmts[0]
+			} else {
+				statements[i] = FALLBACK_QUERY_TREE.Stmts[0]
+			}
+
+		// Unsupported query
+		default:
+			LogDebug(selectRemapper.config, "Query tree:", stmt, node)
+			return nil, errors.New("unsupported query type")
+		}
+	}
+
+	return statements, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // SET ... (no-op)
-func (selectRemapper *SelectRemapper) RemapSetStatement(stmt *pgQuery.RawStmt) *pgQuery.RawStmt {
+func (selectRemapper *SelectRemapper) remapSetStatement(stmt *pgQuery.RawStmt) *pgQuery.RawStmt {
 	setStatement := stmt.Stmt.GetVariableSetStmt()
 
 	if !KNOWN_SET_STATEMENTS.Contains(setStatement.Name) {
@@ -55,8 +107,6 @@ func (selectRemapper *SelectRemapper) RemapSetStatement(stmt *pgQuery.RawStmt) *
 
 	return stmt
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQuery.SelectStmt, indentLevel int) *pgQuery.SelectStmt {
 	// Target Sublinks's
