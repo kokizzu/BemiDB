@@ -36,6 +36,10 @@ func IntToString(i int) string {
 	return strconv.Itoa(i)
 }
 
+func Uint32ToString(i uint32) string {
+	return strconv.FormatUint(uint64(i), 10)
+}
+
 func StringToInt(s string) (int, error) {
 	return strconv.Atoi(s)
 }

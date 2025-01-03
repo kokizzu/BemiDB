@@ -388,7 +388,9 @@ func (queryHandler *QueryHandler) generateRowDescription(cols []*sql.ColumnType)
 	description := pgproto3.RowDescription{Fields: []pgproto3.FieldDescription{}}
 
 	for _, col := range cols {
-		if col.Name() == "Success" && col.ScanType().String() == "bool" && len(cols) == 1 {
+		typeIod := queryHandler.columnTypeOid(col)
+
+		if col.Name() == "Success" && typeIod == pgtype.BoolOID && len(cols) == 1 {
 			// Skip the "Success" DuckDB column returned from SET ... commands
 			return nil
 		}
@@ -397,13 +399,73 @@ func (queryHandler *QueryHandler) generateRowDescription(cols []*sql.ColumnType)
 			Name:                 []byte(col.Name()),
 			TableOID:             0,
 			TableAttributeNumber: 0,
-			DataTypeOID:          pgtype.TextOID,
+			DataTypeOID:          typeIod,
 			DataTypeSize:         -1,
 			TypeModifier:         -1,
 			Format:               0,
 		})
 	}
 	return &description
+}
+
+// https://pkg.go.dev/github.com/jackc/pgx/v5/pgtype#pkg-constants
+func (queryHandler *QueryHandler) columnTypeOid(col *sql.ColumnType) uint32 {
+	switch col.DatabaseTypeName() {
+	case "BOOLEAN":
+		return pgtype.BoolOID
+	case "BOOLEAN[]":
+		return pgtype.BoolArrayOID
+	case "SMALLINT":
+		return pgtype.Int2OID
+	case "SMALLINT[]":
+		return pgtype.Int2ArrayOID
+	case "INTEGER", "UINTEGER":
+		return pgtype.Int4OID
+	case "INTEGER[]", "UINTEGER[]":
+		return pgtype.Int4ArrayOID
+	case "BIGINT", "UBIGINT":
+		return pgtype.Int8OID
+	case "BIGINT[]", "UBIGINT[]":
+		return pgtype.Int8ArrayOID
+	case "FLOAT":
+		return pgtype.Float4OID
+	case "FLOAT[]":
+		return pgtype.Float4ArrayOID
+	case "DOUBLE":
+		return pgtype.Float8OID
+	case "DOUBLE[]":
+		return pgtype.Float8ArrayOID
+	case "VARCHAR":
+		return pgtype.TextOID
+	case "VARCHAR[]":
+		return pgtype.TextArrayOID
+	case "TIME":
+		return pgtype.TimeOID
+	case "TIME[]":
+		return pgtype.TimeArrayOID
+	case "DATE":
+		return pgtype.DateOID
+	case "DATE[]":
+		return pgtype.DateArrayOID
+	case "TIMESTAMP":
+		return pgtype.TimestampOID
+	case "TIMESTAMP[]":
+		return pgtype.TimestampArrayOID
+	case "BLOB":
+		return pgtype.ByteaOID
+	case "BLOB[]":
+		return pgtype.ByteaArrayOID
+	default:
+		if strings.HasPrefix(col.DatabaseTypeName(), "DECIMAL") {
+			if strings.HasSuffix(col.DatabaseTypeName(), "[]") {
+				return pgtype.NumericArrayOID
+			} else {
+				return pgtype.NumericOID
+			}
+		}
+
+		panic("Unsupported column type: " + col.DatabaseTypeName())
+	}
 }
 
 func (queryHandler *QueryHandler) generateDataRow(rows *sql.Rows, cols []*sql.ColumnType) (*pgproto3.DataRow, error) {
