@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"strings"
 
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
@@ -30,6 +31,11 @@ func (utils *QueryParserUtils) MakeSubselectWithRowsNode(tableName string, colum
 			constNode := pgQuery.MakeAConstStrNode(val, 0)
 			if _, err := strconv.ParseInt(val, 10, 64); err == nil {
 				constNode = parserType.MakeCaseTypeCastNode(constNode, "int8")
+			} else {
+				valLower := strings.ToLower(val)
+				if valLower == "true" || valLower == "false" {
+					constNode = parserType.MakeCaseTypeCastNode(constNode, "bool")
+				}
 			}
 			rowList = append(rowList, constNode)
 		}

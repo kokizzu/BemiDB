@@ -150,16 +150,16 @@ func TestHandleQuery(t *testing.T) {
 			"types": {
 				Uint32ToString(pgtype.OIDOID),
 				Uint32ToString(pgtype.TextOID),
-				Uint32ToString(pgtype.TextOID),
-				Uint32ToString(pgtype.TextOID),
-				Uint32ToString(pgtype.TextOID),
-				Uint32ToString(pgtype.TextOID),
-				Uint32ToString(pgtype.TextOID),
-				Uint32ToString(pgtype.TextOID),
+				Uint32ToString(pgtype.BoolOID),
+				Uint32ToString(pgtype.BoolOID),
+				Uint32ToString(pgtype.BoolOID),
+				Uint32ToString(pgtype.BoolOID),
+				Uint32ToString(pgtype.BoolOID),
+				Uint32ToString(pgtype.BoolOID),
 				Uint32ToString(pgtype.Int8OID),
 				Uint32ToString(pgtype.TextOID),
 				Uint32ToString(pgtype.TextOID),
-				Uint32ToString(pgtype.TextOID),
+				Uint32ToString(pgtype.BoolOID),
 				Uint32ToString(pgtype.TextOID),
 			},
 			"values": {"10", "bemidb", "true", "true", "true", "true", "true", "false", "-1", "NULL", "NULL", "false", "NULL"},
@@ -671,12 +671,12 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"SELECT roles.oid AS id, roles.rolname AS name, roles.rolsuper AS is_superuser, CASE WHEN roles.rolsuper THEN true ELSE false END AS can_create_role FROM pg_catalog.pg_roles roles WHERE rolname = current_user": {
 			"description": {"id", "name", "is_superuser", "can_create_role"},
-			"types":       {Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID)},
 			"values":      {},
 		},
 		"SELECT roles.oid AS id, roles.rolname AS name, roles.rolsuper AS is_superuser, CASE WHEN roles.rolsuper THEN true ELSE roles.rolcreaterole END AS can_create_role FROM pg_catalog.pg_roles roles WHERE rolname = current_user": {
 			"description": {"id", "name", "is_superuser", "can_create_role"},
-			"types":       {Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID)},
 			"values":      {},
 		},
 		"SELECT CASE WHEN TRUE THEN pg_catalog.pg_is_in_recovery() END AS CASE": {
@@ -765,13 +765,13 @@ func TestHandleQuery(t *testing.T) {
 				Uint32ToString(pgtype.OIDOID),
 				Uint32ToString(pgtype.TextOID),
 				Uint32ToString(pgtype.TextOID),
-				Uint32ToString(pgtype.TextOID),
-				Uint32ToString(pgtype.TextOID),
+				Uint32ToString(pgtype.BoolOID),
+				Uint32ToString(pgtype.BoolOID),
 				Uint32ToString(pgtype.BoolOID),
 				Uint32ToString(pgtype.Int8OID),
 				Uint32ToString(pgtype.BoolOID),
 			},
-			"values": {"16388", "bemidb", "", "TRUE", "FALSE", "true", "10", ""},
+			"values": {"16388", "bemidb", "", "true", "false", "true", "10", ""},
 		},
 	}
 
@@ -846,7 +846,7 @@ func TestHandleParseQuery(t *testing.T) {
 			&pgproto3.ParseComplete{},
 		})
 
-		remappedQuery := "SELECT usename, passwd FROM (VALUES ('bemidb', '10'::int8, 'FALSE', 'FALSE', 'TRUE', 'FALSE', 'bemidb-encrypted', 'NULL', 'NULL')) pg_shadow(usename, usesysid, usecreatedb, usesuper, userepl, usebypassrls, passwd, valuntil, useconfig) WHERE usename = $1"
+		remappedQuery := "SELECT usename, passwd FROM (VALUES ('bemidb', '10'::int8, 'FALSE'::bool, 'FALSE'::bool, 'TRUE'::bool, 'FALSE'::bool, 'bemidb-encrypted', 'NULL', 'NULL')) pg_shadow(usename, usesysid, usecreatedb, usesuper, userepl, usebypassrls, passwd, valuntil, useconfig) WHERE usename = $1"
 		if preparedStatement.Query != remappedQuery {
 			t.Errorf("Expected the prepared statement query to be %v, got %v", remappedQuery, preparedStatement.Query)
 		}
