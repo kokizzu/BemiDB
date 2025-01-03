@@ -16,9 +16,11 @@ var KNOWN_SET_STATEMENTS = NewSet([]string{
 	"extra_float_digits",          // SET extra_float_digits = 3
 	"application_name",            // SET application_name = 'psql'
 	"datestyle",                   // SET datestyle TO 'ISO'
+	"session characteristics",     // SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL READ COMMITTED
 })
 
 var FALLBACK_QUERY_TREE, _ = pgQuery.Parse(FALLBACK_SQL_QUERY)
+var FALLBACK_SET_QUERY_TREE, _ = pgQuery.Parse("SET schema TO public")
 
 type SelectRemapper struct {
 	parserTable    *QueryParserTable
@@ -96,16 +98,11 @@ func (selectRemapper *SelectRemapper) RemapSelectStatements(statements []*pgQuer
 func (selectRemapper *SelectRemapper) remapSetStatement(stmt *pgQuery.RawStmt) *pgQuery.RawStmt {
 	setStatement := stmt.Stmt.GetVariableSetStmt()
 
-	if !KNOWN_SET_STATEMENTS.Contains(setStatement.Name) {
+	if !KNOWN_SET_STATEMENTS.Contains(strings.ToLower(setStatement.Name)) {
 		LogWarn(selectRemapper.config, "Unsupported SET ", setStatement.Name, ":", setStatement)
 	}
 
-	stmt.Stmt.GetVariableSetStmt().Name = "schema"
-	stmt.Stmt.GetVariableSetStmt().Args = []*pgQuery.Node{
-		pgQuery.MakeAConstStrNode(PG_SCHEMA_PUBLIC, 0),
-	}
-
-	return stmt
+	return FALLBACK_SET_QUERY_TREE.Stmts[0]
 }
 
 func (selectRemapper *SelectRemapper) remapSelectStatement(selectStatement *pgQuery.SelectStmt, indentLevel int) *pgQuery.SelectStmt {

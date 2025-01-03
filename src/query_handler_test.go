@@ -824,7 +824,7 @@ func TestHandleQuery(t *testing.T) {
 	t.Run("Returns a result without a row description for SET queries", func(t *testing.T) {
 		queryHandler := initQueryHandler()
 
-		messages, err := queryHandler.HandleQuery("SET client_encoding TO 'UTF8'")
+		messages, err := queryHandler.HandleQuery("SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL READ UNCOMMITTED")
 
 		testNoError(t, err)
 		testMessageTypes(t, messages, []pgproto3.Message{
