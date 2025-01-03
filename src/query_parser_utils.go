@@ -28,16 +28,27 @@ func (utils *QueryParserUtils) MakeSubselectWithRowsNode(tableName string, colum
 	for _, row := range rowsValues {
 		var rowList []*pgQuery.Node
 		for _, val := range row {
-			constNode := pgQuery.MakeAConstStrNode(val, 0)
-			if _, err := strconv.ParseInt(val, 10, 64); err == nil {
-				constNode = parserType.MakeCaseTypeCastNode(constNode, "int8")
-			} else {
-				valLower := strings.ToLower(val)
-				if valLower == "true" || valLower == "false" {
-					constNode = parserType.MakeCaseTypeCastNode(constNode, "bool")
+			if val == "NULL" {
+				constNode := &pgQuery.Node{
+					Node: &pgQuery.Node_AConst{
+						AConst: &pgQuery.A_Const{
+							Isnull: true,
+						},
+					},
 				}
+				rowList = append(rowList, constNode)
+			} else {
+				constNode := pgQuery.MakeAConstStrNode(val, 0)
+				if _, err := strconv.ParseInt(val, 10, 64); err == nil {
+					constNode = parserType.MakeCaseTypeCastNode(constNode, "int8")
+				} else {
+					valLower := strings.ToLower(val)
+					if valLower == "true" || valLower == "false" {
+						constNode = parserType.MakeCaseTypeCastNode(constNode, "bool")
+					}
+				}
+				rowList = append(rowList, constNode)
 			}
-			rowList = append(rowList, constNode)
 		}
 		selectStmt.ValuesLists = append(selectStmt.ValuesLists,
 			&pgQuery.Node{Node: &pgQuery.Node_List{List: &pgQuery.List{Items: rowList}}})
