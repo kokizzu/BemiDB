@@ -419,14 +419,22 @@ func (queryHandler *QueryHandler) columnTypeOid(col *sql.ColumnType) uint32 {
 		return pgtype.Int2OID
 	case "SMALLINT[]":
 		return pgtype.Int2ArrayOID
-	case "INTEGER", "UINTEGER":
+	case "INTEGER":
 		return pgtype.Int4OID
-	case "INTEGER[]", "UINTEGER[]":
+	case "INTEGER[]":
 		return pgtype.Int4ArrayOID
-	case "BIGINT", "UBIGINT":
+	case "UINTEGER":
+		return pgtype.XIDOID
+	case "UINTEGER[]":
+		return pgtype.XIDArrayOID
+	case "BIGINT":
 		return pgtype.Int8OID
-	case "BIGINT[]", "UBIGINT[]":
+	case "BIGINT[]":
 		return pgtype.Int8ArrayOID
+	case "UBIGINT":
+		return pgtype.XID8OID
+	case "UBIGINT[]":
+		return pgtype.XID8ArrayOID
 	case "FLOAT":
 		return pgtype.Float4OID
 	case "FLOAT[]":

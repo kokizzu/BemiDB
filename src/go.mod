@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.35
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.66.2
 	github.com/google/uuid v1.6.0
-	github.com/jackc/pgx/v5 v5.7.1
+	github.com/jackc/pgx/v5 v5.7.2
 	github.com/linkedin/goavro v2.1.0+incompatible
 	github.com/marcboeker/go-duckdb v1.8.3
 	github.com/pganalyze/pg_query_go/v5 v5.1.0

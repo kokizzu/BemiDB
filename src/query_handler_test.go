@@ -296,22 +296,22 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"SELECT xid_column FROM public.test_table WHERE xid_column IS NOT NULL": {
 			"description": {"xid_column"},
-			"types":       {Uint32ToString(pgtype.Int4OID)},
+			"types":       {Uint32ToString(pgtype.XIDOID)},
 			"values":      {"4294967295"},
 		},
 		"SELECT xid_column FROM public.test_table WHERE xid_column IS NULL": {
 			"description": {"xid_column"},
-			"types":       {Uint32ToString(pgtype.Int4OID)},
+			"types":       {Uint32ToString(pgtype.XIDOID)},
 			"values":      {""},
 		},
 		"SELECT xid8_column FROM public.test_table WHERE xid8_column IS NOT NULL": {
 			"description": {"xid8_column"},
-			"types":       {Uint32ToString(pgtype.Int8OID)},
+			"types":       {Uint32ToString(pgtype.XID8OID)},
 			"values":      {"18446744073709551615"},
 		},
 		"SELECT xid8_column FROM public.test_table WHERE xid8_column IS NULL": {
 			"description": {"xid8_column"},
-			"types":       {Uint32ToString(pgtype.Int8OID)},
+			"types":       {Uint32ToString(pgtype.XID8OID)},
 			"values":      {""},
 		},
 		"SELECT float4_column FROM public.test_table WHERE float4_column = 3.14": {
