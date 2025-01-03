@@ -614,7 +614,7 @@ var PG_DATABASE_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 	{"dattablespace", "1663"},
 	{"datcollate", "en_US.UTF-8"},
 	{"datctype", "en_US.UTF-8"},
-	{"daticulocale", "NULL"},
+	{"datlocale", "NULL"},
 	{"daticurules", "NULL"},
 	{"datcollversion", "NULL"},
 	{"datacl", "NULL"},
