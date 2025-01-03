@@ -340,7 +340,12 @@ func (queryHandler *QueryHandler) rowsToDescriptionMessages(rows *sql.Rows, quer
 	}
 
 	var messages []pgproto3.Message
-	messages = append(messages, queryHandler.generateRowDescription(cols))
+
+	rowDescription := queryHandler.generateRowDescription(cols)
+	if rowDescription != nil {
+		messages = append(messages, rowDescription)
+	}
+
 	return messages, nil
 }
 
@@ -383,6 +388,11 @@ func (queryHandler *QueryHandler) generateRowDescription(cols []*sql.ColumnType)
 	description := pgproto3.RowDescription{Fields: []pgproto3.FieldDescription{}}
 
 	for _, col := range cols {
+		if col.Name() == "Success" && col.ScanType().String() == "bool" && len(cols) == 1 {
+			// Skip the "Success" DuckDB column returned from SET ... commands
+			return nil
+		}
+
 		description.Fields = append(description.Fields, pgproto3.FieldDescription{
 			Name:                 []byte(col.Name()),
 			TableOID:             0,

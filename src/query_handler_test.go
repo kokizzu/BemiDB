@@ -137,11 +137,6 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"table_catalog", "table_schema", "table"},
 			"values":      {"memory", "public", "test_table"},
 		},
-		// SET
-		"SET client_encoding TO 'UTF8'": {
-			"description": {"Success"},
-			"values":      {},
-		},
 		// Empty query
 		"-- ping": {
 			"description": {"1"},
@@ -658,6 +653,17 @@ func TestHandleQuery(t *testing.T) {
 			t.Errorf("Expected the error to be '"+expectedErrorMessage+"', got %v", err.Error())
 		}
 	})
+
+	t.Run("Returns a result without a row description for SET queries", func(t *testing.T) {
+		queryHandler := initQueryHandler()
+
+		messages, err := queryHandler.HandleQuery("SET client_encoding TO 'UTF8'")
+
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.CommandComplete{},
+		})
+	})
 }
 
 func TestHandleParseQuery(t *testing.T) {
@@ -796,7 +802,6 @@ SET standard_conforming_strings = on;`
 
 		testNoError(t, err)
 		testMessageTypes(t, messages, []pgproto3.Message{
-			&pgproto3.RowDescription{},
 			&pgproto3.CommandComplete{},
 		})
 	})
