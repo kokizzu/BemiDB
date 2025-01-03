@@ -96,6 +96,11 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {"123"},
 		},
+		"SELECT pg_catalog.aclexplode(db.datacl) AS d FROM pg_catalog.pg_database db": {
+			"description": {"d"},
+			"types":       {Uint32ToString(pgtype.TextOID)},
+			"values":      {""},
+		},
 		// PG system tables
 		"SELECT oid, typname AS typename FROM pg_type WHERE typname='geometry' OR typname='geography'": {
 			"description": {"oid", "typename"},
