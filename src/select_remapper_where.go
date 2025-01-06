@@ -37,19 +37,3 @@ func (remapper *SelectRemapperWhere) RemapWhereExpressions(selectStatement *pgQu
 
 	return selectStatement
 }
-
-func (remapper *SelectRemapperWhere) RemapWhereClauseForTable(qSchemaTable QuerySchemaTable, selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
-	if remapper.parserTable.IsTableFromPgCatalog(qSchemaTable) {
-		switch qSchemaTable.Table {
-		case PG_TABLE_PG_NAMESPACE:
-			// FROM pg_catalog.pg_namespace -> FROM pg_catalog.pg_namespace WHERE nspname != 'main'
-			withoutMainSchemaWhereCondition := remapper.parserWhere.MakeExpressionNode("nspname", "!=", "main")
-			return remapper.parserWhere.AppendWhereCondition(selectStatement, withoutMainSchemaWhereCondition)
-		case PG_TABLE_PG_STATIO_USER_TABLES:
-			// FROM pg_catalog.pg_statio_user_tables -> FROM pg_catalog.pg_statio_user_tables WHERE false
-			falseWhereCondition := remapper.parserWhere.MakeFalseConditionNode()
-			return remapper.parserWhere.OverrideWhereCondition(selectStatement, falseWhereCondition)
-		}
-	}
-	return selectStatement
-}
