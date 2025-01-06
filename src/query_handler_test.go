@@ -672,6 +672,11 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.Int8OID)},
 			"values":      {"1"},
 		},
+		"SELECT (information_schema._pg_expandarray(ARRAY[1])).n": {
+			"description": {"n"},
+			"types":       {Uint32ToString(pgtype.Int4OID)},
+			"values":      {"1"},
+		},
 		// Transformed JOIN's
 		"SELECT s.usename, r.rolconfig FROM pg_catalog.pg_shadow s LEFT JOIN pg_catalog.pg_roles r ON s.usename = r.rolname": {
 			"description": {"usename", "rolconfig"},

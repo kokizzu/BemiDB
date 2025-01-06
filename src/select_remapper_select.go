@@ -4,6 +4,15 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
+const (
+	PG_FUNCTION_QUOTE_INDENT    = "quote_ident"
+	PG_FUNCTION_PG_GET_EXPR     = "pg_get_expr"
+	PG_FUNCTION_SET_CONFIG      = "set_config"
+	PG_FUNCTION_ROW_TO_JSON     = "row_to_json"
+	PG_FUNCTION_ARRAY_TO_STRING = "array_to_string"
+	PG_FUNCTION_PG_EXPANDARRAY  = "_pg_expandarray"
+)
+
 var REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME = map[string]string{
 	"version":                            "PostgreSQL " + PG_VERSION + ", compiled by Bemi",
 	"pg_get_userbyid":                    "bemidb",
@@ -34,6 +43,11 @@ func NewSelectRemapperSelect(config *Config) *SelectRemapperSelect {
 
 // SELECT [PG_FUNCTION()]
 func (remapper *SelectRemapperSelect) RemapSelect(targetNode *pgQuery.Node) *pgQuery.Node {
+	newTargetNode := remapper.remappedInderectionFunctionCall(targetNode)
+	if newTargetNode != nil {
+		return newTargetNode
+	}
+
 	functionCall := remapper.parserSelect.FunctionCall(targetNode)
 	if functionCall == nil {
 		return targetNode
@@ -41,7 +55,8 @@ func (remapper *SelectRemapperSelect) RemapSelect(targetNode *pgQuery.Node) *pgQ
 
 	originalFunctionName := remapper.parserSelect.FunctionName(functionCall)
 
-	if remapper.parserSelect.IsSetConfigFunction(originalFunctionName) {
+	// set_config(setting_name, new_value, is_local) -> new_value
+	if originalFunctionName == PG_FUNCTION_SET_CONFIG {
 		remapper.parserSelect.RemapSetConfigFunction(targetNode, functionCall)
 		return targetNode
 	}
@@ -68,40 +83,57 @@ func (remapper *SelectRemapperSelect) RemapSelect(targetNode *pgQuery.Node) *pgQ
 	return targetNode
 }
 
-func (remapper *SelectRemapperSelect) SubselectStatement(targetNode *pgQuery.Node) *pgQuery.SelectStmt {
-	target := targetNode.GetResTarget()
+func (remapper *SelectRemapperSelect) remappedInderectionFunctionCall(targetNode *pgQuery.Node) *pgQuery.Node {
+	parser := remapper.parserSelect
 
-	if target.Val.GetSubLink() != nil {
-		return target.Val.GetSubLink().Subselect.GetSelectStmt()
+	functionCall := parser.InderectionFunctionCall(targetNode)
+	if functionCall == nil {
+		return nil
 	}
 
-	return nil
+	functionName := parser.FunctionName(functionCall)
+
+	switch functionName {
+
+	// (information_schema._pg_expandarray(array)).n -> unnest(anyarray) AS n
+	case PG_FUNCTION_PG_EXPANDARRAY:
+		inderectionColumnName := targetNode.GetResTarget().Val.GetAIndirection().Indirection[0].GetString_().Sval
+		newTargetNode := parser.RemapInderectionToFunctionCall(targetNode, parser.RemapPgExpandArray(functionCall))
+		remapper.parserSelect.SetDefaultTargetName(newTargetNode, inderectionColumnName)
+		return newTargetNode
+
+	default:
+		return nil
+	}
 }
 
 func (remapper *SelectRemapperSelect) remappedFunctionName(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
 	functionName := remapper.parserSelect.FunctionName(functionCall)
 
-	if remapper.parserSelect.IsArrayToStringFunction(functionName) {
-		return remapper.parserSelect.RemapArrayToString(functionCall)
-	}
-
-	if remapper.parserSelect.IsRowToJsonFunction(functionName) {
-		return remapper.parserSelect.RemapRowToJson(functionCall)
-	}
+	switch functionName {
 
 	// quote_ident(str) -> concat("\""+str+"\"")
-	if remapper.parserSelect.IsQuoteIdentFunction(functionName) {
+	case PG_FUNCTION_QUOTE_INDENT:
 		return remapper.parserSelect.RemapQuoteIdentToConcat(functionCall)
-	}
 
-	return nil
+	// array_to_string(array, separator) -> main.array_to_string(array, separator)
+	case PG_FUNCTION_ARRAY_TO_STRING:
+		return remapper.parserSelect.RemapArrayToString(functionCall)
+
+	// row_to_json(col) -> to_json(col)
+	case PG_FUNCTION_ROW_TO_JSON:
+		return remapper.parserSelect.RemapRowToJson(functionCall)
+
+	default:
+		return nil
+	}
 }
 
 func (remapper *SelectRemapperSelect) remappedFunctionArgs(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
 	functionName := remapper.parserSelect.FunctionName(functionCall)
 
 	// pg_get_expr(pg_node_tree, relation_oid, pretty_bool) -> pg_get_expr(pg_node_tree, relation_oid)
-	if remapper.parserSelect.IsPgGetExprFunction(functionName) {
+	if functionName == PG_FUNCTION_PG_GET_EXPR {
 		return remapper.parserSelect.RemoveThirdArgumentFromPgGetExpr(functionCall)
 	}
 

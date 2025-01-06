@@ -4,14 +4,6 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
-const (
-	PG_FUNCTION_QUOTE_INDENT    = "quote_ident"
-	PG_FUNCTION_PG_GET_EXPR     = "pg_get_expr"
-	PG_FUNCTION_SET_CONFIG      = "set_config"
-	PG_FUNCTION_ROW_TO_JSON     = "row_to_json"
-	PG_FUNCTION_ARRAY_TO_STRING = "array_to_string"
-)
-
 type QueryParserSelect struct {
 	config *Config
 	utils  *QueryParserUtils
@@ -23,6 +15,15 @@ func NewQueryParserSelect(config *Config) *QueryParserSelect {
 
 func (parser *QueryParserSelect) FunctionCall(targetNode *pgQuery.Node) *pgQuery.FuncCall {
 	return targetNode.GetResTarget().Val.GetFuncCall()
+}
+
+func (parser *QueryParserSelect) InderectionFunctionCall(targetNode *pgQuery.Node) *pgQuery.FuncCall {
+	indirection := targetNode.GetResTarget().Val.GetAIndirection()
+	if indirection != nil && indirection.Arg.GetFuncCall() != nil {
+		return indirection.Arg.GetFuncCall()
+	}
+
+	return nil
 }
 
 func (parser *QueryParserSelect) NestedFunctionCalls(functionCall *pgQuery.FuncCall) []*pgQuery.FuncCall {
@@ -39,11 +40,6 @@ func (parser *QueryParserSelect) FunctionName(functionCall *pgQuery.FuncCall) st
 	return functionCall.Funcname[len(functionCall.Funcname)-1].GetString_().Sval
 }
 
-// quote_ident()
-func (parser *QueryParserSelect) IsQuoteIdentFunction(functionName string) bool {
-	return functionName == PG_FUNCTION_QUOTE_INDENT
-}
-
 // quote_ident(str) -> concat("\""+str+"\"")
 func (parser *QueryParserSelect) RemapQuoteIdentToConcat(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
 	functionCall.Funcname[0] = pgQuery.MakeStrNode("concat")
@@ -57,11 +53,6 @@ func (parser *QueryParserSelect) RemapQuoteIdentToConcat(functionCall *pgQuery.F
 	return functionCall
 }
 
-// pg_get_expr()
-func (parser *QueryParserSelect) IsPgGetExprFunction(functionName string) bool {
-	return functionName == PG_FUNCTION_PG_GET_EXPR
-}
-
 // pg_get_expr(pg_node_tree, relation_oid, pretty_bool) -> pg_get_expr(pg_node_tree, relation_oid)
 func (parser *QueryParserSelect) RemoveThirdArgumentFromPgGetExpr(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
 	if len(functionCall.Args) > 2 {
@@ -69,11 +60,6 @@ func (parser *QueryParserSelect) RemoveThirdArgumentFromPgGetExpr(functionCall *
 	}
 
 	return functionCall
-}
-
-// set_config()
-func (parser *QueryParserSelect) IsSetConfigFunction(functionName string) bool {
-	return functionName == PG_FUNCTION_SET_CONFIG
 }
 
 // set_config(setting_name, new_value, is_local) -> new_value
@@ -86,20 +72,22 @@ func (parser *QueryParserSelect) RemapSetConfigFunction(targetNode *pgQuery.Node
 	parser.SetDefaultTargetName(targetNode, PG_FUNCTION_SET_CONFIG)
 }
 
-// row_to_json()
-func (parser *QueryParserSelect) IsRowToJsonFunction(functionName string) bool {
-	return functionName == PG_FUNCTION_ROW_TO_JSON
-}
-
 // row_to_json() -> to_json()
 func (parser *QueryParserSelect) RemapRowToJson(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
 	functionCall.Funcname = []*pgQuery.Node{pgQuery.MakeStrNode("to_json")}
 	return functionCall
 }
 
-// array_to_string()
-func (parser *QueryParserSelect) IsArrayToStringFunction(functionName string) bool {
-	return functionName == PG_FUNCTION_ARRAY_TO_STRING
+// information_schema._pg_expandarray(array) -> unnest(anyarray)
+func (parser *QueryParserSelect) RemapPgExpandArray(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
+	functionCall.Funcname = []*pgQuery.Node{pgQuery.MakeStrNode("unnest")}
+	return functionCall
+}
+
+// (...).n -> func() AS n
+func (parser *QueryParserSelect) RemapInderectionToFunctionCall(targetNode *pgQuery.Node, functionCall *pgQuery.FuncCall) *pgQuery.Node {
+	targetNode.GetResTarget().Val = &pgQuery.Node{Node: &pgQuery.Node_FuncCall{FuncCall: functionCall}}
+	return targetNode
 }
 
 // array_to_string() -> main.array_to_string()

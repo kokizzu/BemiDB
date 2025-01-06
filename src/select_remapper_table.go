@@ -58,68 +58,84 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 	// pg_catalog.pg_* system tables
 	if remapper.isTableFromPgCatalog(qSchemaTable) {
 		switch qSchemaTable.Table {
+
+		// pg_catalog.pg_shadow -> return hard-coded credentials
 		case PG_TABLE_PG_SHADOW:
-			// pg_catalog.pg_shadow -> return hard-coded credentials
 			tableNode := parser.MakePgShadowNode(remapper.config.User, remapper.config.EncryptedPassword, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_catalog.pg_roles -> return hard-coded role info
 		case PG_TABLE_PG_ROLES:
-			// pg_catalog.pg_roles -> return hard-coded role info
 			tableNode := parser.MakePgRolesNode(remapper.config.User, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_catalog.pg_class -> reload Iceberg tables
 		case PG_TABLE_PG_CLASS:
-			// pg_catalog.pg_class -> reload Iceberg tables
 			remapper.reloadIceberSchemaTables()
 			return node
+
+		// pg_catalog.pg_inherits -> return nothing
 		case PG_TABLE_PG_INHERITS:
-			// pg_catalog.pg_inherits -> return nothing
 			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_INHERITS, PG_INHERITS_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_catalog.pg_shdescription -> return nothing
 		case PG_TABLE_PG_SHDESCRIPTION:
-			// pg_catalog.pg_shdescription -> return nothing
 			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_SHDESCRIPTION, PG_SHDESCRIPTION_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_catalog.pg_statio_user_tables -> return nothing
 		case PG_TABLE_PG_STATIO_USER_TABLES:
-			// pg_catalog.pg_statio_user_tables -> return nothing
 			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_STATIO_USER_TABLES, PG_STATIO_USER_TABLES_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_catalog.pg_extension -> return hard-coded extension info
 		case PG_TABLE_PG_EXTENSION:
-			// pg_catalog.pg_extension -> return hard-coded extension info
 			tableNode := parser.MakePgExtensionNode(qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_replication_slots -> return nothing
 		case PG_TABLE_PG_REPLICATION_SLOTS:
-			// pg_replication_slots -> return nothing
 			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_REPLICATION_SLOTS, PG_REPLICATION_SLOTS_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_catalog.pg_database -> return hard-coded database info
 		case PG_TABLE_PG_DATABASE:
-			// pg_catalog.pg_database -> return hard-coded database info
 			tableNode := parser.MakePgDatabaseNode(remapper.config.Database, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_catalog.pg_stat_gssapi -> return nothing
 		case PG_TABLE_PG_STAT_GSSAPI:
-			// pg_catalog.pg_stat_gssapi -> return nothing
 			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_GSSAPI, PG_STAT_GSSAPI_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_catalog.pg_auth_members -> return empty table
 		case PG_TABLE_PG_AUTH_MEMBERS:
-			// pg_catalog.pg_auth_members -> return empty table
 			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_AUTH_MEMBERS, PG_AUTH_MEMBERS_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_catalog.pg_user -> return hard-coded user info
 		case PG_TABLE_PG_USER:
-			// pg_catalog.pg_user -> return hard-coded user info
 			tableNode := parser.MakePgUserNode(remapper.config.User, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_stat_activity -> return empty table
 		case PG_TABLE_PG_STAT_ACTIVITY:
-			// pg_stat_activity -> return empty table
 			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_ACTIVITY, PG_STAT_ACTIVITY_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_matviews -> return empty table
 		case PG_TABLE_PG_MATVIEWS:
-			// pg_matviews -> return empty table
 			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_MATVIEWS, PG_MATVIEWS_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_stat_user_tables -> return hard-coded table info
 		case PG_TABLE_PG_STAT_USER_TABLES:
-			// pg_stat_user_tables -> return hard-coded table info
 			tableNode := parser.MakePgStatUserTablesNode(remapper.icebergSchemaTables, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
+
+		// pg_catalog.pg_* other system tables -> return as is
 		default:
-			// pg_catalog.pg_* other system tables -> return as is
 			return node
 		}
 	}
@@ -127,12 +143,14 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 	// information_schema.* system tables
 	if parser.IsTableFromInformationSchema(qSchemaTable) {
 		switch qSchemaTable.Table {
+
+		// information_schema.tables -> reload Iceberg tables
 		case PG_TABLE_TABLES:
-			// information_schema.tables -> reload Iceberg tables
 			remapper.reloadIceberSchemaTables()
 			return node
+
+		// information_schema.* other system tables -> return as is
 		default:
-			// information_schema.* other system tables -> return as is
 			return node
 		}
 	}
@@ -188,12 +206,14 @@ func (remapper *SelectRemapperTable) RemapNestedTableFunction(funcCallNode *pgQu
 func (remapper *SelectRemapperTable) RemapWhereClauseForTable(qSchemaTable QuerySchemaTable, selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
 	if remapper.isTableFromPgCatalog(qSchemaTable) {
 		switch qSchemaTable.Table {
+
+		// FROM pg_catalog.pg_namespace -> FROM pg_catalog.pg_namespace WHERE nspname != 'main'
 		case PG_TABLE_PG_NAMESPACE:
-			// FROM pg_catalog.pg_namespace -> FROM pg_catalog.pg_namespace WHERE nspname != 'main'
 			withoutMainSchemaWhereCondition := remapper.parserWhere.MakeExpressionNode("nspname", "!=", "main")
 			return remapper.parserWhere.AppendWhereCondition(selectStatement, withoutMainSchemaWhereCondition)
+
+		// FROM pg_catalog.pg_statio_user_tables -> FROM pg_catalog.pg_statio_user_tables WHERE false
 		case PG_TABLE_PG_STATIO_USER_TABLES:
-			// FROM pg_catalog.pg_statio_user_tables -> FROM pg_catalog.pg_statio_user_tables WHERE false
 			falseWhereCondition := remapper.parserWhere.MakeFalseConditionNode()
 			return remapper.parserWhere.OverrideWhereCondition(selectStatement, falseWhereCondition)
 		}
