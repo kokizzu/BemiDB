@@ -175,27 +175,19 @@ func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string, qSchemaTa
 	return parser.utils.MakeSubselectFromNode(qSchemaTable.Table, []*pgQuery.Node{selectStarNode}, node, qSchemaTable.Alias)
 }
 
-// pg_catalog.pg_get_keywords()
-func (parser *QueryParserTable) IsPgGetKeywordsFunction(node *pgQuery.Node) bool {
+func (parser *QueryParserTable) SchemaFunction(node *pgQuery.Node) PgSchemaFunction {
 	for _, funcNode := range node.GetRangeFunction().Functions {
 		for _, funcItemNode := range funcNode.GetList().Items {
 			funcCallNode := funcItemNode.GetFuncCall()
 			if funcCallNode == nil {
 				continue
 			}
-			if len(funcCallNode.Funcname) != 2 {
-				continue
-			}
 
-			schema := funcCallNode.Funcname[0].GetString_().Sval
-			function := funcCallNode.Funcname[1].GetString_().Sval
-			if schema == PG_SCHEMA_PG_CATALOG && function == PG_FUNCTION_PG_GET_KEYWORDS {
-				return true
-			}
+			return parser.utils.SchemaFunction(funcCallNode)
 		}
 	}
 
-	return false
+	return PgSchemaFunction{}
 }
 
 // pg_catalog.pg_get_keywords() -> VALUES(values...) t(columns...)
@@ -255,35 +247,7 @@ func (parser *QueryParserTable) MakeArrayUpperNode(funcCallNode *pgQuery.FuncCal
 	).GetFuncCall()
 }
 
-// pg_show_all_settings()
-func (parser *QueryParserTable) IsPgShowAllSettingsFunction(node *pgQuery.Node) bool {
-	for _, funcNode := range node.GetRangeFunction().Functions {
-		for _, funcItemNode := range funcNode.GetList().Items {
-			funcCallNode := funcItemNode.GetFuncCall()
-			if funcCallNode == nil {
-				continue
-			}
-
-			if len(funcCallNode.Funcname) == 1 {
-				function := funcCallNode.Funcname[0].GetString_().Sval
-				if function == PG_FUNCTION_PG_SHOW_ALL_SETTINGS {
-					return true
-				}
-			}
-
-			if len(funcCallNode.Funcname) == 2 {
-				schema := funcCallNode.Funcname[0].GetString_().Sval
-				function := funcCallNode.Funcname[1].GetString_().Sval
-				if schema == PG_SCHEMA_PG_CATALOG && function == PG_FUNCTION_PG_SHOW_ALL_SETTINGS {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-// pg_show_all_settings() -> duckdb_settings() mapped to pg format
+// pg_catalog.pg_show_all_settings() -> duckdb_settings() mapped to pg format
 func (parser *QueryParserTable) MakePgShowAllSettingsNode(node *pgQuery.Node) *pgQuery.Node {
 	targetList := []*pgQuery.Node{
 		pgQuery.MakeResTargetNodeWithNameAndVal(
@@ -392,35 +356,7 @@ func (parser *QueryParserTable) MakePgShowAllSettingsNode(node *pgQuery.Node) *p
 	return parser.utils.MakeSubselectFromNode(PG_FUNCTION_PG_SHOW_ALL_SETTINGS, targetList, fromNode, alias)
 }
 
-// pg_is_in_recovery()
-func (parser *QueryParserTable) IsPgIsInRecoveryFunction(node *pgQuery.Node) bool {
-	for _, funcNode := range node.GetRangeFunction().Functions {
-		for _, funcItemNode := range funcNode.GetList().Items {
-			funcCallNode := funcItemNode.GetFuncCall()
-			if funcCallNode == nil {
-				continue
-			}
-
-			if len(funcCallNode.Funcname) == 1 {
-				function := funcCallNode.Funcname[0].GetString_().Sval
-				if function == PG_FUNCTION_PG_IS_IN_RECOVERY {
-					return true
-				}
-			}
-
-			if len(funcCallNode.Funcname) == 2 {
-				schema := funcCallNode.Funcname[0].GetString_().Sval
-				function := funcCallNode.Funcname[1].GetString_().Sval
-				if schema == PG_SCHEMA_PG_CATALOG && function == PG_FUNCTION_PG_IS_IN_RECOVERY {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-// pg_is_in_recovery() -> 'f'::bool
+// pg_catalog.pg_is_in_recovery() -> 'f'::bool
 func (parser *QueryParserTable) MakePgIsInRecoveryNode(node *pgQuery.Node) *pgQuery.Node {
 	var alias string
 	if node.GetAlias() != nil {
@@ -433,10 +369,6 @@ func (parser *QueryParserTable) MakePgIsInRecoveryNode(node *pgQuery.Node) *pgQu
 		[][]string{{"f"}},
 		alias,
 	)
-}
-
-func (parser *QueryParserTable) isPgCatalogSchema(qSchemaTable QuerySchemaTable) bool {
-	return qSchemaTable.Schema == PG_SCHEMA_PG_CATALOG || qSchemaTable.Schema == ""
 }
 
 var PG_SHADOW_VALUE_BY_COLUMN = NewOrderedMap([][]string{

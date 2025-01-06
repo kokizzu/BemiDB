@@ -154,19 +154,23 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 func (remapper *SelectRemapperTable) RemapTableFunction(node *pgQuery.Node) *pgQuery.Node {
 	parser := remapper.parserTable
 
-	// pg_catalog.pg_get_keywords() -> hard-coded keywords
-	if parser.IsPgGetKeywordsFunction(node) {
-		return parser.MakePgGetKeywordsNode(node)
-	}
+	schemaFunction := parser.SchemaFunction(node)
 
-	// pg_show_all_settings() -> duckdb_settings()
-	if parser.IsPgShowAllSettingsFunction(node) {
-		return parser.MakePgShowAllSettingsNode(node)
-	}
+	if remapper.isFunctionFromPgCatalog(schemaFunction) {
+		switch {
 
-	// pg_is_in_recovery() -> 'f'::bool
-	if parser.IsPgIsInRecoveryFunction(node) {
-		return parser.MakePgIsInRecoveryNode(node)
+		// pg_catalog.pg_get_keywords() -> hard-coded keywords
+		case schemaFunction.Function == PG_FUNCTION_PG_GET_KEYWORDS:
+			return parser.MakePgGetKeywordsNode(node)
+
+		// pg_catalog.pg_show_all_settings() -> duckdb_settings()
+		case schemaFunction.Function == PG_FUNCTION_PG_SHOW_ALL_SETTINGS:
+			return parser.MakePgShowAllSettingsNode(node)
+
+		// pg_catalog.pg_is_in_recovery() -> 'f'::bool
+		case schemaFunction.Function == PG_FUNCTION_PG_IS_IN_RECOVERY:
+			return parser.MakePgIsInRecoveryNode(node)
+		}
 	}
 
 	return node
@@ -237,6 +241,11 @@ func (remapper *SelectRemapperTable) isTableFromPgCatalog(qSchemaTable QuerySche
 		(qSchemaTable.Schema == "" &&
 			(PG_SYSTEM_TABLES.Contains(qSchemaTable.Table) || PG_SYSTEM_VIEWS.Contains(qSchemaTable.Table)) &&
 			!remapper.icebergSchemaTableExists(qSchemaTable.ToIcebergSchemaTable()))
+}
+
+func (remapper *SelectRemapperTable) isFunctionFromPgCatalog(schemaFunction PgSchemaFunction) bool {
+	return schemaFunction.Schema == PG_SCHEMA_PG_CATALOG ||
+		(schemaFunction.Schema == "" && PG_SYSTEM_FUNCTIONS.Contains(schemaFunction.Function))
 }
 
 var PG_INHERITS_COLUMNS = []string{
@@ -335,121 +344,3 @@ var PG_MATVIEWS_COLUMNS = []string{
 	"ispopulated",
 	"definition",
 }
-
-var PG_SYSTEM_TABLES = NewSet([]string{
-	"pg_aggregate",
-	"pg_am",
-	"pg_amop",
-	"pg_amproc",
-	"pg_attrdef",
-	"pg_attribute",
-	"pg_auth_members",
-	"pg_authid",
-	"pg_cast",
-	"pg_class",
-	"pg_collation",
-	"pg_constraint",
-	"pg_conversion",
-	"pg_database",
-	"pg_db_role_setting",
-	"pg_default_acl",
-	"pg_depend",
-	"pg_description",
-	"pg_enum",
-	"pg_event_trigger",
-	"pg_extension",
-	"pg_foreign_data_wrapper",
-	"pg_foreign_server",
-	"pg_foreign_table",
-	"pg_index",
-	"pg_inherits",
-	"pg_init_privs",
-	"pg_language",
-	"pg_largeobject",
-	"pg_largeobject_metadata",
-	"pg_matviews",
-	"pg_namespace",
-	"pg_opclass",
-	"pg_operator",
-	"pg_opfamily",
-	"pg_parameter_acl",
-	"pg_partitioned_table",
-	"pg_policy",
-	"pg_proc",
-	"pg_publication",
-	"pg_publication_namespace",
-	"pg_publication_rel",
-	"pg_user",
-	"pg_range",
-	"pg_replication_origin",
-	"pg_replication_slots",
-	"pg_rewrite",
-	"pg_roles",
-	"pg_seclabel",
-	"pg_sequence",
-	"pg_shadow",
-	"pg_shdepend",
-	"pg_shdescription",
-	"pg_shseclabel",
-	"pg_statistic",
-	"pg_statistic_ext",
-	"pg_statistic_ext_data",
-	"pg_subscription",
-	"pg_subscription_rel",
-	"pg_tablespace",
-	"pg_transform",
-	"pg_trigger",
-	"pg_ts_config",
-	"pg_ts_config_map",
-	"pg_ts_dict",
-	"pg_ts_parser",
-	"pg_ts_template",
-	"pg_type",
-	"pg_user_mapping",
-})
-
-var PG_SYSTEM_VIEWS = NewSet([]string{
-	"pg_stat_activity",
-	"pg_stat_replication",
-	"pg_stat_wal_receiver",
-	"pg_stat_recovery_prefetch",
-	"pg_stat_subscription",
-	"pg_stat_ssl",
-	"pg_stat_gssapi",
-	"pg_stat_progress_analyze",
-	"pg_stat_progress_create_index",
-	"pg_stat_progress_vacuum",
-	"pg_stat_progress_cluster",
-	"pg_stat_progress_basebackup",
-	"pg_stat_progress_copy",
-	"pg_stat_archiver",
-	"pg_stat_bgwriter",
-	"pg_stat_checkpointer",
-	"pg_stat_database",
-	"pg_stat_database_conflicts",
-	"pg_stat_io",
-	"pg_stat_replication_slots",
-	"pg_stat_slru",
-	"pg_stat_subscription_stats",
-	"pg_stat_wal",
-	"pg_stat_all_tables",
-	"pg_stat_sys_tables",
-	"pg_stat_user_tables",
-	"pg_stat_xact_all_tables",
-	"pg_stat_xact_sys_tables",
-	"pg_stat_xact_user_tables",
-	"pg_stat_all_indexes",
-	"pg_stat_sys_indexes",
-	"pg_stat_user_indexes",
-	"pg_stat_user_functions",
-	"pg_stat_xact_user_functions",
-	"pg_statio_all_tables",
-	"pg_statio_sys_tables",
-	"pg_statio_user_tables",
-	"pg_statio_all_indexes",
-	"pg_statio_sys_indexes",
-	"pg_statio_user_indexes",
-	"pg_statio_all_sequences",
-	"pg_statio_sys_sequences",
-	"pg_statio_user_sequences",
-})

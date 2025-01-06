@@ -15,6 +15,23 @@ func NewQueryParserUtils(config *Config) *QueryParserUtils {
 	return &QueryParserUtils{config: config}
 }
 
+func (utils *QueryParserUtils) SchemaFunction(functionCall *pgQuery.FuncCall) PgSchemaFunction {
+	switch len(functionCall.Funcname) {
+	case 1:
+		return PgSchemaFunction{
+			Schema:   "",
+			Function: functionCall.Funcname[0].GetString_().Sval,
+		}
+	case 2:
+		return PgSchemaFunction{
+			Schema:   functionCall.Funcname[0].GetString_().Sval,
+			Function: functionCall.Funcname[1].GetString_().Sval,
+		}
+	default:
+		panic("Invalid function call")
+	}
+}
+
 func (utils *QueryParserUtils) MakeSubselectWithRowsNode(tableName string, columns []string, rowsValues [][]string, alias string) *pgQuery.Node {
 	parserType := NewQueryParserType(utils.config)
 

@@ -123,8 +123,8 @@ func (remapper *SelectRemapperSelect) remappedFunctionName(functionCall *pgQuery
 func (remapper *SelectRemapperSelect) remappedFunctionArgs(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
 	schemaFunction := remapper.parserSelect.SchemaFunction(functionCall)
 
-	// pg_get_expr(pg_node_tree, relation_oid, pretty_bool) -> pg_get_expr(pg_node_tree, relation_oid)
-	if schemaFunction.Schema == PG_SCHEMA_PG_CATALOG && schemaFunction.Function == PG_FUNCTION_PG_GET_EXPR {
+	// pg_catalog.pg_get_expr(pg_node_tree, relation_oid, pretty_bool) -> pg_catalog.pg_get_expr(pg_node_tree, relation_oid)
+	if (schemaFunction.Schema == PG_SCHEMA_PG_CATALOG || schemaFunction.Schema == "") && schemaFunction.Function == PG_FUNCTION_PG_GET_EXPR {
 		return remapper.parserSelect.RemoveThirdArgumentFromPgGetExpr(functionCall)
 	}
 
