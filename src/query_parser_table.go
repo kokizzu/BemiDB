@@ -119,6 +119,30 @@ func (parser *QueryParserTable) MakePgUserNode(user string, alias string) *pgQue
 	return parser.utils.MakeSubselectWithRowsNode(PG_TABLE_PG_USER, columns, [][]string{rowValues}, alias)
 }
 
+// pg_catalog.pg_stat_user_tables -> VALUES(values...) t(columns...)
+func (parser *QueryParserTable) MakePgStatUserTablesNode(schemaTables []IcebergSchemaTable, alias string) *pgQuery.Node {
+	columns := PG_STAT_USER_TABLES_VALUE_BY_COLUMN.Keys()
+	staticRowValues := PG_STAT_USER_TABLES_VALUE_BY_COLUMN.Values()
+
+	var rowsValues [][]string
+
+	for _, schemaTable := range schemaTables {
+		rowValues := make([]string, len(staticRowValues))
+		copy(rowValues, staticRowValues)
+		for i, column := range columns {
+			switch column {
+			case "schemaname":
+				rowValues[i] = schemaTable.Schema
+			case "relname":
+				rowValues[i] = schemaTable.Table
+			}
+		}
+		rowsValues = append(rowsValues, rowValues)
+	}
+
+	return parser.utils.MakeSubselectWithRowsNode(PG_TABLE_PG_STAT_USER_TABLES, columns, rowsValues, alias)
+}
+
 // Other information_schema.* tables
 func (parser *QueryParserTable) IsTableFromInformationSchema(qSchemaTable QuerySchemaTable) bool {
 	return qSchemaTable.Schema == PG_SCHEMA_INFORMATION_SCHEMA
@@ -507,6 +531,35 @@ var PG_USER_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 	{"passwd", ""},
 	{"valuntil", "NULL"},
 	{"useconfig", "NULL"},
+})
+
+var PG_STAT_USER_TABLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{
+	{"relid", "123456"},
+	{"schemaname", "public"},
+	{"relname", "table"},
+	{"seq_scan", "0"},
+	{"last_seq_scan", "NULL"},
+	{"seq_tup_read", "0"},
+	{"idx_scan", "0"},
+	{"last_idx_scan", "NULL"},
+	{"idx_tup_fetch", "0"},
+	{"n_tup_ins", "0"},
+	{"n_tup_upd", "0"},
+	{"n_tup_del", "0"},
+	{"n_tup_hot_upd", "0"},
+	{"n_tup_newpage_upd", "0"},
+	{"n_live_tup", "0"},
+	{"n_dead_tup", "0"},
+	{"n_mod_since_analyze", "0"},
+	{"n_ins_since_vacuum", "0"},
+	{"last_vacuum", "NULL"},
+	{"last_autovacuum", "NULL"},
+	{"last_analyze", "NULL"},
+	{"last_autoanalyze", "NULL"},
+	{"vacuum_count", "0"},
+	{"autovacuum_count", "0"},
+	{"analyze_count", "0"},
+	{"autoanalyze_count", "0"},
 })
 
 type DuckDBKeyword struct {
