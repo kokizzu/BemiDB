@@ -23,6 +23,7 @@ const (
 	PG_TABLE_PG_AUTH_MEMBERS       = "pg_auth_members"
 	PG_TABLE_PG_USER               = "pg_user"
 	PG_TABLE_PG_STAT_ACTIVITY      = "pg_stat_activity"
+	PG_TABLE_PG_MATVIEWS           = "pg_matviews"
 
 	PG_TABLE_TABLES = "tables"
 )
@@ -105,6 +106,10 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 		case PG_TABLE_PG_STAT_ACTIVITY:
 			// pg_stat_activity -> return empty table
 			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_ACTIVITY, PG_STAT_ACTIVITY_COLUMNS, qSchemaTable.Alias)
+			return remapper.overrideTable(node, tableNode)
+		case PG_TABLE_PG_MATVIEWS:
+			// pg_matviews -> return empty table
+			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_MATVIEWS, PG_MATVIEWS_COLUMNS, qSchemaTable.Alias)
 			return remapper.overrideTable(node, tableNode)
 		default:
 			// pg_catalog.pg_* other system tables -> return as is
@@ -284,4 +289,14 @@ var PG_STAT_ACTIVITY_COLUMNS = []string{
 	"backend_xmin",
 	"query",
 	"backend_type",
+}
+
+var PG_MATVIEWS_COLUMNS = []string{
+	"schemaname",
+	"matviewname",
+	"matviewowner",
+	"tablespace",
+	"hasindexes",
+	"ispopulated",
+	"definition",
 }

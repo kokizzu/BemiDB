@@ -475,6 +475,7 @@ var PG_SYSTEM_TABLES = NewSet([]string{
 	"pg_language",
 	"pg_largeobject",
 	"pg_largeobject_metadata",
+	"pg_matviews",
 	"pg_namespace",
 	"pg_opclass",
 	"pg_operator",

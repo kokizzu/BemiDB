@@ -142,6 +142,11 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.BoolOID)},
 			"values":      {},
 		},
+		"SELECT schemaname, matviewname AS objectname FROM pg_catalog.pg_matviews": {
+			"description": {"schemaname", "objectname"},
+			"types":       {Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID)},
+			"values":      {},
+		},
 		// pg_namespace
 		"SELECT DISTINCT(nspname) FROM pg_catalog.pg_namespace WHERE nspname != 'information_schema' AND nspname != 'pg_catalog'": {
 			"description": {"nspname"},
