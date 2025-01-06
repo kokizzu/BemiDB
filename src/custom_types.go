@@ -121,3 +121,8 @@ func (pgSchemaTable PgSchemaTable) ToIcebergSchemaTable() IcebergSchemaTable {
 		Table:  pgSchemaTable.Table,
 	}
 }
+
+type PgSchemaFunction struct {
+	Schema   string
+	Function string
+}

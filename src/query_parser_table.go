@@ -4,16 +4,6 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
-const (
-	// PG_SCHEMA_PG_CATALOG = "pg_catalog" Already defined in pg_schema_column.go
-	PG_SCHEMA_INFORMATION_SCHEMA = "information_schema"
-
-	PG_FUNCTION_PG_GET_KEYWORDS      = "pg_get_keywords"
-	PG_FUNCTION_ARRAY_UPPER          = "array_upper"
-	PG_FUNCTION_PG_SHOW_ALL_SETTINGS = "pg_show_all_settings"
-	PG_FUNCTION_PG_IS_IN_RECOVERY    = "pg_is_in_recovery"
-)
-
 type QueryParserTable struct {
 	config *Config
 	utils  *QueryParserUtils
@@ -247,26 +237,13 @@ func (parser *QueryParserTable) MakePgGetKeywordsNode(node *pgQuery.Node) *pgQue
 	return parser.utils.MakeSubselectWithRowsNode(PG_FUNCTION_PG_GET_KEYWORDS, columns, rows, alias)
 }
 
-// array_upper(array, 1)
-func (parser *QueryParserTable) IsArrayUpperFunction(funcCallNode *pgQuery.FuncCall) bool {
-	if len(funcCallNode.Funcname) != 1 {
-		return false
-	}
-
-	funcName := funcCallNode.Funcname[0].GetString_().Sval
-
-	if funcName == PG_FUNCTION_ARRAY_UPPER {
-		dimension := funcCallNode.Args[1].GetAConst().GetIval().Ival
-		if dimension == 1 {
-			return true
-		}
-	}
-
-	return false
-}
-
 // array_upper(array, 1) -> len(array)
 func (parser *QueryParserTable) MakeArrayUpperNode(funcCallNode *pgQuery.FuncCall) *pgQuery.FuncCall {
+	dimension := funcCallNode.Args[1].GetAConst().GetIval().Ival
+	if dimension != 1 {
+		return funcCallNode
+	}
+
 	return pgQuery.MakeFuncCallNode(
 		[]*pgQuery.Node{
 			pgQuery.MakeStrNode("len"),

@@ -36,8 +36,22 @@ func (parser *QueryParserSelect) NestedFunctionCalls(functionCall *pgQuery.FuncC
 	return nestedFunctionCalls
 }
 
-func (parser *QueryParserSelect) FunctionName(functionCall *pgQuery.FuncCall) string {
-	return functionCall.Funcname[len(functionCall.Funcname)-1].GetString_().Sval
+func (parser *QueryParserSelect) SchemaFunction(functionCall *pgQuery.FuncCall) PgSchemaFunction {
+	if len(functionCall.Funcname) == 1 {
+		return PgSchemaFunction{
+			Schema:   "",
+			Function: functionCall.Funcname[0].GetString_().Sval,
+		}
+	}
+
+	if len(functionCall.Funcname) == 2 {
+		return PgSchemaFunction{
+			Schema:   functionCall.Funcname[0].GetString_().Sval,
+			Function: functionCall.Funcname[1].GetString_().Sval,
+		}
+	}
+
+	return PgSchemaFunction{}
 }
 
 // quote_ident(str) -> concat("\""+str+"\"")

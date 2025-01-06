@@ -6,32 +6,10 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
-const (
-	PG_SCHEMA_PUBLIC = "public"
-
-	PG_TABLE_PG_INHERITS           = "pg_inherits"
-	PG_TABLE_PG_SHDESCRIPTION      = "pg_shdescription"
-	PG_TABLE_PG_STATIO_USER_TABLES = "pg_statio_user_tables"
-	PG_TABLE_PG_SHADOW             = "pg_shadow"
-	PG_TABLE_PG_NAMESPACE          = "pg_namespace"
-	PG_TABLE_PG_ROLES              = "pg_roles"
-	PG_TABLE_PG_CLASS              = "pg_class"
-	PG_TABLE_PG_EXTENSION          = "pg_extension"
-	PG_TABLE_PG_REPLICATION_SLOTS  = "pg_replication_slots"
-	PG_TABLE_PG_DATABASE           = "pg_database"
-	PG_TABLE_PG_STAT_GSSAPI        = "pg_stat_gssapi"
-	PG_TABLE_PG_AUTH_MEMBERS       = "pg_auth_members"
-	PG_TABLE_PG_USER               = "pg_user"
-	PG_TABLE_PG_STAT_ACTIVITY      = "pg_stat_activity"
-	PG_TABLE_PG_MATVIEWS           = "pg_matviews"
-	PG_TABLE_PG_STAT_USER_TABLES   = "pg_stat_user_tables"
-
-	PG_TABLE_TABLES = "tables"
-)
-
 type SelectRemapperTable struct {
 	parserTable         *QueryParserTable
 	parserWhere         *QueryParserWhere
+	parserSelect        *QueryParserSelect
 	icebergSchemaTables []IcebergSchemaTable
 	icebergReader       *IcebergReader
 	duckdb              *Duckdb
@@ -42,6 +20,7 @@ func NewSelectRemapperTable(config *Config, icebergReader *IcebergReader, duckdb
 	remapper := &SelectRemapperTable{
 		parserTable:   NewQueryParserTable(config),
 		parserWhere:   NewQueryParserWhere(config),
+		parserSelect:  NewQueryParserSelect(config),
 		icebergReader: icebergReader,
 		duckdb:        duckdb,
 		config:        config,
@@ -194,13 +173,18 @@ func (remapper *SelectRemapperTable) RemapTableFunction(node *pgQuery.Node) *pgQ
 }
 
 // FROM PG_FUNCTION(PG_NESTED_FUNCTION())
-func (remapper *SelectRemapperTable) RemapNestedTableFunction(funcCallNode *pgQuery.FuncCall) *pgQuery.FuncCall {
-	// array_upper(values, 1) -> len(values)
-	if remapper.parserTable.IsArrayUpperFunction(funcCallNode) {
-		return remapper.parserTable.MakeArrayUpperNode(funcCallNode)
-	}
+func (remapper *SelectRemapperTable) RemapNestedTableFunction(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
+	schemaFunction := remapper.parserSelect.SchemaFunction(functionCall)
 
-	return funcCallNode
+	switch {
+
+	// array_upper(values, 1) -> len(values)
+	case schemaFunction.Function == PG_FUNCTION_ARRAY_UPPER:
+		return remapper.parserTable.MakeArrayUpperNode(functionCall)
+
+	default:
+		return functionCall
+	}
 }
 
 func (remapper *SelectRemapperTable) RemapWhereClauseForTable(qSchemaTable QuerySchemaTable, selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {

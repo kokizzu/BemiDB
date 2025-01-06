@@ -4,15 +4,6 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
-const (
-	PG_FUNCTION_QUOTE_INDENT    = "quote_ident"
-	PG_FUNCTION_PG_GET_EXPR     = "pg_get_expr"
-	PG_FUNCTION_SET_CONFIG      = "set_config"
-	PG_FUNCTION_ROW_TO_JSON     = "row_to_json"
-	PG_FUNCTION_ARRAY_TO_STRING = "array_to_string"
-	PG_FUNCTION_PG_EXPANDARRAY  = "_pg_expandarray"
-)
-
 var REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME = map[string]string{
 	"version":                            "PostgreSQL " + PG_VERSION + ", compiled by Bemi",
 	"pg_get_userbyid":                    "bemidb",
@@ -53,10 +44,10 @@ func (remapper *SelectRemapperSelect) RemapSelect(targetNode *pgQuery.Node) *pgQ
 		return targetNode
 	}
 
-	originalFunctionName := remapper.parserSelect.FunctionName(functionCall)
+	schemaFunction := remapper.parserSelect.SchemaFunction(functionCall)
 
 	// set_config(setting_name, new_value, is_local) -> new_value
-	if originalFunctionName == PG_FUNCTION_SET_CONFIG {
+	if schemaFunction.Function == PG_FUNCTION_SET_CONFIG {
 		remapper.parserSelect.RemapSetConfigFunction(targetNode, functionCall)
 		return targetNode
 	}
@@ -64,7 +55,7 @@ func (remapper *SelectRemapperSelect) RemapSelect(targetNode *pgQuery.Node) *pgQ
 	renamedNameFunction := remapper.remappedFunctionName(functionCall)
 	if renamedNameFunction != nil {
 		functionCall = renamedNameFunction
-		remapper.parserSelect.SetDefaultTargetName(targetNode, originalFunctionName)
+		remapper.parserSelect.SetDefaultTargetName(targetNode, schemaFunction.Function)
 	}
 
 	remappedArgsFunction := remapper.remappedFunctionArgs(functionCall)
@@ -75,7 +66,7 @@ func (remapper *SelectRemapperSelect) RemapSelect(targetNode *pgQuery.Node) *pgQ
 	constantNode := remapper.remappedToConstant(functionCall)
 	if constantNode != nil {
 		remapper.parserSelect.OverrideTargetValue(targetNode, constantNode)
-		remapper.parserSelect.SetDefaultTargetName(targetNode, originalFunctionName)
+		remapper.parserSelect.SetDefaultTargetName(targetNode, schemaFunction.Function)
 	}
 
 	functionCall = remapper.remapNestedFunctionCalls(functionCall) // recursive
@@ -91,12 +82,12 @@ func (remapper *SelectRemapperSelect) remappedInderectionFunctionCall(targetNode
 		return nil
 	}
 
-	functionName := parser.FunctionName(functionCall)
+	schemaFunction := parser.SchemaFunction(functionCall)
 
-	switch functionName {
+	switch {
 
 	// (information_schema._pg_expandarray(array)).n -> unnest(anyarray) AS n
-	case PG_FUNCTION_PG_EXPANDARRAY:
+	case schemaFunction.Schema == PG_SCHEMA_INFORMATION_SCHEMA && schemaFunction.Function == PG_FUNCTION_PG_EXPANDARRAY:
 		inderectionColumnName := targetNode.GetResTarget().Val.GetAIndirection().Indirection[0].GetString_().Sval
 		newTargetNode := parser.RemapInderectionToFunctionCall(targetNode, parser.RemapPgExpandArray(functionCall))
 		remapper.parserSelect.SetDefaultTargetName(newTargetNode, inderectionColumnName)
@@ -108,20 +99,20 @@ func (remapper *SelectRemapperSelect) remappedInderectionFunctionCall(targetNode
 }
 
 func (remapper *SelectRemapperSelect) remappedFunctionName(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
-	functionName := remapper.parserSelect.FunctionName(functionCall)
+	schemaFunction := remapper.parserSelect.SchemaFunction(functionCall)
 
-	switch functionName {
+	switch {
 
 	// quote_ident(str) -> concat("\""+str+"\"")
-	case PG_FUNCTION_QUOTE_INDENT:
+	case schemaFunction.Function == PG_FUNCTION_QUOTE_INDENT:
 		return remapper.parserSelect.RemapQuoteIdentToConcat(functionCall)
 
 	// array_to_string(array, separator) -> main.array_to_string(array, separator)
-	case PG_FUNCTION_ARRAY_TO_STRING:
+	case schemaFunction.Function == PG_FUNCTION_ARRAY_TO_STRING:
 		return remapper.parserSelect.RemapArrayToString(functionCall)
 
 	// row_to_json(col) -> to_json(col)
-	case PG_FUNCTION_ROW_TO_JSON:
+	case schemaFunction.Function == PG_FUNCTION_ROW_TO_JSON:
 		return remapper.parserSelect.RemapRowToJson(functionCall)
 
 	default:
@@ -130,10 +121,10 @@ func (remapper *SelectRemapperSelect) remappedFunctionName(functionCall *pgQuery
 }
 
 func (remapper *SelectRemapperSelect) remappedFunctionArgs(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
-	functionName := remapper.parserSelect.FunctionName(functionCall)
+	schemaFunction := remapper.parserSelect.SchemaFunction(functionCall)
 
 	// pg_get_expr(pg_node_tree, relation_oid, pretty_bool) -> pg_get_expr(pg_node_tree, relation_oid)
-	if functionName == PG_FUNCTION_PG_GET_EXPR {
+	if schemaFunction.Schema == PG_SCHEMA_PG_CATALOG && schemaFunction.Function == PG_FUNCTION_PG_GET_EXPR {
 		return remapper.parserSelect.RemoveThirdArgumentFromPgGetExpr(functionCall)
 	}
 
@@ -165,8 +156,8 @@ func (remapper *SelectRemapperSelect) remapNestedFunctionCalls(functionCall *pgQ
 }
 
 func (remapper *SelectRemapperSelect) remappedToConstant(functionCall *pgQuery.FuncCall) *pgQuery.Node {
-	functionName := remapper.parserSelect.FunctionName(functionCall)
-	constant, ok := REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME[functionName]
+	schemaFunction := remapper.parserSelect.SchemaFunction(functionCall)
+	constant, ok := REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME[schemaFunction.Function]
 	if ok {
 		return pgQuery.MakeAConstStrNode(constant, 0)
 	}

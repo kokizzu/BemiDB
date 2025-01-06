@@ -1,0 +1,37 @@
+package main
+
+const (
+	PG_SCHEMA_INFORMATION_SCHEMA = "information_schema"
+	PG_SCHEMA_PG_CATALOG         = "pg_catalog"
+	PG_SCHEMA_PUBLIC             = "public"
+
+	PG_FUNCTION_ARRAY_UPPER          = "array_upper"
+	PG_FUNCTION_PG_GET_INDEXDEF      = "pg_get_indexdef"
+	PG_FUNCTION_PG_GET_KEYWORDS      = "pg_get_keywords"
+	PG_FUNCTION_PG_IS_IN_RECOVERY    = "pg_is_in_recovery"
+	PG_FUNCTION_PG_SHOW_ALL_SETTINGS = "pg_show_all_settings"
+	PG_FUNCTION_QUOTE_INDENT         = "quote_ident"
+	PG_FUNCTION_PG_GET_EXPR          = "pg_get_expr"
+	PG_FUNCTION_SET_CONFIG           = "set_config"
+	PG_FUNCTION_ROW_TO_JSON          = "row_to_json"
+	PG_FUNCTION_ARRAY_TO_STRING      = "array_to_string"
+	PG_FUNCTION_PG_EXPANDARRAY       = "_pg_expandarray"
+
+	PG_TABLE_PG_AUTH_MEMBERS       = "pg_auth_members"
+	PG_TABLE_PG_CLASS              = "pg_class"
+	PG_TABLE_PG_DATABASE           = "pg_database"
+	PG_TABLE_PG_EXTENSION          = "pg_extension"
+	PG_TABLE_PG_INHERITS           = "pg_inherits"
+	PG_TABLE_PG_MATVIEWS           = "pg_matviews"
+	PG_TABLE_PG_NAMESPACE          = "pg_namespace"
+	PG_TABLE_PG_REPLICATION_SLOTS  = "pg_replication_slots"
+	PG_TABLE_PG_ROLES              = "pg_roles"
+	PG_TABLE_PG_SHADOW             = "pg_shadow"
+	PG_TABLE_PG_SHDESCRIPTION      = "pg_shdescription"
+	PG_TABLE_PG_STATIO_USER_TABLES = "pg_statio_user_tables"
+	PG_TABLE_PG_STAT_ACTIVITY      = "pg_stat_activity"
+	PG_TABLE_PG_STAT_GSSAPI        = "pg_stat_gssapi"
+	PG_TABLE_PG_STAT_USER_TABLES   = "pg_stat_user_tables"
+	PG_TABLE_PG_USER               = "pg_user"
+	PG_TABLE_TABLES                = "tables"
+)
