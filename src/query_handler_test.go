@@ -101,6 +101,7 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {""},
 		},
+
 		// PG system tables
 		"SELECT oid, typname AS typename FROM pg_type WHERE typname='geometry' OR typname='geography'": {
 			"description": {"oid", "typename"},
@@ -152,7 +153,6 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int8OID)},
 			"values":      {"public", "test_table", "0"},
 		},
-		// pg_namespace
 		"SELECT DISTINCT(nspname) FROM pg_catalog.pg_namespace WHERE nspname != 'information_schema' AND nspname != 'pg_catalog'": {
 			"description": {"nspname"},
 			"types":       {Uint32ToString(pgtype.TextOID)},
@@ -205,6 +205,7 @@ func TestHandleQuery(t *testing.T) {
 		"SELECT * FROM pg_auth_members": {
 			"description": {"oid", "roleid", "member", "grantor", "admin_option", "inherit_option", "set_option"},
 		},
+
 		// Information schema
 		"SELECT * FROM information_schema.tables": {
 			"description": {"table_catalog", "table_schema", "table_name", "table_type", "self_referencing_column_name", "reference_generation", "user_defined_type_catalog", "user_defined_type_schema", "user_defined_type_name", "is_insertable_into", "is_typed", "commit_action", "TABLE_COMMENT"},
@@ -216,18 +217,28 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {"memory", "public", "test_table"},
 		},
+
 		// Empty query
 		"-- ping": {
 			"description": {"1"},
 			"types":       {Uint32ToString(pgtype.Int4OID)},
 			"values":      {"1"},
 		},
+
 		// DISCARD
 		"DISCARD ALL": {
 			"description": {"1"},
 			"types":       {Uint32ToString(pgtype.Int4OID)},
 			"values":      {"1"},
 		},
+
+		// SHOW
+		"SHOW search_path": {
+			"description": {"search_path"},
+			"types":       {Uint32ToString(pgtype.TextOID)},
+			"values":      {`"$user", public`},
+		},
+
 		// Iceberg data
 		"SELECT COUNT(*) AS count FROM public.test_table": {
 			"description": {"count"},
@@ -645,12 +656,7 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.Int2OID)},
 			"values":      {"1"},
 		},
-		// SHOW
-		"SHOW search_path": {
-			"description": {"search_path"},
-			"types":       {Uint32ToString(pgtype.TextOID)},
-			"values":      {`"$user", public`},
-		},
+
 		// SELECT * FROM function()
 		"SELECT * FROM pg_catalog.pg_get_keywords() LIMIT 1": {
 			"description": {"word", "catcode", "barelabel", "catdesc", "baredesc"},
@@ -677,6 +683,12 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.Int4OID)},
 			"values":      {"1"},
 		},
+		"SELECT * FROM pg_catalog.pg_get_indexdef(1, 1, false)": {
+			"description": {"pg_get_indexdef"},
+			"types":       {Uint32ToString(pgtype.Int4OID)},
+			"values":      {""},
+		},
+
 		// Transformed JOIN's
 		"SELECT s.usename, r.rolconfig FROM pg_catalog.pg_shadow s LEFT JOIN pg_catalog.pg_roles r ON s.usename = r.rolname": {
 			"description": {"usename", "rolconfig"},
@@ -688,6 +700,7 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.BoolOID)},
 			"values":      {"10", ""},
 		},
+
 		// CASE
 		"SELECT CASE WHEN true THEN 'yes' ELSE 'no' END AS case": {
 			"description": {"case"},
@@ -724,18 +737,21 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {"f"},
 		},
+
 		// WHERE pg functions
 		"SELECT gss_authenticated, encrypted FROM (SELECT false, false, false, false, false WHERE false) t(pid, gss_authenticated, principal, encrypted, credentials_delegated) WHERE pid = pg_backend_pid()": {
 			"description": {"gss_authenticated", "encrypted"},
 			"types":       {Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID)},
 			"values":      {},
 		},
+
 		// WITH
 		"WITH RECURSIVE simple_cte AS (SELECT oid, rolname FROM pg_roles WHERE rolname = 'postgres' UNION ALL SELECT oid, rolname FROM pg_roles) SELECT * FROM simple_cte": {
 			"description": {"oid", "rolname"},
 			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID)},
 			"values":      {"10", "bemidb"},
 		},
+
 		// Table alias
 		"SELECT pg_shadow.usename FROM pg_shadow": {
 			"description": {"usename"},
@@ -792,12 +808,14 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {"test_table"},
 		},
+
 		// Sublink's in target list
 		"SELECT x.usename, (SELECT passwd FROM pg_shadow WHERE usename = x.usename) as password FROM pg_shadow x WHERE x.usename = 'bemidb'": {
 			"description": {"usename", "password"},
 			"types":       {Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID)},
 			"values":      {"bemidb", "bemidb-encrypted"},
 		},
+
 		// Type comparisons
 		"SELECT db.oid AS did, db.datname AS name, ta.spcname AS spcname, db.datallowconn, db.datistemplate AS is_template, pg_catalog.has_database_privilege(db.oid, 'CREATE') AS cancreate, datdba AS owner, descr.description FROM pg_catalog.pg_database db LEFT OUTER JOIN pg_catalog.pg_tablespace ta ON db.dattablespace = ta.oid LEFT OUTER JOIN pg_catalog.pg_shdescription descr ON (db.oid = descr.objoid AND descr.classoid = 'pg_database'::regclass) WHERE db.oid > 1145::OID OR db.datname IN ('postgres', 'edb') ORDER BY datname": {
 			"description": {"did", "name", "spcname", "datallowconn", "is_template", "cancreate", "owner", "description"},

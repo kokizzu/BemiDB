@@ -9,6 +9,7 @@ const (
 	PG_FUNCTION_ARRAY_UPPER          = "array_upper"
 	PG_FUNCTION_PG_EXPANDARRAY       = "_pg_expandarray"
 	PG_FUNCTION_PG_GET_EXPR          = "pg_get_expr"
+	PG_FUNCTION_PG_GET_INDEXDEF      = "pg_get_indexdef"
 	PG_FUNCTION_PG_GET_KEYWORDS      = "pg_get_keywords"
 	PG_FUNCTION_PG_IS_IN_RECOVERY    = "pg_is_in_recovery"
 	PG_FUNCTION_PG_SHOW_ALL_SETTINGS = "pg_show_all_settings"
