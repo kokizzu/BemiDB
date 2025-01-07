@@ -4,17 +4,21 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
-type QueryParserWhere struct {
+type ParserWhere struct {
 	config *Config
-	utils  *QueryParserUtils
+	utils  *ParserUtils
 }
 
-func NewQueryParserWhere(config *Config) *QueryParserWhere {
-	return &QueryParserWhere{config: config, utils: NewQueryParserUtils(config)}
+func NewParserWhere(config *Config) *ParserWhere {
+	return &ParserWhere{config: config, utils: NewParserUtils(config)}
+}
+
+func (parser *ParserWhere) FunctionCall(whereNode *pgQuery.Node) *pgQuery.FuncCall {
+	return whereNode.GetFuncCall()
 }
 
 // WHERE column != 'value'
-func (parser *QueryParserWhere) MakeExpressionNode(column string, operation string, value string) *pgQuery.Node {
+func (parser *ParserWhere) MakeExpressionNode(column string, operation string, value string) *pgQuery.Node {
 	return pgQuery.MakeAExprNode(
 		pgQuery.A_Expr_Kind_AEXPR_OP,
 		[]*pgQuery.Node{pgQuery.MakeStrNode(operation)},
@@ -25,11 +29,11 @@ func (parser *QueryParserWhere) MakeExpressionNode(column string, operation stri
 }
 
 // WHERE false
-func (parser *QueryParserWhere) MakeFalseConditionNode() *pgQuery.Node {
+func (parser *ParserWhere) MakeFalseConditionNode() *pgQuery.Node {
 	return parser.utils.MakeAConstBoolNode(false)
 }
 
-func (parser *QueryParserWhere) AppendWhereCondition(selectStatement *pgQuery.SelectStmt, whereCondition *pgQuery.Node) *pgQuery.SelectStmt {
+func (parser *ParserWhere) AppendWhereCondition(selectStatement *pgQuery.SelectStmt, whereCondition *pgQuery.Node) *pgQuery.SelectStmt {
 	whereClause := selectStatement.WhereClause
 
 	if whereClause == nil {
@@ -49,7 +53,7 @@ func (parser *QueryParserWhere) AppendWhereCondition(selectStatement *pgQuery.Se
 	return selectStatement
 }
 
-func (parser *QueryParserWhere) OverrideWhereCondition(selectStatement *pgQuery.SelectStmt, whereCondition *pgQuery.Node) *pgQuery.SelectStmt {
+func (parser *ParserWhere) OverrideWhereCondition(selectStatement *pgQuery.SelectStmt, whereCondition *pgQuery.Node) *pgQuery.SelectStmt {
 	selectStatement.WhereClause = whereCondition
 	return selectStatement
 }

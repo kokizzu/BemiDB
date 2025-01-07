@@ -6,31 +6,31 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
-type SelectRemapperTable struct {
-	parserTable         *QueryParserTable
-	parserWhere         *QueryParserWhere
-	parserSelect        *QueryParserSelect
+type QueryRemapperTable struct {
+	parserTable         *ParserTable
+	parserWhere         *ParserWhere
+	parserFunction      *ParserFunction
 	icebergSchemaTables []IcebergSchemaTable
 	icebergReader       *IcebergReader
 	duckdb              *Duckdb
 	config              *Config
 }
 
-func NewSelectRemapperTable(config *Config, icebergReader *IcebergReader, duckdb *Duckdb) *SelectRemapperTable {
-	remapper := &SelectRemapperTable{
-		parserTable:   NewQueryParserTable(config),
-		parserWhere:   NewQueryParserWhere(config),
-		parserSelect:  NewQueryParserSelect(config),
-		icebergReader: icebergReader,
-		duckdb:        duckdb,
-		config:        config,
+func NewQueryRemapperTable(config *Config, icebergReader *IcebergReader, duckdb *Duckdb) *QueryRemapperTable {
+	remapper := &QueryRemapperTable{
+		parserTable:    NewParserTable(config),
+		parserWhere:    NewParserWhere(config),
+		parserFunction: NewParserFunction(config),
+		icebergReader:  icebergReader,
+		duckdb:         duckdb,
+		config:         config,
 	}
 	remapper.reloadIceberSchemaTables()
 	return remapper
 }
 
 // FROM / JOIN [TABLE]
-func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node {
+func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node {
 	parser := remapper.parserTable
 	qSchemaTable := parser.NodeToQuerySchemaTable(node)
 
@@ -151,7 +151,7 @@ func (remapper *SelectRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Nod
 }
 
 // FROM [PG_FUNCTION()]
-func (remapper *SelectRemapperTable) RemapTableFunction(node *pgQuery.Node) *pgQuery.Node {
+func (remapper *QueryRemapperTable) RemapTableFunction(node *pgQuery.Node) *pgQuery.Node {
 	parser := remapper.parserTable
 
 	schemaFunction := parser.SchemaFunction(node)
@@ -181,8 +181,8 @@ func (remapper *SelectRemapperTable) RemapTableFunction(node *pgQuery.Node) *pgQ
 }
 
 // FROM PG_FUNCTION(PG_NESTED_FUNCTION())
-func (remapper *SelectRemapperTable) RemapNestedTableFunction(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
-	schemaFunction := remapper.parserSelect.SchemaFunction(functionCall)
+func (remapper *QueryRemapperTable) RemapNestedTableFunction(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
+	schemaFunction := remapper.parserFunction.SchemaFunction(functionCall)
 
 	switch {
 
@@ -195,7 +195,7 @@ func (remapper *SelectRemapperTable) RemapNestedTableFunction(functionCall *pgQu
 	}
 }
 
-func (remapper *SelectRemapperTable) RemapWhereClauseForTable(qSchemaTable QuerySchemaTable, selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
+func (remapper *QueryRemapperTable) RemapWhereClauseForTable(qSchemaTable QuerySchemaTable, selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
 	if remapper.isTableFromPgCatalog(qSchemaTable) {
 		switch qSchemaTable.Table {
 
@@ -213,12 +213,12 @@ func (remapper *SelectRemapperTable) RemapWhereClauseForTable(qSchemaTable Query
 	return selectStatement
 }
 
-func (remapper *SelectRemapperTable) overrideTable(node *pgQuery.Node, fromClause *pgQuery.Node) *pgQuery.Node {
+func (remapper *QueryRemapperTable) overrideTable(node *pgQuery.Node, fromClause *pgQuery.Node) *pgQuery.Node {
 	node = fromClause
 	return node
 }
 
-func (remapper *SelectRemapperTable) reloadIceberSchemaTables() {
+func (remapper *QueryRemapperTable) reloadIceberSchemaTables() {
 	icebergSchemaTables, err := remapper.icebergReader.SchemaTables()
 	PanicIfError(err)
 
@@ -230,7 +230,7 @@ func (remapper *SelectRemapperTable) reloadIceberSchemaTables() {
 	remapper.icebergSchemaTables = icebergSchemaTables
 }
 
-func (remapper *SelectRemapperTable) icebergSchemaTableExists(schemaTable IcebergSchemaTable) bool {
+func (remapper *QueryRemapperTable) icebergSchemaTableExists(schemaTable IcebergSchemaTable) bool {
 	for _, icebergSchemaTable := range remapper.icebergSchemaTables {
 		if icebergSchemaTable == schemaTable {
 			return true
@@ -240,14 +240,14 @@ func (remapper *SelectRemapperTable) icebergSchemaTableExists(schemaTable Iceber
 }
 
 // System pg_* tables
-func (remapper *SelectRemapperTable) isTableFromPgCatalog(qSchemaTable QuerySchemaTable) bool {
+func (remapper *QueryRemapperTable) isTableFromPgCatalog(qSchemaTable QuerySchemaTable) bool {
 	return qSchemaTable.Schema == PG_SCHEMA_PG_CATALOG ||
 		(qSchemaTable.Schema == "" &&
 			(PG_SYSTEM_TABLES.Contains(qSchemaTable.Table) || PG_SYSTEM_VIEWS.Contains(qSchemaTable.Table)) &&
 			!remapper.icebergSchemaTableExists(qSchemaTable.ToIcebergSchemaTable()))
 }
 
-func (remapper *SelectRemapperTable) isFunctionFromPgCatalog(schemaFunction PgSchemaFunction) bool {
+func (remapper *QueryRemapperTable) isFunctionFromPgCatalog(schemaFunction PgSchemaFunction) bool {
 	return schemaFunction.Schema == PG_SCHEMA_PG_CATALOG ||
 		(schemaFunction.Schema == "" && PG_SYSTEM_FUNCTIONS.Contains(schemaFunction.Function))
 }

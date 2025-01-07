@@ -22,10 +22,10 @@ const (
 )
 
 type QueryHandler struct {
-	duckdb         *Duckdb
-	icebergReader  *IcebergReader
-	selectRemapper *SelectRemapper
-	config         *Config
+	duckdb        *Duckdb
+	icebergReader *IcebergReader
+	queryRemapper *QueryRemapper
+	config        *Config
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -159,10 +159,10 @@ func (nullArray NullArray) String() string {
 
 func NewQueryHandler(config *Config, duckdb *Duckdb, icebergReader *IcebergReader) *QueryHandler {
 	queryHandler := &QueryHandler{
-		duckdb:         duckdb,
-		icebergReader:  icebergReader,
-		selectRemapper: NewSelectRemapper(config, icebergReader, duckdb),
-		config:         config,
+		duckdb:        duckdb,
+		icebergReader: icebergReader,
+		queryRemapper: NewQueryRemapper(config, icebergReader, duckdb),
+		config:        config,
 	}
 
 	queryHandler.createSchemas()
@@ -376,7 +376,7 @@ func (queryHandler *QueryHandler) remapQuery(query string) (string, error) {
 		return "", err
 	}
 
-	queryTree.Stmts, err = queryHandler.selectRemapper.RemapSelectStatements(queryTree.Stmts)
+	queryTree.Stmts, err = queryHandler.queryRemapper.RemapStatements(queryTree.Stmts)
 	if err != nil {
 		return "", err
 	}

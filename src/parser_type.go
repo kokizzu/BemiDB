@@ -6,19 +6,15 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
-type QueryParserType struct {
+type ParserType struct {
 	config *Config
-	utils  *QueryParserUtils
 }
 
-func NewQueryParserType(config *Config) *QueryParserType {
-	return &QueryParserType{
-		config: config,
-		utils:  NewQueryParserUtils(config),
-	}
+func NewParserType(config *Config) *ParserType {
+	return &ParserType{config: config}
 }
 
-func (parser *QueryParserType) MakeTypeCastNode(arg *pgQuery.Node, typeName string) *pgQuery.Node {
+func (parser *ParserType) MakeTypeCastNode(arg *pgQuery.Node, typeName string) *pgQuery.Node {
 	return &pgQuery.Node{
 		Node: &pgQuery.Node_TypeCast{
 			TypeCast: &pgQuery.TypeCast{
@@ -34,7 +30,7 @@ func (parser *QueryParserType) MakeTypeCastNode(arg *pgQuery.Node, typeName stri
 	}
 }
 
-func (parser *QueryParserType) inferNodeType(node *pgQuery.Node) string {
+func (parser *ParserType) inferNodeType(node *pgQuery.Node) string {
 	if typeCast := node.GetTypeCast(); typeCast != nil {
 		return typeCast.TypeName.Names[0].GetString_().Sval
 	}
@@ -52,14 +48,14 @@ func (parser *QueryParserType) inferNodeType(node *pgQuery.Node) string {
 	return ""
 }
 
-func (parser *QueryParserType) MakeCaseTypeCastNode(arg *pgQuery.Node, typeName string) *pgQuery.Node {
+func (parser *ParserType) MakeCaseTypeCastNode(arg *pgQuery.Node, typeName string) *pgQuery.Node {
 	if existingType := parser.inferNodeType(arg); existingType == typeName {
 		return arg
 	}
 	return parser.MakeTypeCastNode(arg, typeName)
 }
 
-func (parser *QueryParserType) RemapTypeCast(node *pgQuery.Node) *pgQuery.Node {
+func (parser *ParserType) RemapTypeCast(node *pgQuery.Node) *pgQuery.Node {
 	if node.GetTypeCast() != nil {
 		typeCast := node.GetTypeCast()
 		if len(typeCast.TypeName.Names) > 0 {
@@ -76,7 +72,7 @@ func (parser *QueryParserType) RemapTypeCast(node *pgQuery.Node) *pgQuery.Node {
 	return node
 }
 
-func (parser *QueryParserType) MakeListValueFromArray(node *pgQuery.Node) *pgQuery.Node {
+func (parser *ParserType) MakeListValueFromArray(node *pgQuery.Node) *pgQuery.Node {
 	arrayStr := node.GetAConst().GetSval().Sval
 	arrayStr = strings.Trim(arrayStr, "{}")
 	elements := strings.Split(arrayStr, ",")

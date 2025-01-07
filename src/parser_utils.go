@@ -7,15 +7,15 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
-type QueryParserUtils struct {
+type ParserUtils struct {
 	config *Config
 }
 
-func NewQueryParserUtils(config *Config) *QueryParserUtils {
-	return &QueryParserUtils{config: config}
+func NewParserUtils(config *Config) *ParserUtils {
+	return &ParserUtils{config: config}
 }
 
-func (utils *QueryParserUtils) SchemaFunction(functionCall *pgQuery.FuncCall) PgSchemaFunction {
+func (utils *ParserUtils) SchemaFunction(functionCall *pgQuery.FuncCall) PgSchemaFunction {
 	switch len(functionCall.Funcname) {
 	case 1:
 		return PgSchemaFunction{
@@ -32,8 +32,8 @@ func (utils *QueryParserUtils) SchemaFunction(functionCall *pgQuery.FuncCall) Pg
 	}
 }
 
-func (utils *QueryParserUtils) MakeSubselectWithRowsNode(tableName string, columns []string, rowsValues [][]string, alias string) *pgQuery.Node {
-	parserType := NewQueryParserType(utils.config)
+func (utils *ParserUtils) MakeSubselectWithRowsNode(tableName string, columns []string, rowsValues [][]string, alias string) *pgQuery.Node {
+	parserType := NewParserType(utils.config)
 
 	columnNodes := make([]*pgQuery.Node, len(columns))
 	for i, column := range columns {
@@ -92,7 +92,7 @@ func (utils *QueryParserUtils) MakeSubselectWithRowsNode(tableName string, colum
 	}
 }
 
-func (utils *QueryParserUtils) MakeSubselectWithoutRowsNode(tableName string, columns []string, alias string) *pgQuery.Node {
+func (utils *ParserUtils) MakeSubselectWithoutRowsNode(tableName string, columns []string, alias string) *pgQuery.Node {
 	columnNodes := make([]*pgQuery.Node, len(columns))
 	for i, column := range columns {
 		columnNodes[i] = pgQuery.MakeStrNode(column)
@@ -130,7 +130,7 @@ func (utils *QueryParserUtils) MakeSubselectWithoutRowsNode(tableName string, co
 	}
 }
 
-func (utils *QueryParserUtils) MakeSubselectFromNode(tableName string, targetList []*pgQuery.Node, fromNode *pgQuery.Node, alias string) *pgQuery.Node {
+func (utils *ParserUtils) MakeSubselectFromNode(tableName string, targetList []*pgQuery.Node, fromNode *pgQuery.Node, alias string) *pgQuery.Node {
 	if alias == "" {
 		alias = tableName
 	}
@@ -154,7 +154,7 @@ func (utils *QueryParserUtils) MakeSubselectFromNode(tableName string, targetLis
 	}
 }
 
-func (utils *QueryParserUtils) MakeAConstBoolNode(val bool) *pgQuery.Node {
+func (utils *ParserUtils) MakeAConstBoolNode(val bool) *pgQuery.Node {
 	return &pgQuery.Node{
 		Node: &pgQuery.Node_AConst{
 			AConst: &pgQuery.A_Const{

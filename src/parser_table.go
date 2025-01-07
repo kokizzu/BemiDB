@@ -4,16 +4,16 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
-type QueryParserTable struct {
+type ParserTable struct {
 	config *Config
-	utils  *QueryParserUtils
+	utils  *ParserUtils
 }
 
-func NewQueryParserTable(config *Config) *QueryParserTable {
-	return &QueryParserTable{config: config, utils: NewQueryParserUtils(config)}
+func NewParserTable(config *Config) *ParserTable {
+	return &ParserTable{config: config, utils: NewParserUtils(config)}
 }
 
-func (parser *QueryParserTable) NodeToQuerySchemaTable(node *pgQuery.Node) QuerySchemaTable {
+func (parser *ParserTable) NodeToQuerySchemaTable(node *pgQuery.Node) QuerySchemaTable {
 	rangeVar := node.GetRangeVar()
 	var alias string
 
@@ -28,12 +28,12 @@ func (parser *QueryParserTable) NodeToQuerySchemaTable(node *pgQuery.Node) Query
 	}
 }
 
-func (parser *QueryParserTable) MakeEmptyTableNode(tableName string, columns []string, alias string) *pgQuery.Node {
+func (parser *ParserTable) MakeEmptyTableNode(tableName string, columns []string, alias string) *pgQuery.Node {
 	return parser.utils.MakeSubselectWithoutRowsNode(tableName, columns, alias)
 }
 
 // pg_catalog.pg_shadow -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakePgShadowNode(user string, encryptedPassword string, alias string) *pgQuery.Node {
+func (parser *ParserTable) MakePgShadowNode(user string, encryptedPassword string, alias string) *pgQuery.Node {
 	columns := PG_SHADOW_VALUE_BY_COLUMN.Keys()
 	staticRowValues := PG_SHADOW_VALUE_BY_COLUMN.Values()
 
@@ -55,7 +55,7 @@ func (parser *QueryParserTable) MakePgShadowNode(user string, encryptedPassword 
 }
 
 // pg_catalog.pg_roles -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakePgRolesNode(user string, alias string) *pgQuery.Node {
+func (parser *ParserTable) MakePgRolesNode(user string, alias string) *pgQuery.Node {
 	columns := PG_ROLES_VALUE_BY_COLUMN.Keys()
 	staticRowValues := PG_ROLES_VALUE_BY_COLUMN.Values()
 
@@ -74,7 +74,7 @@ func (parser *QueryParserTable) MakePgRolesNode(user string, alias string) *pgQu
 }
 
 // pg_catalog.pg_extension -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakePgExtensionNode(alias string) *pgQuery.Node {
+func (parser *ParserTable) MakePgExtensionNode(alias string) *pgQuery.Node {
 	columns := PG_EXTENSION_VALUE_BY_COLUMN.Keys()
 	staticRowValues := PG_EXTENSION_VALUE_BY_COLUMN.Values()
 	rowsValues := [][]string{staticRowValues}
@@ -82,7 +82,7 @@ func (parser *QueryParserTable) MakePgExtensionNode(alias string) *pgQuery.Node 
 }
 
 // pg_catalog.pg_database -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakePgDatabaseNode(database string, alias string) *pgQuery.Node {
+func (parser *ParserTable) MakePgDatabaseNode(database string, alias string) *pgQuery.Node {
 	columns := PG_DATABASE_VALUE_BY_COLUMN.Keys()
 	staticRowValues := PG_DATABASE_VALUE_BY_COLUMN.Values()
 
@@ -100,7 +100,7 @@ func (parser *QueryParserTable) MakePgDatabaseNode(database string, alias string
 }
 
 // pg_catalog.pg_user -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakePgUserNode(user string, alias string) *pgQuery.Node {
+func (parser *ParserTable) MakePgUserNode(user string, alias string) *pgQuery.Node {
 	columns := PG_USER_VALUE_BY_COLUMN.Keys()
 	rowValues := PG_USER_VALUE_BY_COLUMN.Values()
 
@@ -110,7 +110,7 @@ func (parser *QueryParserTable) MakePgUserNode(user string, alias string) *pgQue
 }
 
 // pg_catalog.pg_stat_user_tables -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakePgStatUserTablesNode(schemaTables []IcebergSchemaTable, alias string) *pgQuery.Node {
+func (parser *ParserTable) MakePgStatUserTablesNode(schemaTables []IcebergSchemaTable, alias string) *pgQuery.Node {
 	columns := PG_STAT_USER_TABLES_VALUE_BY_COLUMN.Keys()
 	staticRowValues := PG_STAT_USER_TABLES_VALUE_BY_COLUMN.Values()
 
@@ -134,12 +134,12 @@ func (parser *QueryParserTable) MakePgStatUserTablesNode(schemaTables []IcebergS
 }
 
 // Other information_schema.* tables
-func (parser *QueryParserTable) IsTableFromInformationSchema(qSchemaTable QuerySchemaTable) bool {
+func (parser *ParserTable) IsTableFromInformationSchema(qSchemaTable QuerySchemaTable) bool {
 	return qSchemaTable.Schema == PG_SCHEMA_INFORMATION_SCHEMA
 }
 
 // iceberg.table -> FROM iceberg_scan('path', skip_schema_inference = true)
-func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string, qSchemaTable QuerySchemaTable) *pgQuery.Node {
+func (parser *ParserTable) MakeIcebergTableNode(tablePath string, qSchemaTable QuerySchemaTable) *pgQuery.Node {
 	node := pgQuery.MakeSimpleRangeFunctionNode([]*pgQuery.Node{
 		pgQuery.MakeListNode([]*pgQuery.Node{
 			pgQuery.MakeFuncCallNode(
@@ -175,7 +175,7 @@ func (parser *QueryParserTable) MakeIcebergTableNode(tablePath string, qSchemaTa
 	return parser.utils.MakeSubselectFromNode(qSchemaTable.Table, []*pgQuery.Node{selectStarNode}, node, qSchemaTable.Alias)
 }
 
-func (parser *QueryParserTable) SchemaFunction(node *pgQuery.Node) PgSchemaFunction {
+func (parser *ParserTable) SchemaFunction(node *pgQuery.Node) PgSchemaFunction {
 	for _, funcNode := range node.GetRangeFunction().Functions {
 		for _, funcItemNode := range funcNode.GetList().Items {
 			funcCallNode := funcItemNode.GetFuncCall()
@@ -191,7 +191,7 @@ func (parser *QueryParserTable) SchemaFunction(node *pgQuery.Node) PgSchemaFunct
 }
 
 // pg_catalog.pg_get_keywords() -> VALUES(values...) t(columns...)
-func (parser *QueryParserTable) MakePgGetKeywordsNode(node *pgQuery.Node) *pgQuery.Node {
+func (parser *ParserTable) MakePgGetKeywordsNode(node *pgQuery.Node) *pgQuery.Node {
 	columns := []string{"word", "catcode", "barelabel", "catdesc", "baredesc"}
 
 	var rows [][]string
@@ -230,7 +230,7 @@ func (parser *QueryParserTable) MakePgGetKeywordsNode(node *pgQuery.Node) *pgQue
 }
 
 // array_upper(array, 1) -> len(array)
-func (parser *QueryParserTable) MakeArrayUpperNode(funcCallNode *pgQuery.FuncCall) *pgQuery.FuncCall {
+func (parser *ParserTable) MakeArrayUpperNode(funcCallNode *pgQuery.FuncCall) *pgQuery.FuncCall {
 	dimension := funcCallNode.Args[1].GetAConst().GetIval().Ival
 	if dimension != 1 {
 		return funcCallNode
@@ -248,7 +248,7 @@ func (parser *QueryParserTable) MakeArrayUpperNode(funcCallNode *pgQuery.FuncCal
 }
 
 // pg_catalog.pg_show_all_settings() -> duckdb_settings() mapped to pg format
-func (parser *QueryParserTable) MakePgShowAllSettingsNode(node *pgQuery.Node) *pgQuery.Node {
+func (parser *ParserTable) MakePgShowAllSettingsNode(node *pgQuery.Node) *pgQuery.Node {
 	targetList := []*pgQuery.Node{
 		pgQuery.MakeResTargetNodeWithNameAndVal(
 			"name",
@@ -357,7 +357,7 @@ func (parser *QueryParserTable) MakePgShowAllSettingsNode(node *pgQuery.Node) *p
 }
 
 // pg_catalog.pg_is_in_recovery() -> 'f'::bool
-func (parser *QueryParserTable) MakePgIsInRecoveryNode(node *pgQuery.Node) *pgQuery.Node {
+func (parser *ParserTable) MakePgIsInRecoveryNode(node *pgQuery.Node) *pgQuery.Node {
 	var alias string
 	if node.GetAlias() != nil {
 		alias = node.GetAlias().Aliasname
@@ -372,7 +372,7 @@ func (parser *QueryParserTable) MakePgIsInRecoveryNode(node *pgQuery.Node) *pgQu
 }
 
 // pg_catalog.pg_get_indexdef(index_oid, column_no, pretty_bool) -> VALUES(NULL) t(pg_get_indexdef)
-func (parser *QueryParserTable) MakePgGetIndexdefNode(node *pgQuery.Node) *pgQuery.Node {
+func (parser *ParserTable) MakePgGetIndexdefNode(node *pgQuery.Node) *pgQuery.Node {
 	columns := PG_GET_INDEXDEF_VALUE_BY_COLUMN.Keys()
 	rowValues := PG_GET_INDEXDEF_VALUE_BY_COLUMN.Values()
 
