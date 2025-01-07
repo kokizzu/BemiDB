@@ -18,6 +18,7 @@ var REMAPPED_CONSTANT_BY_PG_FUNCTION_NAME = map[string]string{
 	"pg_is_in_recovery":                  "f",
 	"current_setting":                    "",
 	"aclexplode":                         "",
+	"pg_get_indexdef":                    "",
 }
 
 type ParserFunction struct {

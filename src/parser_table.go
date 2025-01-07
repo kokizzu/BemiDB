@@ -371,14 +371,6 @@ func (parser *ParserTable) MakePgIsInRecoveryNode(node *pgQuery.Node) *pgQuery.N
 	)
 }
 
-// pg_catalog.pg_get_indexdef(index_oid, column_no, pretty_bool) -> VALUES(NULL) t(pg_get_indexdef)
-func (parser *ParserTable) MakePgGetIndexdefNode(node *pgQuery.Node) *pgQuery.Node {
-	columns := PG_GET_INDEXDEF_VALUE_BY_COLUMN.Keys()
-	rowValues := PG_GET_INDEXDEF_VALUE_BY_COLUMN.Values()
-
-	return parser.utils.MakeSubselectWithRowsNode("t", columns, [][]string{rowValues}, "")
-}
-
 var PG_SHADOW_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 	{"usename", "bemidb"},
 	{"usesysid", "10"},
@@ -477,10 +469,6 @@ var PG_STAT_USER_TABLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 	{"autovacuum_count", "0"},
 	{"analyze_count", "0"},
 	{"autoanalyze_count", "0"},
-})
-
-var PG_GET_INDEXDEF_VALUE_BY_COLUMN = NewOrderedMap([][]string{
-	{"pg_get_indexdef", "NULL"},
 })
 
 type DuckDBKeyword struct {

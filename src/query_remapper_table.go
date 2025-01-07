@@ -155,10 +155,6 @@ func (remapper *QueryRemapperTable) RemapTableFunction(node *pgQuery.Node) *pgQu
 		// pg_catalog.pg_is_in_recovery() -> 'f'::bool
 		case schemaFunction.Function == PG_FUNCTION_PG_IS_IN_RECOVERY:
 			return parser.MakePgIsInRecoveryNode(node)
-
-		// pg_catalog.pg_get_indexdef(index_oid, column_no, pretty_bool) -> VALUES(NULL) t(pg_get_indexdef)
-		case schemaFunction.Function == PG_FUNCTION_PG_GET_INDEXDEF:
-			return parser.MakePgGetIndexdefNode(node)
 		}
 	}
 

@@ -102,6 +102,11 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {""},
 		},
+		"SELECT TRIM (BOTH '\"' FROM pg_catalog.pg_get_indexdef(1, 1, false)) AS trim": {
+			"description": {"trim"},
+			"types":       {Uint32ToString(pgtype.TextOID)},
+			"values":      {""},
+		},
 
 		// PG system tables
 		"SELECT oid, typname AS typename FROM pg_type WHERE typname='geometry' OR typname='geography'": {
@@ -683,11 +688,6 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"n"},
 			"types":       {Uint32ToString(pgtype.Int4OID)},
 			"values":      {"1"},
-		},
-		"SELECT * FROM pg_catalog.pg_get_indexdef(1, 1, false)": {
-			"description": {"pg_get_indexdef"},
-			"types":       {Uint32ToString(pgtype.Int4OID)},
-			"values":      {""},
 		},
 
 		// Transformed JOIN's
