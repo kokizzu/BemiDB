@@ -235,7 +235,7 @@ func (queryHandler *QueryHandler) HandleParseQuery(message *pgproto3.Parse) ([]p
 func (queryHandler *QueryHandler) HandleBindQuery(message *pgproto3.Bind, preparedStatement *PreparedStatement) ([]pgproto3.Message, *PreparedStatement, error) {
 	if message.PreparedStatement != preparedStatement.Name {
 		LogError(queryHandler.config, "Prepared statement mismatch:", message.PreparedStatement, "instead of", preparedStatement.Name)
-		return nil, nil, errors.New("Prepared statement mismatch")
+		return nil, nil, errors.New("prepared statement mismatch")
 	}
 
 	var variables []interface{}
@@ -274,12 +274,12 @@ func (queryHandler *QueryHandler) HandleDescribeQuery(message *pgproto3.Describe
 	case 'S': // Statement
 		if message.Name != preparedStatement.Query {
 			LogError(queryHandler.config, "Statement mismatch:", message.Name, "instead of", preparedStatement.Query)
-			return nil, nil, errors.New("Statement mismatch")
+			return nil, nil, errors.New("statement mismatch")
 		}
 	case 'P': // Portal
 		if message.Name != preparedStatement.Portal {
 			LogError(queryHandler.config, "Portal mismatch:", message.Name, "instead of", preparedStatement.Portal)
-			return nil, nil, errors.New("Portal mismatch")
+			return nil, nil, errors.New("portal mismatch")
 		}
 	}
 
@@ -300,7 +300,7 @@ func (queryHandler *QueryHandler) HandleDescribeQuery(message *pgproto3.Describe
 func (queryHandler *QueryHandler) HandleExecuteQuery(message *pgproto3.Execute, preparedStatement *PreparedStatement) ([]pgproto3.Message, error) {
 	if message.Portal != preparedStatement.Portal {
 		LogError(queryHandler.config, "Portal mismatch:", message.Portal, "instead of", preparedStatement.Portal)
-		return nil, errors.New("Portal mismatch")
+		return nil, errors.New("portal mismatch")
 	}
 
 	if preparedStatement.Rows == nil {

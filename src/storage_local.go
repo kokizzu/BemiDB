@@ -112,7 +112,7 @@ func (storage *StorageLocal) CreateParquet(dataDirPath string, pgSchemaColumns [
 
 	fileWriter, err := local.NewLocalFileWriter(filePath)
 	if err != nil {
-		return ParquetFile{}, fmt.Errorf("Failed to open Parquet file for writing: %v", err)
+		return ParquetFile{}, fmt.Errorf("failed to open Parquet file for writing: %v", err)
 	}
 
 	recordCount, err := storage.storageBase.WriteParquetFile(fileWriter, pgSchemaColumns, loadRows)
@@ -123,13 +123,13 @@ func (storage *StorageLocal) CreateParquet(dataDirPath string, pgSchemaColumns [
 
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		return ParquetFile{}, fmt.Errorf("Failed to get Parquet file info: %v", err)
+		return ParquetFile{}, fmt.Errorf("failed to get Parquet file info: %v", err)
 	}
 	fileSize := fileInfo.Size()
 
 	fileReader, err := local.NewLocalFileReader(filePath)
 	if err != nil {
-		return ParquetFile{}, fmt.Errorf("Failed to open Parquet file for reading: %v", err)
+		return ParquetFile{}, fmt.Errorf("failed to open Parquet file for reading: %v", err)
 	}
 	parquetStats, err := storage.storageBase.ReadParquetStats(fileReader)
 	if err != nil {
@@ -211,7 +211,7 @@ func (storage *StorageLocal) fileSystemPrefix() string {
 func (storage *StorageLocal) nestedDirectories(path string) (dirs []string, err error) {
 	files, err := os.ReadDir(path)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read directory: %v", err)
+		return nil, fmt.Errorf("failed to read directory: %v", err)
 	}
 
 	for _, file := range files {

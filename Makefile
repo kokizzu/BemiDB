@@ -27,7 +27,7 @@ debug:
 	devbox run "cd src && dlv test github.com/BemiHQ/BemiDB"
 
 lint:
-	devbox run "cd src && go fmt"
+	devbox run "cd src && go fmt && deadcode . && staticcheck ."
 
 outdated:
 	devbox run "cd src && go list -u -m -f '{{if and .Update (not .Indirect)}}{{.}}{{end}}' all"

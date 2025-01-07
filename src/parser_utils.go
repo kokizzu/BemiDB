@@ -99,7 +99,7 @@ func (utils *ParserUtils) MakeSubselectWithoutRowsNode(tableName string, columns
 	}
 
 	targetList := make([]*pgQuery.Node, len(columns))
-	for i, _ := range columns {
+	for i := range columns {
 		targetList[i] = pgQuery.MakeResTargetNodeWithVal(
 			utils.MakeAConstBoolNode(false),
 			0,

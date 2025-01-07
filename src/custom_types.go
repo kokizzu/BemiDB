@@ -24,15 +24,6 @@ func NewOrderedMap(keyVals [][]string) *OrderedMap {
 	return orderedMap
 }
 
-func (orderedMap *OrderedMap) Get(key string) string {
-	return orderedMap.valueByKey[key]
-}
-
-func (orderedMap *OrderedMap) HasKey(key string) bool {
-	_, ok := orderedMap.valueByKey[key]
-	return ok
-}
-
 func (orderedMap *OrderedMap) Set(key string, value string) {
 	if _, ok := orderedMap.valueByKey[key]; !ok {
 		orderedMap.orderedKeys = append(orderedMap.orderedKeys, key)

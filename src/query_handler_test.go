@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -975,12 +976,12 @@ func TestHandleDescribeQuery(t *testing.T) {
 		queryHandler := initQueryHandler()
 		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
 		parseMessage := &pgproto3.Parse{Query: query}
-		messages, preparedStatement, err := queryHandler.HandleParseQuery(parseMessage)
+		_, preparedStatement, _ := queryHandler.HandleParseQuery(parseMessage)
 		bindMessage := &pgproto3.Bind{Parameters: [][]byte{[]byte("bemidb")}}
-		messages, preparedStatement, err = queryHandler.HandleBindQuery(bindMessage, preparedStatement)
+		_, preparedStatement, _ = queryHandler.HandleBindQuery(bindMessage, preparedStatement)
 		message := &pgproto3.Describe{ObjectType: 'P'}
 
-		messages, preparedStatement, err = queryHandler.HandleDescribeQuery(message, preparedStatement)
+		messages, preparedStatement, err := queryHandler.HandleDescribeQuery(message, preparedStatement)
 
 		testNoError(t, err)
 		testMessageTypes(t, messages, []pgproto3.Message{
@@ -998,14 +999,14 @@ func TestHandleExecuteQuery(t *testing.T) {
 		queryHandler := initQueryHandler()
 		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
 		parseMessage := &pgproto3.Parse{Query: query}
-		messages, preparedStatement, err := queryHandler.HandleParseQuery(parseMessage)
+		_, preparedStatement, _ := queryHandler.HandleParseQuery(parseMessage)
 		bindMessage := &pgproto3.Bind{Parameters: [][]byte{[]byte("bemidb")}}
-		messages, preparedStatement, err = queryHandler.HandleBindQuery(bindMessage, preparedStatement)
+		_, preparedStatement, _ = queryHandler.HandleBindQuery(bindMessage, preparedStatement)
 		describeMessage := &pgproto3.Describe{ObjectType: 'P'}
-		messages, preparedStatement, err = queryHandler.HandleDescribeQuery(describeMessage, preparedStatement)
+		_, preparedStatement, _ = queryHandler.HandleDescribeQuery(describeMessage, preparedStatement)
 		message := &pgproto3.Execute{}
 
-		messages, err = queryHandler.HandleExecuteQuery(message, preparedStatement)
+		messages, err := queryHandler.HandleExecuteQuery(message, preparedStatement)
 
 		testNoError(t, err)
 		testMessageTypes(t, messages, []pgproto3.Message{
@@ -1139,4 +1140,8 @@ func testDataRowValues(t *testing.T, dataRowMessage pgproto3.Message, expectedVa
 			t.Errorf("Expected the %v data row value to be %v, got %v", i, expectedValue, string(dataRow.Values[i]))
 		}
 	}
+}
+
+func Uint32ToString(i uint32) string {
+	return strconv.FormatUint(uint64(i), 10)
 }

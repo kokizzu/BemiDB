@@ -47,7 +47,7 @@ func (storage *StorageBase) WriteParquetFile(fileWriter source.ParquetFile, pgSc
 	LogDebug(storage.config, "Parquet schema:", string(schemaJson))
 	parquetWriter, err := writer.NewJSONWriter(string(schemaJson), fileWriter, PARQUET_PARALLEL_NUMBER)
 	if err != nil {
-		return 0, fmt.Errorf("Failed to create Parquet writer: %v", err)
+		return 0, fmt.Errorf("failed to create Parquet writer: %v", err)
 	}
 
 	parquetWriter.RowGroupSize = PARQUET_ROW_GROUP_SIZE
@@ -74,7 +74,7 @@ func (storage *StorageBase) WriteParquetFile(fileWriter source.ParquetFile, pgSc
 
 	LogDebug(storage.config, "Stopping Parquet writer...")
 	if err := parquetWriter.WriteStop(); err != nil {
-		return 0, fmt.Errorf("Failed to stop Parquet writer: %v", err)
+		return 0, fmt.Errorf("failed to stop Parquet writer: %v", err)
 	}
 
 	return recordCount, nil
@@ -85,7 +85,7 @@ func (storage *StorageBase) ReadParquetStats(fileReader source.ParquetFile) (par
 
 	pr, err := reader.NewParquetReader(fileReader, nil, 1)
 	if err != nil {
-		return ParquetFileStats{}, fmt.Errorf("Failed to create Parquet reader: %v", err)
+		return ParquetFileStats{}, fmt.Errorf("failed to create Parquet reader: %v", err)
 	}
 	defer pr.ReadStop()
 
@@ -143,7 +143,7 @@ func (storage *StorageBase) WriteManifestFile(fileSystemPrefix string, filePath 
 	snapshotId := time.Now().UnixNano()
 	codec, err := goavro.NewCodec(MANIFEST_SCHEMA)
 	if err != nil {
-		return ManifestFile{}, fmt.Errorf("Failed to create Avro codec: %v", err)
+		return ManifestFile{}, fmt.Errorf("failed to create Avro codec: %v", err)
 	}
 
 	columnSizesArr := []interface{}{}
@@ -229,7 +229,7 @@ func (storage *StorageBase) WriteManifestFile(fileSystemPrefix string, filePath 
 
 	avroFile, err := os.Create(filePath)
 	if err != nil {
-		return ManifestFile{}, fmt.Errorf("Failed to create manifest file: %v", err)
+		return ManifestFile{}, fmt.Errorf("failed to create manifest file: %v", err)
 	}
 	defer avroFile.Close()
 
@@ -239,17 +239,17 @@ func (storage *StorageBase) WriteManifestFile(fileSystemPrefix string, filePath 
 		Schema: MANIFEST_SCHEMA,
 	})
 	if err != nil {
-		return ManifestFile{}, fmt.Errorf("Failed to create Avro OCF writer: %v", err)
+		return ManifestFile{}, fmt.Errorf("failed to create Avro OCF writer: %v", err)
 	}
 
 	err = ocfWriter.Append([]interface{}{manifestEntry})
 	if err != nil {
-		return ManifestFile{}, fmt.Errorf("Failed to write to manifest file: %v", err)
+		return ManifestFile{}, fmt.Errorf("failed to write to manifest file: %v", err)
 	}
 
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		return ManifestFile{}, fmt.Errorf("Failed to get manifest file info: %v", err)
+		return ManifestFile{}, fmt.Errorf("failed to get manifest file info: %v", err)
 	}
 	fileSize := fileInfo.Size()
 
@@ -263,7 +263,7 @@ func (storage *StorageBase) WriteManifestFile(fileSystemPrefix string, filePath 
 func (storage *StorageBase) WriteManifestListFile(fileSystemPrefix string, filePath string, parquetFile ParquetFile, manifestFile ManifestFile) (err error) {
 	codec, err := goavro.NewCodec(MANIFEST_LIST_SCHEMA)
 	if err != nil {
-		return fmt.Errorf("Failed to create Avro codec for manifest list: %v", err)
+		return fmt.Errorf("failed to create Avro codec for manifest list: %v", err)
 	}
 
 	manifestListRecord := map[string]interface{}{
@@ -286,7 +286,7 @@ func (storage *StorageBase) WriteManifestListFile(fileSystemPrefix string, fileP
 
 	avroFile, err := os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("Failed to create manifest list file: %v", err)
+		return fmt.Errorf("failed to create manifest list file: %v", err)
 	}
 	defer avroFile.Close()
 
@@ -296,12 +296,12 @@ func (storage *StorageBase) WriteManifestListFile(fileSystemPrefix string, fileP
 		Schema: MANIFEST_LIST_SCHEMA,
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to create OCF writer for manifest list: %v", err)
+		return fmt.Errorf("failed to create OCF writer for manifest list: %v", err)
 	}
 
 	err = ocfWriter.Append([]interface{}{manifestListRecord})
 	if err != nil {
-		return fmt.Errorf("Failed to write manifest list record: %v", err)
+		return fmt.Errorf("failed to write manifest list record: %v", err)
 	}
 
 	return nil
@@ -388,7 +388,7 @@ func (storage *StorageBase) WriteMetadataFile(fileSystemPrefix string, filePath 
 
 	file, err := os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("Failed to create metadata file: %v", err)
+		return fmt.Errorf("failed to create metadata file: %v", err)
 	}
 	defer file.Close()
 
@@ -396,7 +396,7 @@ func (storage *StorageBase) WriteMetadataFile(fileSystemPrefix string, filePath 
 	encoder.SetIndent("", "  ")
 	err = encoder.Encode(metadata)
 	if err != nil {
-		return fmt.Errorf("Failed to write metadata to file: %v", err)
+		return fmt.Errorf("failed to write metadata to file: %v", err)
 	}
 
 	return nil
@@ -405,13 +405,13 @@ func (storage *StorageBase) WriteMetadataFile(fileSystemPrefix string, filePath 
 func (storage *StorageBase) WriteVersionHintFile(filePath string, metadataFile MetadataFile) (err error) {
 	versionHintFile, err := os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("Failed to create version hint file: %v", err)
+		return fmt.Errorf("failed to create version hint file: %v", err)
 	}
 	defer versionHintFile.Close()
 
 	_, err = versionHintFile.WriteString(fmt.Sprintf("%d", metadataFile.Version))
 	if err != nil {
-		return fmt.Errorf("Failed to write to version hint file: %v", err)
+		return fmt.Errorf("failed to write to version hint file: %v", err)
 	}
 
 	return nil

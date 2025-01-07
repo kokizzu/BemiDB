@@ -122,7 +122,7 @@ func (storage *StorageS3) CreateParquet(dataDirPath string, pgSchemaColumns []Pg
 
 	fileWriter, err := s3v2.NewS3FileWriterWithClient(ctx, storage.s3Client, storage.config.Aws.S3Bucket, fileKey, nil)
 	if err != nil {
-		return ParquetFile{}, fmt.Errorf("Failed to open Parquet file for writing: %v", err)
+		return ParquetFile{}, fmt.Errorf("failed to open Parquet file for writing: %v", err)
 	}
 
 	recordCount, err := storage.storageBase.WriteParquetFile(fileWriter, pgSchemaColumns, loadRows)
@@ -136,13 +136,13 @@ func (storage *StorageS3) CreateParquet(dataDirPath string, pgSchemaColumns []Pg
 		Key:    aws.String(fileKey),
 	})
 	if err != nil {
-		return ParquetFile{}, fmt.Errorf("Failed to get Parquet file info: %v", err)
+		return ParquetFile{}, fmt.Errorf("failed to get Parquet file info: %v", err)
 	}
 	fileSize := *headObjectResponse.ContentLength
 
 	fileReader, err := s3v2.NewS3FileReaderWithClient(ctx, storage.s3Client, storage.config.Aws.S3Bucket, fileKey)
 	if err != nil {
-		return ParquetFile{}, fmt.Errorf("Failed to open Parquet file for reading: %v", err)
+		return ParquetFile{}, fmt.Errorf("failed to open Parquet file for reading: %v", err)
 	}
 	parquetStats, err := storage.storageBase.ReadParquetStats(fileReader)
 	if err != nil {
@@ -264,7 +264,7 @@ func (storage *StorageS3) uploadFile(filePath string, file *os.File) (err error)
 		Body:   file,
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to upload file: %v", err)
+		return fmt.Errorf("failed to upload file: %v", err)
 	}
 
 	return nil
@@ -290,7 +290,7 @@ func (storage *StorageS3) nestedDirectoryPrefixes(prefix string) (dirs []string,
 		Delimiter: aws.String("/"),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Failed to list objects: %v", err)
+		return nil, fmt.Errorf("failed to list objects: %v", err)
 	}
 
 	for _, prefix := range listResponse.CommonPrefixes {
@@ -308,7 +308,7 @@ func (storage *StorageS3) deleteNestedObjects(prefix string) (err error) {
 		Prefix: aws.String(prefix),
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to list objects: %v", err)
+		return fmt.Errorf("failed to list objects: %v", err)
 	}
 
 	var objectsToDelete []types.ObjectIdentifier
@@ -326,7 +326,7 @@ func (storage *StorageS3) deleteNestedObjects(prefix string) (err error) {
 			},
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to delete objects: %v", err)
+			return fmt.Errorf("failed to delete objects: %v", err)
 		}
 		LogDebug(storage.config, "Deleted", len(objectsToDelete), "object(s).")
 	} else {

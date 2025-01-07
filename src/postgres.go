@@ -68,11 +68,11 @@ func (postgres *Postgres) Run(queryHandler *QueryHandler) {
 			return // Terminate connection
 		}
 
-		switch message.(type) {
+		switch message := message.(type) {
 		case *pgproto3.Query:
-			postgres.handleSimpleQuery(queryHandler, message.(*pgproto3.Query))
+			postgres.handleSimpleQuery(queryHandler, message)
 		case *pgproto3.Parse:
-			err = postgres.handleExtendedQuery(queryHandler, message.(*pgproto3.Parse))
+			err = postgres.handleExtendedQuery(queryHandler, message)
 			if err != nil {
 				return // Terminate connection
 			}
@@ -116,9 +116,8 @@ func (postgres *Postgres) handleExtendedQuery(queryHandler *QueryHandler, parseM
 			return err
 		}
 
-		switch message.(type) {
+		switch message := message.(type) {
 		case *pgproto3.Bind:
-			message := message.(*pgproto3.Bind)
 			LogDebug(postgres.config, "Binding query", message.PreparedStatement)
 			messages, preparedStatement, err = queryHandler.HandleBindQuery(message, preparedStatement)
 			if err != nil {
@@ -127,7 +126,6 @@ func (postgres *Postgres) handleExtendedQuery(queryHandler *QueryHandler, parseM
 			}
 			postgres.writeMessages(messages...)
 		case *pgproto3.Describe:
-			message := message.(*pgproto3.Describe)
 			LogDebug(postgres.config, "Describing query", message.Name, "("+string(message.ObjectType)+")")
 			var messages []pgproto3.Message
 			messages, preparedStatement, err = queryHandler.HandleDescribeQuery(message, preparedStatement)
@@ -137,7 +135,6 @@ func (postgres *Postgres) handleExtendedQuery(queryHandler *QueryHandler, parseM
 			}
 			postgres.writeMessages(messages...)
 		case *pgproto3.Execute:
-			message := message.(*pgproto3.Execute)
 			LogDebug(postgres.config, "Executing query", message.Portal)
 			messages, err := queryHandler.HandleExecuteQuery(message, preparedStatement)
 			if err != nil {
@@ -179,19 +176,19 @@ func (postgres *Postgres) handleStartup() error {
 		return err
 	}
 
-	switch startupMessage.(type) {
+	switch startupMessage := startupMessage.(type) {
 	case *pgproto3.StartupMessage:
-		params := startupMessage.(*pgproto3.StartupMessage).Parameters
+		params := startupMessage.Parameters
 		LogDebug(postgres.config, "BemiDB: startup message", params)
 
 		if params["database"] != postgres.config.Database {
 			postgres.writeError("database " + params["database"] + " does not exist")
-			return errors.New("Database does not exist")
+			return errors.New("database does not exist")
 		}
 
 		if postgres.config.User != "" && params["user"] != postgres.config.User && params["user"] != SYSTEM_AUTH_USER {
 			postgres.writeError("role \"" + params["user"] + "\" does not exist")
-			return errors.New("Role does not exist")
+			return errors.New("role does not exist")
 		}
 
 		postgres.writeMessages(
@@ -209,6 +206,6 @@ func (postgres *Postgres) handleStartup() error {
 		postgres.handleStartup()
 		return nil
 	default:
-		return errors.New("Unknown startup message")
+		return errors.New("unknown startup message")
 	}
 }

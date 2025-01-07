@@ -125,11 +125,11 @@ func (remapper *QueryRemapper) remapSelectStatement(selectStatement *pgQuery.Sel
 	if selectStatement.FromClause == nil && selectStatement.Larg != nil && selectStatement.Rarg != nil {
 		remapper.traceTreeTraversal("UNION left", indentLevel)
 		leftSelectStatement := selectStatement.Larg
-		leftSelectStatement = remapper.remapSelectStatement(leftSelectStatement, indentLevel+1) // self-recursion
+		remapper.remapSelectStatement(leftSelectStatement, indentLevel+1) // self-recursion
 
 		remapper.traceTreeTraversal("UNION right", indentLevel)
 		rightSelectStatement := selectStatement.Rarg
-		rightSelectStatement = remapper.remapSelectStatement(rightSelectStatement, indentLevel+1) // self-recursion
+		remapper.remapSelectStatement(rightSelectStatement, indentLevel+1) // self-recursion
 	}
 
 	// JOIN
@@ -167,7 +167,7 @@ func (remapper *QueryRemapper) remapSelectStatement(selectStatement *pgQuery.Sel
 				// FROM (SELECT ...)
 				remapper.traceTreeTraversal("FROM subselect", indentLevel)
 				subSelectStatement := fromNode.GetRangeSubselect().Subquery.GetSelectStmt()
-				subSelectStatement = remapper.remapSelectStatement(subSelectStatement, indentLevel+1) // self-recursion
+				remapper.remapSelectStatement(subSelectStatement, indentLevel+1) // self-recursion
 			} else if fromNode.GetRangeFunction() != nil {
 				// FROM PG_FUNCTION()
 				selectStatement.FromClause[i] = remapper.remapTableFunction(fromNode, indentLevel) // recursive
@@ -201,12 +201,12 @@ func (remapper *QueryRemapper) remapCaseExpressions(selectStatement *pgQuery.Sel
 							if subLink := aExpr.Lexpr.GetSubLink(); subLink != nil {
 								remapper.traceTreeTraversal("CASE WHEN left", indentLevel+1)
 								subSelect := subLink.Subselect.GetSelectStmt()
-								subSelect = remapper.remapSelectStatement(subSelect, indentLevel+1)
+								remapper.remapSelectStatement(subSelect, indentLevel+1)
 							}
 							if subLink := aExpr.Rexpr.GetSubLink(); subLink != nil {
 								remapper.traceTreeTraversal("CASE WHEN right", indentLevel+1)
 								subSelect := subLink.Subselect.GetSelectStmt()
-								subSelect = remapper.remapSelectStatement(subSelect, indentLevel+1)
+								remapper.remapSelectStatement(subSelect, indentLevel+1)
 							}
 						}
 					}
@@ -215,7 +215,7 @@ func (remapper *QueryRemapper) remapCaseExpressions(selectStatement *pgQuery.Sel
 						if subLink := whenClause.Result.GetSubLink(); subLink != nil {
 							remapper.traceTreeTraversal("CASE THEN", indentLevel+1)
 							subSelect := subLink.Subselect.GetSelectStmt()
-							subSelect = remapper.remapSelectStatement(subSelect, indentLevel+1)
+							remapper.remapSelectStatement(subSelect, indentLevel+1)
 						}
 						if funcCall := whenClause.Result.GetFuncCall(); funcCall != nil {
 							remapper.traceTreeTraversal("CASE THEN function", indentLevel+1)
@@ -229,7 +229,7 @@ func (remapper *QueryRemapper) remapCaseExpressions(selectStatement *pgQuery.Sel
 				if subLink := caseExpr.Defresult.GetSubLink(); subLink != nil {
 					remapper.traceTreeTraversal("CASE ELSE", indentLevel+1)
 					subSelect := subLink.Subselect.GetSelectStmt()
-					subSelect = remapper.remapSelectStatement(subSelect, indentLevel+1)
+					remapper.remapSelectStatement(subSelect, indentLevel+1)
 				}
 				if funcCall := caseExpr.Defresult.GetFuncCall(); funcCall != nil {
 					remapper.traceTreeTraversal("CASE ELSE function", indentLevel+1)
@@ -275,7 +275,7 @@ func (remapper *QueryRemapper) remapTableFunction(fromNode *pgQuery.Node, indent
 			if funcCallNode == nil {
 				continue
 			}
-			funcCallNode = remapper.remapTableFunctionArgs(funcCallNode, indentLevel+1) // recursive
+			remapper.remapTableFunctionArgs(funcCallNode, indentLevel+1) // recursive
 		}
 	}
 
@@ -373,7 +373,7 @@ func (remapper *QueryRemapper) remapJoinExpressions(selectStatement *pgQuery.Sel
 		leftJoinNode = remapper.remapperTable.RemapTable(leftJoinNode)
 	} else if leftJoinNode.GetRangeSubselect() != nil {
 		leftSelectStatement := leftJoinNode.GetRangeSubselect().Subquery.GetSelectStmt()
-		leftSelectStatement = remapper.remapSelectStatement(leftSelectStatement, indentLevel+1) // parent-recursion
+		remapper.remapSelectStatement(leftSelectStatement, indentLevel+1) // parent-recursion
 	}
 	node.GetJoinExpr().Larg = leftJoinNode
 
@@ -385,13 +385,13 @@ func (remapper *QueryRemapper) remapJoinExpressions(selectStatement *pgQuery.Sel
 		// WHERE
 		remapper.traceTreeTraversal("WHERE right", indentLevel+1)
 		qSchemaTable := remapper.parserTable.NodeToQuerySchemaTable(rightJoinNode)
-		selectStatement = remapper.remapperTable.RemapWhereClauseForTable(qSchemaTable, selectStatement)
+		remapper.remapperTable.RemapWhereClauseForTable(qSchemaTable, selectStatement)
 		// TABLE
 		remapper.traceTreeTraversal("TABLE right", indentLevel+1)
 		rightJoinNode = remapper.remapperTable.RemapTable(rightJoinNode)
 	} else if rightJoinNode.GetRangeSubselect() != nil {
 		rightSelectStatement := rightJoinNode.GetRangeSubselect().Subquery.GetSelectStmt()
-		rightSelectStatement = remapper.remapSelectStatement(rightSelectStatement, indentLevel+1) // parent-recursion
+		remapper.remapSelectStatement(rightSelectStatement, indentLevel+1) // parent-recursion
 	}
 	node.GetJoinExpr().Rarg = rightJoinNode
 

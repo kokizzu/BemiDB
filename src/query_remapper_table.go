@@ -40,13 +40,11 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 
 		// pg_catalog.pg_shadow -> return hard-coded credentials
 		case PG_TABLE_PG_SHADOW:
-			tableNode := parser.MakePgShadowNode(remapper.config.User, remapper.config.EncryptedPassword, qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakePgShadowNode(remapper.config.User, remapper.config.EncryptedPassword, qSchemaTable.Alias)
 
 		// pg_catalog.pg_roles -> return hard-coded role info
 		case PG_TABLE_PG_ROLES:
-			tableNode := parser.MakePgRolesNode(remapper.config.User, qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakePgRolesNode(remapper.config.User, qSchemaTable.Alias)
 
 		// pg_catalog.pg_class -> reload Iceberg tables
 		case PG_TABLE_PG_CLASS:
@@ -55,63 +53,51 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 
 		// pg_catalog.pg_inherits -> return nothing
 		case PG_TABLE_PG_INHERITS:
-			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_INHERITS, PG_INHERITS_COLUMNS, qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_INHERITS, PG_INHERITS_COLUMNS, qSchemaTable.Alias)
 
 		// pg_catalog.pg_shdescription -> return nothing
 		case PG_TABLE_PG_SHDESCRIPTION:
-			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_SHDESCRIPTION, PG_SHDESCRIPTION_COLUMNS, qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_SHDESCRIPTION, PG_SHDESCRIPTION_COLUMNS, qSchemaTable.Alias)
 
 		// pg_catalog.pg_statio_user_tables -> return nothing
 		case PG_TABLE_PG_STATIO_USER_TABLES:
-			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_STATIO_USER_TABLES, PG_STATIO_USER_TABLES_COLUMNS, qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_STATIO_USER_TABLES, PG_STATIO_USER_TABLES_COLUMNS, qSchemaTable.Alias)
 
 		// pg_catalog.pg_extension -> return hard-coded extension info
 		case PG_TABLE_PG_EXTENSION:
-			tableNode := parser.MakePgExtensionNode(qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakePgExtensionNode(qSchemaTable.Alias)
 
 		// pg_replication_slots -> return nothing
 		case PG_TABLE_PG_REPLICATION_SLOTS:
-			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_REPLICATION_SLOTS, PG_REPLICATION_SLOTS_COLUMNS, qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_REPLICATION_SLOTS, PG_REPLICATION_SLOTS_COLUMNS, qSchemaTable.Alias)
 
 		// pg_catalog.pg_database -> return hard-coded database info
 		case PG_TABLE_PG_DATABASE:
-			tableNode := parser.MakePgDatabaseNode(remapper.config.Database, qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakePgDatabaseNode(remapper.config.Database, qSchemaTable.Alias)
 
 		// pg_catalog.pg_stat_gssapi -> return nothing
 		case PG_TABLE_PG_STAT_GSSAPI:
-			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_GSSAPI, PG_STAT_GSSAPI_COLUMNS, qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_GSSAPI, PG_STAT_GSSAPI_COLUMNS, qSchemaTable.Alias)
 
 		// pg_catalog.pg_auth_members -> return empty table
 		case PG_TABLE_PG_AUTH_MEMBERS:
-			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_AUTH_MEMBERS, PG_AUTH_MEMBERS_COLUMNS, qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_AUTH_MEMBERS, PG_AUTH_MEMBERS_COLUMNS, qSchemaTable.Alias)
 
 		// pg_catalog.pg_user -> return hard-coded user info
 		case PG_TABLE_PG_USER:
-			tableNode := parser.MakePgUserNode(remapper.config.User, qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakePgUserNode(remapper.config.User, qSchemaTable.Alias)
 
 		// pg_stat_activity -> return empty table
 		case PG_TABLE_PG_STAT_ACTIVITY:
-			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_ACTIVITY, PG_STAT_ACTIVITY_COLUMNS, qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_ACTIVITY, PG_STAT_ACTIVITY_COLUMNS, qSchemaTable.Alias)
 
 		// pg_matviews -> return empty table
 		case PG_TABLE_PG_MATVIEWS:
-			tableNode := parser.MakeEmptyTableNode(PG_TABLE_PG_MATVIEWS, PG_MATVIEWS_COLUMNS, qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_MATVIEWS, PG_MATVIEWS_COLUMNS, qSchemaTable.Alias)
 
 		// pg_stat_user_tables -> return hard-coded table info
 		case PG_TABLE_PG_STAT_USER_TABLES:
-			tableNode := parser.MakePgStatUserTablesNode(remapper.icebergSchemaTables, qSchemaTable.Alias)
-			return remapper.overrideTable(node, tableNode)
+			return parser.MakePgStatUserTablesNode(remapper.icebergSchemaTables, qSchemaTable.Alias)
 
 		// pg_catalog.pg_* other system tables -> return as is
 		default:
@@ -146,8 +132,7 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 		}
 	}
 	icebergPath := remapper.icebergReader.MetadataFilePath(schemaTable)
-	tableNode := parser.MakeIcebergTableNode(icebergPath, qSchemaTable)
-	return remapper.overrideTable(node, tableNode)
+	return parser.MakeIcebergTableNode(icebergPath, qSchemaTable)
 }
 
 // FROM [PG_FUNCTION()]
@@ -211,11 +196,6 @@ func (remapper *QueryRemapperTable) RemapWhereClauseForTable(qSchemaTable QueryS
 		}
 	}
 	return selectStatement
-}
-
-func (remapper *QueryRemapperTable) overrideTable(node *pgQuery.Node, fromClause *pgQuery.Node) *pgQuery.Node {
-	node = fromClause
-	return node
 }
 
 func (remapper *QueryRemapperTable) reloadIceberSchemaTables() {

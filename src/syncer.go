@@ -68,7 +68,7 @@ func (syncer *Syncer) urlEncodePassword(databaseUrl string) string {
 	}
 
 	password := strings.TrimPrefix(databaseUrl, "postgresql://")
-	password = strings.TrimPrefix(databaseUrl, "postgres://")
+	password = strings.TrimPrefix(password, "postgres://")
 	passwordEndIndex := strings.LastIndex(password, "@")
 	password = password[:passwordEndIndex]
 
