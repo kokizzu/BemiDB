@@ -32,6 +32,7 @@ const (
 	PG_TABLE_PG_STAT_GSSAPI        = "pg_stat_gssapi"
 	PG_TABLE_PG_STAT_USER_TABLES   = "pg_stat_user_tables"
 	PG_TABLE_PG_USER               = "pg_user"
+	PG_TABLE_PG_VIEWS              = "pg_views"
 	PG_TABLE_TABLES                = "tables"
 )
 
@@ -105,6 +106,7 @@ var PG_SYSTEM_TABLES = NewSet([]string{
 	"pg_ts_template",
 	"pg_type",
 	"pg_user_mapping",
+	"pg_views",
 })
 
 var PG_SYSTEM_VIEWS = NewSet([]string{

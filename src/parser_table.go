@@ -457,7 +457,7 @@ var PG_STAT_USER_TABLES_VALUE_BY_COLUMN = NewOrderedMap([][]string{
 	{"n_tup_del", "0"},
 	{"n_tup_hot_upd", "0"},
 	{"n_tup_newpage_upd", "0"},
-	{"n_live_tup", "0"},
+	{"n_live_tup", "1"},
 	{"n_dead_tup", "0"},
 	{"n_mod_since_analyze", "0"},
 	{"n_ins_since_vacuum", "0"},

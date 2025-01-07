@@ -154,10 +154,14 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID)},
 			"values":      {},
 		},
+		"SELECT * FROM pg_catalog.pg_views": {
+			"description": {"schemaname", "viewname", "viewowner", "definition"},
+			"types":       {Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID)},
+		},
 		"SELECT schemaname, relname, n_live_tup FROM pg_stat_user_tables": {
 			"description": {"schemaname", "relname", "n_live_tup"},
 			"types":       {Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int8OID)},
-			"values":      {"public", "test_table", "0"},
+			"values":      {"public", "test_table", "1"},
 		},
 		"SELECT DISTINCT(nspname) FROM pg_catalog.pg_namespace WHERE nspname != 'information_schema' AND nspname != 'pg_catalog'": {
 			"description": {"nspname"},

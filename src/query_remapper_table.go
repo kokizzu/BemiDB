@@ -91,6 +91,10 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 		case PG_TABLE_PG_STAT_ACTIVITY:
 			return parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_ACTIVITY, PG_STAT_ACTIVITY_COLUMNS, qSchemaTable.Alias)
 
+		// pg_views -> return empty table
+		case PG_TABLE_PG_VIEWS:
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_VIEWS, PG_VIEWS_COLUMNS, qSchemaTable.Alias)
+
 		// pg_matviews -> return empty table
 		case PG_TABLE_PG_MATVIEWS:
 			return parser.MakeEmptyTableNode(PG_TABLE_PG_MATVIEWS, PG_MATVIEWS_COLUMNS, qSchemaTable.Alias)
@@ -313,6 +317,13 @@ var PG_STAT_ACTIVITY_COLUMNS = []string{
 	"backend_xmin",
 	"query",
 	"backend_type",
+}
+
+var PG_VIEWS_COLUMNS = []string{
+	"schemaname",
+	"viewname",
+	"viewowner",
+	"definition",
 }
 
 var PG_MATVIEWS_COLUMNS = []string{
