@@ -34,6 +34,8 @@ const (
 	PG_TABLE_PG_USER               = "pg_user"
 	PG_TABLE_PG_VIEWS              = "pg_views"
 	PG_TABLE_TABLES                = "tables"
+
+	PG_VAR_SEARCH_PATH = "search_path"
 )
 
 var PG_SYSTEM_TABLES = NewSet([]string{

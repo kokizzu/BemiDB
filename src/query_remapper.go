@@ -28,6 +28,7 @@ type QueryRemapper struct {
 	remapperTable  *QueryRemapperTable
 	remapperWhere  *QueryRemapperWhere
 	remapperSelect *QueryRemapperSelect
+	remapperShow   *QueryRemapperShow
 	icebergReader  *IcebergReader
 	duckdb         *Duckdb
 	config         *Config
@@ -40,6 +41,7 @@ func NewQueryRemapper(config *Config, icebergReader *IcebergReader, duckdb *Duck
 		remapperTable:  NewQueryRemapperTable(config, icebergReader, duckdb),
 		remapperWhere:  NewQueryRemapperWhere(config),
 		remapperSelect: NewQueryRemapperSelect(config),
+		remapperShow:   NewQueryRemapperShow(config),
 		icebergReader:  icebergReader,
 		duckdb:         duckdb,
 		config:         config,
@@ -75,12 +77,7 @@ func (remapper *QueryRemapper) RemapStatements(statements []*pgQuery.RawStmt) ([
 
 		// SHOW ...
 		case node.GetVariableShowStmt() != nil:
-			if node.GetVariableShowStmt().Name == "search_path" {
-				searchPathStmt, _ := pgQuery.Parse(`SELECT CONCAT('"$user", ', value) AS search_path FROM duckdb_settings() WHERE name = 'search_path'`)
-				statements[i] = searchPathStmt.Stmts[0]
-			} else {
-				statements[i] = FALLBACK_QUERY_TREE.Stmts[0]
-			}
+			statements[i] = remapper.remapperShow.RemapShowStatement(stmt)
 
 		// Unsupported query
 		default:

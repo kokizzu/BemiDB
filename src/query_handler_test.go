@@ -248,6 +248,10 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {`"$user", public`},
 		},
+		"SHOW timezone": {
+			"description": {"timezone"},
+			"types":       {Uint32ToString(pgtype.TextOID)},
+		},
 
 		// Iceberg data
 		"SELECT COUNT(*) AS count FROM public.test_table": {
