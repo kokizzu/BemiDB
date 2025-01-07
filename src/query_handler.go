@@ -31,12 +31,13 @@ type QueryHandler struct {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type PreparedStatement struct {
-	Name      string
-	Query     string
-	Statement *sql.Stmt
-	Variables []interface{}
-	Portal    string
-	Rows      *sql.Rows
+	Name          string
+	Query         string
+	Statement     *sql.Stmt
+	ParameterOIDs []uint32
+	Variables     []interface{}
+	Portal        string
+	Rows          *sql.Rows
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -222,9 +223,10 @@ func (queryHandler *QueryHandler) HandleParseQuery(message *pgproto3.Parse) ([]p
 	}
 
 	preparedStatement := &PreparedStatement{
-		Name:      message.Name,
-		Query:     query,
-		Statement: statement,
+		Name:          message.Name,
+		Query:         query,
+		Statement:     statement,
+		ParameterOIDs: message.ParameterOIDs,
 	}
 
 	messages := []pgproto3.Message{&pgproto3.ParseComplete{}}
@@ -272,8 +274,8 @@ func (queryHandler *QueryHandler) HandleBindQuery(message *pgproto3.Bind, prepar
 func (queryHandler *QueryHandler) HandleDescribeQuery(message *pgproto3.Describe, preparedStatement *PreparedStatement) ([]pgproto3.Message, *PreparedStatement, error) {
 	switch message.ObjectType {
 	case 'S': // Statement
-		if message.Name != preparedStatement.Query {
-			LogError(queryHandler.config, "Statement mismatch:", message.Name, "instead of", preparedStatement.Query)
+		if message.Name != preparedStatement.Name {
+			LogError(queryHandler.config, "Statement mismatch:", message.Name, "instead of", preparedStatement.Name)
 			return nil, nil, errors.New("statement mismatch")
 		}
 	case 'P': // Portal
@@ -281,6 +283,10 @@ func (queryHandler *QueryHandler) HandleDescribeQuery(message *pgproto3.Describe
 			LogError(queryHandler.config, "Portal mismatch:", message.Name, "instead of", preparedStatement.Portal)
 			return nil, nil, errors.New("portal mismatch")
 		}
+	}
+
+	if len(preparedStatement.ParameterOIDs) != len(preparedStatement.Variables) { // Bind step didn't happen before
+		return []pgproto3.Message{&pgproto3.NoData{}}, preparedStatement, nil
 	}
 
 	rows, err := preparedStatement.Statement.QueryContext(context.Background(), preparedStatement.Variables...)
@@ -303,7 +309,7 @@ func (queryHandler *QueryHandler) HandleExecuteQuery(message *pgproto3.Execute, 
 		return nil, errors.New("portal mismatch")
 	}
 
-	if preparedStatement.Rows == nil {
+	if preparedStatement.Rows == nil { // If Describe step didn't have Bind step before
 		rows, err := preparedStatement.Statement.QueryContext(context.Background(), preparedStatement.Variables...)
 		if err != nil {
 			LogError(queryHandler.config, "Couldn't execute prepared statement via DuckDB:", preparedStatement.Query+"\n"+err.Error())

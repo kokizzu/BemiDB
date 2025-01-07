@@ -893,7 +893,7 @@ func TestHandleQuery(t *testing.T) {
 }
 
 func TestHandleParseQuery(t *testing.T) {
-	t.Run("Handles PARSE extended query", func(t *testing.T) {
+	t.Run("Handles PARSE extended query step", func(t *testing.T) {
 		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
 		queryHandler := initQueryHandler()
 		message := &pgproto3.Parse{Query: query}
@@ -916,7 +916,7 @@ func TestHandleParseQuery(t *testing.T) {
 }
 
 func TestHandleBindQuery(t *testing.T) {
-	t.Run("Handles BIND extended query with text format parameter", func(t *testing.T) {
+	t.Run("Handles BIND extended query step with text format parameter", func(t *testing.T) {
 		queryHandler := initQueryHandler()
 		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
 		parseMessage := &pgproto3.Parse{Query: query}
@@ -941,7 +941,7 @@ func TestHandleBindQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("Handles BIND extended query with binary format parameter", func(t *testing.T) {
+	t.Run("Handles BIND extended query step with binary format parameter", func(t *testing.T) {
 		queryHandler := initQueryHandler()
 		query := "SELECT c.oid FROM pg_catalog.pg_class c WHERE c.relnamespace = $1"
 		parseMessage := &pgproto3.Parse{Query: query}
@@ -972,10 +972,10 @@ func TestHandleBindQuery(t *testing.T) {
 }
 
 func TestHandleDescribeQuery(t *testing.T) {
-	t.Run("Handles DESCRIBE extended query", func(t *testing.T) {
+	t.Run("Handles DESCRIBE extended query step", func(t *testing.T) {
 		queryHandler := initQueryHandler()
 		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
-		parseMessage := &pgproto3.Parse{Query: query}
+		parseMessage := &pgproto3.Parse{Query: query, ParameterOIDs: []uint32{pgtype.TextOID}}
 		_, preparedStatement, _ := queryHandler.HandleParseQuery(parseMessage)
 		bindMessage := &pgproto3.Bind{Parameters: [][]byte{[]byte("bemidb")}}
 		_, preparedStatement, _ = queryHandler.HandleBindQuery(bindMessage, preparedStatement)
@@ -992,10 +992,25 @@ func TestHandleDescribeQuery(t *testing.T) {
 			t.Errorf("Expected the prepared statement to have rows")
 		}
 	})
+
+	t.Run("Handles DESCRIBE (Statement) extended query step if there was no BIND step", func(t *testing.T) {
+		queryHandler := initQueryHandler()
+		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
+		parseMessage := &pgproto3.Parse{Query: query, ParameterOIDs: []uint32{pgtype.TextOID}}
+		_, preparedStatement, _ := queryHandler.HandleParseQuery(parseMessage)
+		message := &pgproto3.Describe{ObjectType: 'S'}
+
+		messages, _, err := queryHandler.HandleDescribeQuery(message, preparedStatement)
+
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.NoData{},
+		})
+	})
 }
 
 func TestHandleExecuteQuery(t *testing.T) {
-	t.Run("Handles EXECUTE extended query", func(t *testing.T) {
+	t.Run("Handles EXECUTE extended query step", func(t *testing.T) {
 		queryHandler := initQueryHandler()
 		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
 		parseMessage := &pgproto3.Parse{Query: query}
