@@ -52,17 +52,18 @@ func NewQueryRemapper(config *Config, icebergReader *IcebergReader, duckdb *Duck
 }
 
 func (remapper *QueryRemapper) RemapStatements(statements []*pgQuery.RawStmt) ([]*pgQuery.RawStmt, error) {
+	// Empty query
 	if len(statements) == 0 {
-		return FALLBACK_QUERY_TREE.Stmts, nil
+		return statements, nil
 	}
 
 	for i, stmt := range statements {
 		node := stmt.Stmt
 
 		switch {
-		// Empty query
+		// Empty statement
 		case node == nil:
-			return nil, errors.New("empty query")
+			return nil, errors.New("empty statement")
 
 		// SELECT ...
 		case node.GetSelectStmt() != nil:

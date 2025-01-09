@@ -179,6 +179,10 @@ func (queryHandler *QueryHandler) HandleQuery(originalQuery string) ([]pgproto3.
 		return nil, err
 	}
 
+	if query == "" {
+		return []pgproto3.Message{&pgproto3.EmptyQueryResponse{}}, nil
+	}
+
 	rows, err := queryHandler.duckdb.QueryContext(context.Background(), query)
 	if err != nil {
 		errorMessage := err.Error()
@@ -217,23 +221,24 @@ func (queryHandler *QueryHandler) HandleParseQuery(message *pgproto3.Parse) ([]p
 		return nil, nil, err
 	}
 
+	preparedStatement := &PreparedStatement{
+		Name:          message.Name,
+		OriginalQuery: originalQuery,
+		Query:         query,
+		ParameterOIDs: message.ParameterOIDs,
+	}
+	if query == "" {
+		return []pgproto3.Message{&pgproto3.EmptyQueryResponse{}}, preparedStatement, nil
+	}
+
 	statement, err := queryHandler.duckdb.PrepareContext(ctx, query)
+	preparedStatement.Statement = statement
 	if err != nil {
 		LogError(queryHandler.config, "Couldn't prepare query via DuckDB:", query+"\n"+err.Error())
 		return nil, nil, err
 	}
 
-	preparedStatement := &PreparedStatement{
-		Name:          message.Name,
-		OriginalQuery: originalQuery,
-		Query:         query,
-		Statement:     statement,
-		ParameterOIDs: message.ParameterOIDs,
-	}
-
-	messages := []pgproto3.Message{&pgproto3.ParseComplete{}}
-
-	return messages, preparedStatement, nil
+	return []pgproto3.Message{&pgproto3.ParseComplete{}}, preparedStatement, nil
 }
 
 func (queryHandler *QueryHandler) HandleBindQuery(message *pgproto3.Bind, preparedStatement *PreparedStatement) ([]pgproto3.Message, *PreparedStatement, error) {
@@ -287,6 +292,10 @@ func (queryHandler *QueryHandler) HandleDescribeQuery(message *pgproto3.Describe
 		}
 	}
 
+	if preparedStatement.Query == "" {
+		return []pgproto3.Message{&pgproto3.NoData{}}, preparedStatement, nil
+	}
+
 	if len(preparedStatement.ParameterOIDs) != len(preparedStatement.Variables) { // Bind step didn't happen before
 		return []pgproto3.Message{&pgproto3.NoData{}}, preparedStatement, nil
 	}
@@ -309,6 +318,10 @@ func (queryHandler *QueryHandler) HandleExecuteQuery(message *pgproto3.Execute, 
 	if message.Portal != preparedStatement.Portal {
 		LogError(queryHandler.config, "Portal mismatch:", message.Portal, "instead of", preparedStatement.Portal)
 		return nil, errors.New("portal mismatch")
+	}
+
+	if preparedStatement.Query == "" {
+		return []pgproto3.Message{&pgproto3.EmptyQueryResponse{}}, nil
 	}
 
 	if preparedStatement.Rows == nil { // If Describe step didn't have Bind step before
@@ -396,7 +409,7 @@ func (queryHandler *QueryHandler) remapQuery(query string) (string, error) {
 	}
 
 	if strings.HasSuffix(query, " --INSPECT") {
-		LogDebug(queryHandler.config, queryTree.Stmts[0].Stmt)
+		LogDebug(queryHandler.config, queryTree.Stmts)
 	}
 
 	queryTree.Stmts, err = queryHandler.queryRemapper.RemapStatements(queryTree.Stmts)

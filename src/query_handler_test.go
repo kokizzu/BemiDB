@@ -233,13 +233,6 @@ func TestHandleQuery(t *testing.T) {
 			"values":      {"memory", "public", "test_table"},
 		},
 
-		// Empty query
-		"-- ping": {
-			"description": {"1"},
-			"types":       {Uint32ToString(pgtype.Int4OID)},
-			"values":      {"1"},
-		},
-
 		// DISCARD
 		"DISCARD ALL": {
 			"description": {"1"},
@@ -921,6 +914,17 @@ func TestHandleQuery(t *testing.T) {
 		testDataRowValues(t, messages[1], []string{"UTC"})
 		testCommandCompleteTag(t, messages[2], "SHOW")
 	})
+
+	t.Run("Handles an empty query", func(t *testing.T) {
+		queryHandler := initQueryHandler()
+
+		messages, err := queryHandler.HandleQuery("-- ping")
+
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.EmptyQueryResponse{},
+		})
+	})
 }
 
 func TestHandleParseQuery(t *testing.T) {
@@ -1024,6 +1028,22 @@ func TestHandleDescribeQuery(t *testing.T) {
 		}
 	})
 
+	t.Run("Handles DESCRIBE extended query step if query is empty", func(t *testing.T) {
+		queryHandler := initQueryHandler()
+		parseMessage := &pgproto3.Parse{Query: ""}
+		_, preparedStatement, _ := queryHandler.HandleParseQuery(parseMessage)
+		bindMessage := &pgproto3.Bind{}
+		_, preparedStatement, _ = queryHandler.HandleBindQuery(bindMessage, preparedStatement)
+		message := &pgproto3.Describe{ObjectType: 'P'}
+
+		messages, _, err := queryHandler.HandleDescribeQuery(message, preparedStatement)
+
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.NoData{},
+		})
+	})
+
 	t.Run("Handles DESCRIBE (Statement) extended query step if there was no BIND step", func(t *testing.T) {
 		queryHandler := initQueryHandler()
 		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
@@ -1060,6 +1080,24 @@ func TestHandleExecuteQuery(t *testing.T) {
 			&pgproto3.CommandComplete{},
 		})
 		testDataRowValues(t, messages[0], []string{"bemidb", "bemidb-encrypted"})
+	})
+
+	t.Run("Handles EXECUTE extended query step if query is empty", func(t *testing.T) {
+		queryHandler := initQueryHandler()
+		parseMessage := &pgproto3.Parse{Query: ""}
+		_, preparedStatement, _ := queryHandler.HandleParseQuery(parseMessage)
+		bindMessage := &pgproto3.Bind{}
+		_, preparedStatement, _ = queryHandler.HandleBindQuery(bindMessage, preparedStatement)
+		describeMessage := &pgproto3.Describe{ObjectType: 'P'}
+		_, preparedStatement, _ = queryHandler.HandleDescribeQuery(describeMessage, preparedStatement)
+		message := &pgproto3.Execute{}
+
+		messages, err := queryHandler.HandleExecuteQuery(message, preparedStatement)
+
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.EmptyQueryResponse{},
+		})
 	})
 }
 
