@@ -7,12 +7,15 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
+var SUPPORTED_SET_STATEMENTS = NewSet([]string{
+	"timezone", // SET SESSION timezone TO 'UTC'
+})
+
 var KNOWN_SET_STATEMENTS = NewSet([]string{
 	"client_encoding",             // SET client_encoding TO 'UTF8'
 	"client_min_messages",         // SET client_min_messages TO 'warning'
 	"standard_conforming_strings", // SET standard_conforming_strings = on
 	"intervalstyle",               // SET intervalstyle = iso_8601
-	"timezone",                    // SET SESSION timezone TO 'UTC'
 	"extra_float_digits",          // SET extra_float_digits = 3
 	"application_name",            // SET application_name = 'psql'
 	"datestyle",                   // SET datestyle TO 'ISO'
@@ -95,8 +98,12 @@ func (remapper *QueryRemapper) RemapStatements(statements []*pgQuery.RawStmt) ([
 func (remapper *QueryRemapper) remapSetStatement(stmt *pgQuery.RawStmt) *pgQuery.RawStmt {
 	setStatement := stmt.Stmt.GetVariableSetStmt()
 
+	if SUPPORTED_SET_STATEMENTS.Contains(strings.ToLower(setStatement.Name)) {
+		return stmt
+	}
+
 	if !KNOWN_SET_STATEMENTS.Contains(strings.ToLower(setStatement.Name)) {
-		LogWarn(remapper.config, "Unsupported SET ", setStatement.Name, ":", setStatement)
+		LogWarn(remapper.config, "Unknown SET ", setStatement.Name, ":", setStatement)
 	}
 
 	return FALLBACK_SET_QUERY_TREE.Stmts[0]

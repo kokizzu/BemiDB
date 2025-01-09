@@ -32,6 +32,7 @@ type QueryHandler struct {
 
 type PreparedStatement struct {
 	Name          string
+	OriginalQuery string
 	Query         string
 	Statement     *sql.Stmt
 	ParameterOIDs []uint32
@@ -199,7 +200,7 @@ func (queryHandler *QueryHandler) HandleQuery(originalQuery string) ([]pgproto3.
 		return nil, err
 	}
 	messages = append(messages, descriptionMessages...)
-	dataMessages, err := queryHandler.rowsToDataMessages(rows, query)
+	dataMessages, err := queryHandler.rowsToDataMessages(rows, originalQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -224,6 +225,7 @@ func (queryHandler *QueryHandler) HandleParseQuery(message *pgproto3.Parse) ([]p
 
 	preparedStatement := &PreparedStatement{
 		Name:          message.Name,
+		OriginalQuery: originalQuery,
 		Query:         query,
 		Statement:     statement,
 		ParameterOIDs: message.ParameterOIDs,
@@ -320,7 +322,7 @@ func (queryHandler *QueryHandler) HandleExecuteQuery(message *pgproto3.Execute, 
 
 	defer preparedStatement.Rows.Close()
 
-	return queryHandler.rowsToDataMessages(preparedStatement.Rows, preparedStatement.Query)
+	return queryHandler.rowsToDataMessages(preparedStatement.Rows, preparedStatement.OriginalQuery)
 }
 
 func (queryHandler *QueryHandler) createSchemas() {
@@ -355,10 +357,10 @@ func (queryHandler *QueryHandler) rowsToDescriptionMessages(rows *sql.Rows, quer
 	return messages, nil
 }
 
-func (queryHandler *QueryHandler) rowsToDataMessages(rows *sql.Rows, query string) ([]pgproto3.Message, error) {
+func (queryHandler *QueryHandler) rowsToDataMessages(rows *sql.Rows, originalQuery string) ([]pgproto3.Message, error) {
 	cols, err := rows.ColumnTypes()
 	if err != nil {
-		LogError(queryHandler.config, "Couldn't get column types", query+"\n"+err.Error())
+		LogError(queryHandler.config, "Couldn't get column types", originalQuery+"\n"+err.Error())
 		return nil, err
 	}
 
@@ -366,7 +368,7 @@ func (queryHandler *QueryHandler) rowsToDataMessages(rows *sql.Rows, query strin
 	for rows.Next() {
 		dataRow, err := queryHandler.generateDataRow(rows, cols)
 		if err != nil {
-			LogError(queryHandler.config, "Couldn't get data row", query+"\n"+err.Error())
+			LogError(queryHandler.config, "Couldn't get data row", originalQuery+"\n"+err.Error())
 			return nil, err
 		}
 		messages = append(messages, dataRow)
@@ -374,11 +376,11 @@ func (queryHandler *QueryHandler) rowsToDataMessages(rows *sql.Rows, query strin
 
 	commandTag := FALLBACK_SQL_QUERY
 	switch {
-	case strings.HasPrefix(query, "SET "):
+	case strings.HasPrefix(originalQuery, "SET "):
 		commandTag = "SET"
-	case strings.HasPrefix(query, "SHOW "):
+	case strings.HasPrefix(originalQuery, "SHOW "):
 		commandTag = "SHOW"
-	case strings.HasPrefix(query, "DISCARD ALL"):
+	case strings.HasPrefix(originalQuery, "DISCARD ALL"):
 		commandTag = "DISCARD ALL"
 	}
 

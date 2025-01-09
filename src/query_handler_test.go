@@ -897,10 +897,24 @@ func TestHandleQuery(t *testing.T) {
 		testMessageTypes(t, messages, []pgproto3.Message{
 			&pgproto3.CommandComplete{},
 		})
-		commandComplete := messages[0].(*pgproto3.CommandComplete)
-		if string(commandComplete.CommandTag) != "SET" {
-			t.Errorf("Expected the command tag to be 'SET', got %v", string(commandComplete.CommandTag))
-		}
+		testCommandCompleteTag(t, messages[0], "SET")
+	})
+
+	t.Run("Allows setting and querying timezone", func(t *testing.T) {
+		queryHandler := initQueryHandler()
+		queryHandler.HandleQuery("SET timezone = 'UTC'")
+
+		messages, err := queryHandler.HandleQuery("SHOW timezone")
+
+		testNoError(t, err)
+		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.RowDescription{},
+			&pgproto3.DataRow{},
+			&pgproto3.CommandComplete{},
+		})
+		testRowDescription(t, messages[0], []string{"timezone"}, []string{Uint32ToString(pgtype.TextOID)})
+		testDataRowValues(t, messages[1], []string{"UTC"})
+		testCommandCompleteTag(t, messages[2], "SHOW")
 	})
 }
 
@@ -1166,6 +1180,13 @@ func testDataRowValues(t *testing.T, dataRowMessage pgproto3.Message, expectedVa
 		if string(dataRow.Values[i]) != expectedValue {
 			t.Errorf("Expected the %v data row value to be %v, got %v", i, expectedValue, string(dataRow.Values[i]))
 		}
+	}
+}
+
+func testCommandCompleteTag(t *testing.T, message pgproto3.Message, expectedTag string) {
+	commandComplete := message.(*pgproto3.CommandComplete)
+	if string(commandComplete.CommandTag) != expectedTag {
+		t.Errorf("Expected the command tag to be %v, got %v", expectedTag, string(commandComplete.CommandTag))
 	}
 }
 
