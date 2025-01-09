@@ -173,7 +173,7 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {},
 		},
-		"SELECT n.nspname FROM pg_catalog.pg_namespace n LEFT OUTER JOIN pg_catalog.pg_description d ON d.objoid = n.oid ORDER BY n.oid LIMIT 1": {
+		"SELECT n.nspname FROM pg_catalog.pg_namespace n LEFT OUTER JOIN pg_catalog.pg_description d ON d.objoid = n.oid ORDER BY n.oid DESC LIMIT 1": {
 			"description": {"nspname"},
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {"public"},

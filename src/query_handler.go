@@ -395,6 +395,10 @@ func (queryHandler *QueryHandler) remapQuery(query string) (string, error) {
 		return "", err
 	}
 
+	if strings.HasSuffix(query, " --INSPECT") {
+		LogDebug(queryHandler.config, queryTree.Stmts[0].Stmt)
+	}
+
 	queryTree.Stmts, err = queryHandler.queryRemapper.RemapStatements(queryTree.Stmts)
 	if err != nil {
 		return "", err

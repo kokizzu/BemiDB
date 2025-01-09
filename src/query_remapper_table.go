@@ -6,6 +6,8 @@ import (
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
+var REDUNDANT_PG_NAMESPACE_OIDS = []int64{0, 1148, 1253, 1264, 1265, 1266, 1267}
+
 type QueryRemapperTable struct {
 	parserTable         *ParserTable
 	parserWhere         *ParserWhere
@@ -184,10 +186,10 @@ func (remapper *QueryRemapperTable) RemapWhereClauseForTable(qSchemaTable QueryS
 	if remapper.isTableFromPgCatalog(qSchemaTable) {
 		switch qSchemaTable.Table {
 
-		// FROM pg_catalog.pg_namespace -> FROM pg_catalog.pg_namespace WHERE nspname != 'main'
+		// FROM pg_catalog.pg_namespace -> FROM pg_catalog.pg_namespace WHERE oid NOT IN (3 'main' schema oids, 2 'pg_catalog' and 2 'information_schema' duplicate oids)
 		case PG_TABLE_PG_NAMESPACE:
-			withoutMainSchemaWhereCondition := remapper.parserWhere.MakeExpressionNode("nspname", "!=", "main")
-			return remapper.parserWhere.AppendWhereCondition(selectStatement, withoutMainSchemaWhereCondition)
+			withoutDuckdbOidsWhereCondition := remapper.parserWhere.MakeNotInExpressionNode("oid", REDUNDANT_PG_NAMESPACE_OIDS, qSchemaTable.Alias)
+			remapper.parserWhere.AppendWhereCondition(selectStatement, withoutDuckdbOidsWhereCondition)
 
 		// FROM pg_catalog.pg_statio_user_tables -> FROM pg_catalog.pg_statio_user_tables WHERE false
 		case PG_TABLE_PG_STATIO_USER_TABLES:

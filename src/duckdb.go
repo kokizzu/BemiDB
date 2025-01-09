@@ -14,6 +14,7 @@ import (
 var DEFAULT_BOOT_QUERIES = []string{
 	"INSTALL iceberg",
 	"LOAD iceberg",
+	"SELECT oid FROM pg_catalog.pg_namespace",
 	"CREATE SCHEMA public",
 	"USE public",
 }
