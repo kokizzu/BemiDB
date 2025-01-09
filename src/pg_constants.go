@@ -15,6 +15,7 @@ const (
 	PG_FUNCTION_QUOTE_INDENT         = "quote_ident"
 	PG_FUNCTION_ROW_TO_JSON          = "row_to_json"
 	PG_FUNCTION_SET_CONFIG           = "set_config"
+	PG_FUNCTION_ACLEXPLODE           = "aclexplode"
 
 	PG_TABLE_PG_AUTH_MEMBERS       = "pg_auth_members"
 	PG_TABLE_PG_CLASS              = "pg_class"

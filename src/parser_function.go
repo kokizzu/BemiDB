@@ -129,6 +129,12 @@ func (parser *ParserFunction) RemapArrayToString(functionCall *pgQuery.FuncCall)
 	return functionCall
 }
 
+// aclexplode() -> json()
+func (parser *ParserFunction) RemapAclExplode(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
+	functionCall.Funcname = []*pgQuery.Node{pgQuery.MakeStrNode("json")}
+	return functionCall
+}
+
 func (parser *ParserFunction) OverrideFunctionCallArg(functionCall *pgQuery.FuncCall, index int, node *pgQuery.Node) {
 	functionCall.Args[index] = node
 }

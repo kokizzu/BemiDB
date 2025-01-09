@@ -107,6 +107,10 @@ func (remapper *QueryRemapperSelect) remappedFunctionName(functionCall *pgQuery.
 	case schemaFunction.Function == PG_FUNCTION_ROW_TO_JSON:
 		return remapper.parserFunction.RemapRowToJson(functionCall)
 
+	// aclexplode(acl) -> json
+	case schemaFunction.Function == PG_FUNCTION_ACLEXPLODE:
+		return remapper.parserFunction.RemapAclExplode(functionCall)
+
 	default:
 		return nil
 	}
