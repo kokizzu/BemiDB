@@ -69,8 +69,8 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"SELECT * from pg_is_in_recovery()": {
 			"description": {"pg_is_in_recovery"},
-			"types":       {Uint32ToString(pgtype.TextOID)},
-			"values":      {"f"},
+			"types":       {Uint32ToString(pgtype.BoolOID)},
+			"values":      {"false"},
 		},
 		"SELECT row_to_json(t) FROM (SELECT usename, passwd FROM pg_shadow WHERE usename='bemidb') t": {
 			"description": {"row_to_json"},
@@ -126,7 +126,7 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"SELECT slot_name FROM pg_replication_slots": {
 			"description": {"slot_name"},
-			"types":       {Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {},
 		},
 		"SELECT oid, datname, datdba FROM pg_catalog.pg_database where oid = 16388": {
@@ -136,27 +136,27 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"SELECT * FROM pg_catalog.pg_stat_gssapi": {
 			"description": {"pid", "gss_authenticated", "principal", "encrypted", "credentials_delegated"},
-			"types":       {Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.Int4OID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID)},
 			"values":      {},
 		},
 		"SELECT * FROM pg_catalog.pg_user": {
 			"description": {"usename", "usesysid", "usecreatedb", "usesuper", "userepl", "usebypassrls", "passwd", "valuntil", "useconfig"},
 			"types":       {Uint32ToString(pgtype.TextOID)},
-			"values":      {"bemidb", "10", "t", "t", "t", "t", "", "", ""},
+			"values":      {"bemidb", "10", "true", "true", "true", "true", "", "", ""},
 		},
 		"SELECT datid FROM pg_catalog.pg_stat_activity": {
 			"description": {"datid"},
-			"types":       {Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.Int8OID)},
 			"values":      {},
 		},
 		"SELECT schemaname, matviewname AS objectname FROM pg_catalog.pg_matviews": {
 			"description": {"schemaname", "objectname"},
-			"types":       {Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID)},
 			"values":      {},
 		},
 		"SELECT * FROM pg_catalog.pg_views": {
 			"description": {"schemaname", "viewname", "viewowner", "definition"},
-			"types":       {Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID)},
 		},
 		"SELECT schemaname, relname, n_live_tup FROM pg_stat_user_tables": {
 			"description": {"schemaname", "relname", "n_live_tup"},
@@ -188,7 +188,7 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"SELECT * FROM pg_catalog.pg_shdescription": {
 			"description": {"objoid", "classoid", "description"},
-			"types":       {Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID)},
 		},
 		"SELECT * FROM pg_catalog.pg_roles": {
 			"description": {"oid", "rolname", "rolsuper", "rolinherit", "rolcreaterole", "rolcreatedb", "rolcanlogin", "rolreplication", "rolconnlimit", "rolpassword", "rolvaliduntil", "rolbypassrls", "rolconfig"},
@@ -201,7 +201,7 @@ func TestHandleQuery(t *testing.T) {
 				Uint32ToString(pgtype.BoolOID),
 				Uint32ToString(pgtype.BoolOID),
 				Uint32ToString(pgtype.BoolOID),
-				Uint32ToString(pgtype.Int8OID),
+				Uint32ToString(pgtype.Int4OID),
 				Uint32ToString(pgtype.Int4OID),
 				Uint32ToString(pgtype.Int4OID),
 				Uint32ToString(pgtype.BoolOID),
@@ -706,7 +706,7 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"SELECT a.oid, pd.description FROM pg_catalog.pg_roles a LEFT JOIN pg_catalog.pg_shdescription pd ON a.oid = pd.objoid": {
 			"description": {"oid", "description"},
-			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID)},
 			"values":      {"10", ""},
 		},
 
@@ -784,32 +784,32 @@ func TestHandleQuery(t *testing.T) {
 		},
 		"SELECT pg_inherits.inhrelid FROM pg_inherits": {
 			"description": {"inhrelid"},
-			"types":       {Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.Int8OID)},
 			"values":      {},
 		},
 		"SELECT pg_shdescription.objoid FROM pg_shdescription": {
 			"description": {"objoid"},
-			"types":       {Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.OIDOID)},
 			"values":      {},
 		},
 		"SELECT pg_statio_user_tables.relid FROM pg_statio_user_tables": {
 			"description": {"relid"},
-			"types":       {Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.Int8OID)},
 			"values":      {},
 		},
 		"SELECT pg_replication_slots.slot_name FROM pg_replication_slots": {
 			"description": {"slot_name"},
-			"types":       {Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {},
 		},
 		"SELECT pg_stat_gssapi.pid FROM pg_stat_gssapi": {
 			"description": {"pid"},
-			"types":       {Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.Int4OID)},
 			"values":      {},
 		},
 		"SELECT pg_auth_members.oid FROM pg_auth_members": {
 			"description": {"oid"},
-			"types":       {Uint32ToString(pgtype.BoolOID)},
+			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {},
 		},
 		"SELECT tables.table_name FROM information_schema.tables": {
@@ -836,7 +836,7 @@ func TestHandleQuery(t *testing.T) {
 				Uint32ToString(pgtype.BoolOID),
 				Uint32ToString(pgtype.BoolOID),
 				Uint32ToString(pgtype.Int8OID),
-				Uint32ToString(pgtype.BoolOID),
+				Uint32ToString(pgtype.TextOID),
 			},
 			"values": {"16388", "bemidb", "", "true", "false", "true", "10", ""},
 		},
@@ -913,7 +913,7 @@ func TestHandleParseQuery(t *testing.T) {
 			&pgproto3.ParseComplete{},
 		})
 
-		remappedQuery := "SELECT usename, passwd FROM (VALUES ('bemidb', '10'::int8, 'FALSE'::bool, 'FALSE'::bool, 'TRUE'::bool, 'FALSE'::bool, 'bemidb-encrypted', NULL, NULL)) pg_shadow(usename, usesysid, usecreatedb, usesuper, userepl, usebypassrls, passwd, valuntil, useconfig) WHERE usename = $1"
+		remappedQuery := "SELECT usename, passwd FROM (VALUES ('bemidb'::text, '10'::oid, 'FALSE'::bool, 'FALSE'::bool, 'TRUE'::bool, 'FALSE'::bool, 'bemidb-encrypted'::text, NULL, NULL)) pg_shadow(usename, usesysid, usecreatedb, usesuper, userepl, usebypassrls, passwd, valuntil, useconfig) WHERE usename = $1"
 		if preparedStatement.Query != remappedQuery {
 			t.Errorf("Expected the prepared statement query to be %v, got %v", remappedQuery, preparedStatement.Query)
 		}

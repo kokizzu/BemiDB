@@ -53,15 +53,15 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 
 		// pg_catalog.pg_inherits -> return nothing
 		case PG_TABLE_PG_INHERITS:
-			return parser.MakeEmptyTableNode(PG_TABLE_PG_INHERITS, PG_INHERITS_COLUMNS, qSchemaTable.Alias)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_INHERITS, PG_INHERITS_DEFINITION, qSchemaTable.Alias)
 
 		// pg_catalog.pg_shdescription -> return nothing
 		case PG_TABLE_PG_SHDESCRIPTION:
-			return parser.MakeEmptyTableNode(PG_TABLE_PG_SHDESCRIPTION, PG_SHDESCRIPTION_COLUMNS, qSchemaTable.Alias)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_SHDESCRIPTION, PG_SHDESCRIPTION_DEFINITION, qSchemaTable.Alias)
 
 		// pg_catalog.pg_statio_user_tables -> return nothing
 		case PG_TABLE_PG_STATIO_USER_TABLES:
-			return parser.MakeEmptyTableNode(PG_TABLE_PG_STATIO_USER_TABLES, PG_STATIO_USER_TABLES_COLUMNS, qSchemaTable.Alias)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_STATIO_USER_TABLES, PG_STATIO_USER_TABLES_DEFINITION, qSchemaTable.Alias)
 
 		// pg_catalog.pg_extension -> return hard-coded extension info
 		case PG_TABLE_PG_EXTENSION:
@@ -69,7 +69,7 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 
 		// pg_replication_slots -> return nothing
 		case PG_TABLE_PG_REPLICATION_SLOTS:
-			return parser.MakeEmptyTableNode(PG_TABLE_PG_REPLICATION_SLOTS, PG_REPLICATION_SLOTS_COLUMNS, qSchemaTable.Alias)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_REPLICATION_SLOTS, PG_REPLICATION_SLOTS_DEFINITION, qSchemaTable.Alias)
 
 		// pg_catalog.pg_database -> return hard-coded database info
 		case PG_TABLE_PG_DATABASE:
@@ -77,11 +77,11 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 
 		// pg_catalog.pg_stat_gssapi -> return nothing
 		case PG_TABLE_PG_STAT_GSSAPI:
-			return parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_GSSAPI, PG_STAT_GSSAPI_COLUMNS, qSchemaTable.Alias)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_GSSAPI, PG_STAT_GSSAPI_DEFINITION, qSchemaTable.Alias)
 
 		// pg_catalog.pg_auth_members -> return empty table
 		case PG_TABLE_PG_AUTH_MEMBERS:
-			return parser.MakeEmptyTableNode(PG_TABLE_PG_AUTH_MEMBERS, PG_AUTH_MEMBERS_COLUMNS, qSchemaTable.Alias)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_AUTH_MEMBERS, PG_AUTH_MEMBERS_DEFINITION, qSchemaTable.Alias)
 
 		// pg_catalog.pg_user -> return hard-coded user info
 		case PG_TABLE_PG_USER:
@@ -89,15 +89,15 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 
 		// pg_stat_activity -> return empty table
 		case PG_TABLE_PG_STAT_ACTIVITY:
-			return parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_ACTIVITY, PG_STAT_ACTIVITY_COLUMNS, qSchemaTable.Alias)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_ACTIVITY, PG_STAT_ACTIVITY_DEFINITION, qSchemaTable.Alias)
 
 		// pg_views -> return empty table
 		case PG_TABLE_PG_VIEWS:
-			return parser.MakeEmptyTableNode(PG_TABLE_PG_VIEWS, PG_VIEWS_COLUMNS, qSchemaTable.Alias)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_VIEWS, PG_VIEWS_DEFINITION, qSchemaTable.Alias)
 
 		// pg_matviews -> return empty table
 		case PG_TABLE_PG_MATVIEWS:
-			return parser.MakeEmptyTableNode(PG_TABLE_PG_MATVIEWS, PG_MATVIEWS_COLUMNS, qSchemaTable.Alias)
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_MATVIEWS, PG_MATVIEWS_DEFINITION, qSchemaTable.Alias)
 
 		// pg_stat_user_tables -> return hard-coded table info
 		case PG_TABLE_PG_STAT_USER_TABLES:
@@ -230,108 +230,4 @@ func (remapper *QueryRemapperTable) isTableFromPgCatalog(qSchemaTable QuerySchem
 func (remapper *QueryRemapperTable) isFunctionFromPgCatalog(schemaFunction PgSchemaFunction) bool {
 	return schemaFunction.Schema == PG_SCHEMA_PG_CATALOG ||
 		(schemaFunction.Schema == "" && PG_SYSTEM_FUNCTIONS.Contains(schemaFunction.Function))
-}
-
-var PG_INHERITS_COLUMNS = []string{
-	"inhrelid",
-	"inhparent",
-	"inhseqno",
-	"inhdetachpending",
-}
-
-var PG_SHDESCRIPTION_COLUMNS = []string{
-	"objoid",
-	"classoid",
-	"description",
-}
-
-var PG_STATIO_USER_TABLES_COLUMNS = []string{
-	"relid",
-	"schemaname",
-	"relname",
-	"heap_blks_read",
-	"heap_blks_hit",
-	"idx_blks_read",
-	"idx_blks_hit",
-	"toast_blks_read",
-	"toast_blks_hit",
-	"tidx_blks_read",
-	"tidx_blks_hit",
-}
-
-var PG_REPLICATION_SLOTS_COLUMNS = []string{
-	"slot_name",
-	"plugin",
-	"slot_type",
-	"datoid",
-	"database",
-	"temporary",
-	"active",
-	"active_pid",
-	"xmin",
-	"catalog_xmin",
-	"restart_lsn",
-	"confirmed_flush_lsn",
-	"wal_status",
-	"safe_wal_size",
-	"two_phase",
-	"conflicting",
-}
-
-var PG_STAT_GSSAPI_COLUMNS = []string{
-	"pid",
-	"gss_authenticated",
-	"principal",
-	"encrypted",
-	"credentials_delegated",
-}
-
-var PG_AUTH_MEMBERS_COLUMNS = []string{
-	"oid",
-	"roleid",
-	"member",
-	"grantor",
-	"admin_option",
-	"inherit_option",
-	"set_option",
-}
-
-var PG_STAT_ACTIVITY_COLUMNS = []string{
-	"datid",
-	"datname",
-	"pid",
-	"usesysid",
-	"usename",
-	"application_name",
-	"client_addr",
-	"client_hostname",
-	"client_port",
-	"backend_start",
-	"xact_start",
-	"query_start",
-	"state_change",
-	"wait_event_type",
-	"wait_event",
-	"state",
-	"backend_xid",
-	"backend_xmin",
-	"query",
-	"backend_type",
-}
-
-var PG_VIEWS_COLUMNS = []string{
-	"schemaname",
-	"viewname",
-	"viewowner",
-	"definition",
-}
-
-var PG_MATVIEWS_COLUMNS = []string{
-	"schemaname",
-	"matviewname",
-	"matviewowner",
-	"tablespace",
-	"hasindexes",
-	"ispopulated",
-	"definition",
 }

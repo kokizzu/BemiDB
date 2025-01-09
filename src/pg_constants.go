@@ -38,6 +38,344 @@ const (
 	PG_VAR_SEARCH_PATH = "search_path"
 )
 
+type ColumnDefinition struct {
+	Name string
+	Type string
+}
+
+type TableDefinition struct {
+	Columns []ColumnDefinition
+	Values  []string
+}
+
+var PG_INHERITS_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"inhrelid", "oid"},
+		{"inhparent", "oid"},
+		{"inhseqno", "int4"},
+		{"inhdetachpending", "bool"},
+	},
+}
+
+var PG_SHDESCRIPTION_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"objoid", "oid"},
+		{"classoid", "oid"},
+		{"description", "text"},
+	},
+}
+
+var PG_STATIO_USER_TABLES_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"relid", "oid"},
+		{"schemaname", "text"},
+		{"relname", "text"},
+		{"heap_blks_read", "int8"},
+		{"heap_blks_hit", "int8"},
+		{"idx_blks_read", "int8"},
+		{"idx_blks_hit", "int8"},
+		{"toast_blks_read", "int8"},
+		{"toast_blks_hit", "int8"},
+		{"tidx_blks_read", "int8"},
+		{"tidx_blks_hit", "int8"},
+	},
+}
+
+var PG_REPLICATION_SLOTS_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"slot_name", "text"},
+		{"plugin", "text"},
+		{"slot_type", "text"},
+		{"datoid", "oid"},
+		{"database", "text"},
+		{"temporary", "bool"},
+		{"active", "bool"},
+		{"active_pid", "int4"},
+		{"xmin", "int8"},
+		{"catalog_xmin", "int8"},
+		{"restart_lsn", "text"},
+		{"confirmed_flush_lsn", "text"},
+		{"wal_status", "text"},
+		{"safe_wal_size", "int8"},
+		{"two_phase", "bool"},
+		{"conflicting", "bool"},
+	},
+}
+
+var PG_SHADOW_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"usename", "text"},
+		{"usesysid", "oid"},
+		{"usecreatedb", "bool"},
+		{"usesuper", "bool"},
+		{"userepl", "bool"},
+		{"usebypassrls", "bool"},
+		{"passwd", "text"},
+		{"valuntil", "timestamp"},
+		{"useconfig", "text[]"},
+	},
+	Values: []string{
+		"bemidb",
+		"10",
+		"FALSE",
+		"FALSE",
+		"TRUE",
+		"FALSE",
+		"",
+		"NULL",
+		"NULL",
+	},
+}
+
+var PG_ROLES_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"oid", "oid"},
+		{"rolname", "text"},
+		{"rolsuper", "bool"},
+		{"rolinherit", "bool"},
+		{"rolcreaterole", "bool"},
+		{"rolcreatedb", "bool"},
+		{"rolcanlogin", "bool"},
+		{"rolreplication", "bool"},
+		{"rolconnlimit", "int4"},
+		{"rolpassword", "text"},
+		{"rolvaliduntil", "timestamp"},
+		{"rolbypassrls", "bool"},
+		{"rolconfig", "text[]"},
+	},
+	Values: []string{
+		"10",
+		"",
+		"true",
+		"true",
+		"true",
+		"true",
+		"true",
+		"false",
+		"-1",
+		"NULL",
+		"NULL",
+		"false",
+		"NULL",
+	},
+}
+
+var PG_USER_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"usename", "text"},
+		{"usesysid", "oid"},
+		{"usecreatedb", "bool"},
+		{"usesuper", "bool"},
+		{"userepl", "bool"},
+		{"usebypassrls", "bool"},
+		{"passwd", "text"},
+		{"valuntil", "timestamp"},
+		{"useconfig", "text[]"},
+	},
+	Values: []string{
+		"",
+		"10",
+		"t",
+		"t",
+		"t",
+		"t",
+		"",
+		"NULL",
+		"NULL",
+	},
+}
+
+var PG_DATABASE_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"oid", "oid"},
+		{"datname", "text"},
+		{"datdba", "oid"},
+		{"encoding", "int4"},
+		{"datlocprovider", "text"},
+		{"datistemplate", "bool"},
+		{"datallowconn", "bool"},
+		{"datconnlimit", "int4"},
+		{"datfrozenxid", "int8"},
+		{"datminmxid", "int4"},
+		{"dattablespace", "oid"},
+		{"datcollate", "text"},
+		{"datctype", "text"},
+		{"datlocale", "text"},
+		{"daticurules", "text"},
+		{"datcollversion", "text"},
+		{"datacl", "text[]"},
+	},
+	Values: []string{
+		"16388",
+		"",
+		"10",
+		"6",
+		"c",
+		"FALSE",
+		"TRUE",
+		"-1",
+		"722",
+		"1",
+		"1663",
+		"en_US.UTF-8",
+		"en_US.UTF-8",
+		"NULL",
+		"NULL",
+		"NULL",
+		"NULL",
+	},
+}
+
+var PG_EXTENSION_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"oid", "oid"},
+		{"extname", "text"},
+		{"extowner", "oid"},
+		{"extnamespace", "oid"},
+		{"extrelocatable", "bool"},
+		{"extversion", "text"},
+		{"extconfig", "text[]"},
+		{"extcondition", "text[]"},
+	},
+	Values: []string{
+		"13823",
+		"plpgsql",
+		"10",
+		"11",
+		"false",
+		"1.0",
+		"NULL",
+		"NULL",
+	},
+}
+
+var PG_STAT_USER_TABLES_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"relid", "oid"},
+		{"schemaname", "text"},
+		{"relname", "text"},
+		{"seq_scan", "int8"},
+		{"last_seq_scan", "timestamp"},
+		{"seq_tup_read", "int8"},
+		{"idx_scan", "int8"},
+		{"last_idx_scan", "timestamp"},
+		{"idx_tup_fetch", "int8"},
+		{"n_tup_ins", "int8"},
+		{"n_tup_upd", "int8"},
+		{"n_tup_del", "int8"},
+		{"n_tup_hot_upd", "int8"},
+		{"n_tup_newpage_upd", "int8"},
+		{"n_live_tup", "int8"},
+		{"n_dead_tup", "int8"},
+		{"n_mod_since_analyze", "int8"},
+		{"n_ins_since_vacuum", "int8"},
+		{"last_vacuum", "timestamp"},
+		{"last_autovacuum", "timestamp"},
+		{"last_analyze", "timestamp"},
+		{"last_autoanalyze", "timestamp"},
+		{"vacuum_count", "int8"},
+		{"autovacuum_count", "int8"},
+		{"analyze_count", "int8"},
+		{"autoanalyze_count", "int8"},
+	},
+	Values: []string{
+		"123456",
+		"",
+		"",
+		"0",
+		"NULL",
+		"0",
+		"0",
+		"NULL",
+		"0",
+		"0",
+		"0",
+		"0",
+		"0",
+		"0",
+		"1",
+		"0",
+		"0",
+		"0",
+		"NULL",
+		"NULL",
+		"NULL",
+		"NULL",
+		"0",
+		"0",
+		"0",
+		"0",
+	},
+}
+
+var PG_STAT_GSSAPI_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"pid", "int4"},
+		{"gss_authenticated", "bool"},
+		{"principal", "text"},
+		{"encrypted", "bool"},
+		{"credentials_delegated", "bool"},
+	},
+}
+
+var PG_AUTH_MEMBERS_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"oid", "text"},
+		{"roleid", "oid"},
+		{"member", "oid"},
+		{"grantor", "oid"},
+		{"admin_option", "bool"},
+		{"inherit_option", "bool"},
+		{"set_option", "bool"},
+	},
+}
+
+var PG_STAT_ACTIVITY_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"datid", "oid"},
+		{"datname", "text"},
+		{"pid", "int4"},
+		{"usesysid", "oid"},
+		{"usename", "text"},
+		{"application_name", "text"},
+		{"client_addr", "inet"},
+		{"client_hostname", "text"},
+		{"client_port", "int4"},
+		{"backend_start", "timestamp"},
+		{"xact_start", "timestamp"},
+		{"query_start", "timestamp"},
+		{"state_change", "timestamp"},
+		{"wait_event_type", "text"},
+		{"wait_event", "text"},
+		{"state", "text"},
+		{"backend_xid", "int8"},
+		{"backend_xmin", "int8"},
+		{"query", "text"},
+		{"backend_type", "text"},
+	},
+}
+
+var PG_VIEWS_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"schemaname", "text"},
+		{"viewname", "text"},
+		{"viewowner", "text"},
+		{"definition", "text"},
+	},
+}
+
+var PG_MATVIEWS_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"schemaname", "text"},
+		{"matviewname", "text"},
+		{"matviewowner", "text"},
+		{"tablespace", "text"},
+		{"hasindexes", "bool"},
+		{"ispopulated", "bool"},
+		{"definition", "text"},
+	},
+}
+
 var PG_SYSTEM_TABLES = NewSet([]string{
 	"pg_aggregate",
 	"pg_am",

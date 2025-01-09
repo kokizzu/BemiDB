@@ -1,9 +1,6 @@
 package main
 
 import (
-	"strconv"
-	"strings"
-
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
@@ -32,40 +29,20 @@ func (utils *ParserUtils) SchemaFunction(functionCall *pgQuery.FuncCall) PgSchem
 	}
 }
 
-func (utils *ParserUtils) MakeSubselectWithRowsNode(tableName string, columns []string, rowsValues [][]string, alias string) *pgQuery.Node {
-	parserType := NewParserType(utils.config)
-
-	columnNodes := make([]*pgQuery.Node, len(columns))
-	for i, column := range columns {
-		columnNodes[i] = pgQuery.MakeStrNode(column)
+func (utils *ParserUtils) MakeSubselectWithRowsNode(tableName string, tableDef TableDefinition, rowsValues [][]string, alias string) *pgQuery.Node {
+	columnNodes := make([]*pgQuery.Node, len(tableDef.Columns))
+	for i, col := range tableDef.Columns {
+		columnNodes[i] = pgQuery.MakeStrNode(col.Name)
 	}
 
 	selectStmt := &pgQuery.SelectStmt{}
 
 	for _, row := range rowsValues {
 		var rowList []*pgQuery.Node
-		for _, val := range row {
-			if val == "NULL" {
-				constNode := &pgQuery.Node{
-					Node: &pgQuery.Node_AConst{
-						AConst: &pgQuery.A_Const{
-							Isnull: true,
-						},
-					},
-				}
-				rowList = append(rowList, constNode)
-			} else {
-				constNode := pgQuery.MakeAConstStrNode(val, 0)
-				if _, err := strconv.ParseInt(val, 10, 64); err == nil {
-					constNode = parserType.MakeCaseTypeCastNode(constNode, "int8")
-				} else {
-					valLower := strings.ToLower(val)
-					if valLower == "true" || valLower == "false" {
-						constNode = parserType.MakeCaseTypeCastNode(constNode, "bool")
-					}
-				}
-				rowList = append(rowList, constNode)
-			}
+		for i, val := range row {
+			colType := tableDef.Columns[i].Type
+			constNode := utils.makeTypedConstNode(val, colType)
+			rowList = append(rowList, constNode)
 		}
 		selectStmt.ValuesLists = append(selectStmt.ValuesLists,
 			&pgQuery.Node{Node: &pgQuery.Node_List{List: &pgQuery.List{Items: rowList}}})
@@ -92,18 +69,24 @@ func (utils *ParserUtils) MakeSubselectWithRowsNode(tableName string, columns []
 	}
 }
 
-func (utils *ParserUtils) MakeSubselectWithoutRowsNode(tableName string, columns []string, alias string) *pgQuery.Node {
-	columnNodes := make([]*pgQuery.Node, len(columns))
-	for i, column := range columns {
-		columnNodes[i] = pgQuery.MakeStrNode(column)
+func (utils *ParserUtils) MakeSubselectWithoutRowsNode(tableName string, tableDef TableDefinition, alias string) *pgQuery.Node {
+	parserType := NewParserType(utils.config)
+	columnNodes := make([]*pgQuery.Node, len(tableDef.Columns))
+	for i, col := range tableDef.Columns {
+		columnNodes[i] = pgQuery.MakeStrNode(col.Name)
 	}
 
-	targetList := make([]*pgQuery.Node, len(columns))
-	for i := range columns {
-		targetList[i] = pgQuery.MakeResTargetNodeWithVal(
-			utils.MakeAConstBoolNode(false),
-			0,
-		)
+	targetList := make([]*pgQuery.Node, len(tableDef.Columns))
+	for i, col := range tableDef.Columns {
+		nullNode := &pgQuery.Node{
+			Node: &pgQuery.Node_AConst{
+				AConst: &pgQuery.A_Const{
+					Isnull: true,
+				},
+			},
+		}
+		typedNullNode := parserType.MakeTypeCastNode(nullNode, col.Type)
+		targetList[i] = pgQuery.MakeResTargetNodeWithVal(typedNullNode, 0)
 	}
 
 	if alias == "" {
@@ -168,4 +151,22 @@ func (utils *ParserUtils) MakeAConstBoolNode(val bool) *pgQuery.Node {
 			},
 		},
 	}
+}
+
+func (utils *ParserUtils) makeTypedConstNode(val string, pgType string) *pgQuery.Node {
+	parserType := NewParserType(utils.config)
+
+	if val == "NULL" {
+		return &pgQuery.Node{
+			Node: &pgQuery.Node_AConst{
+				AConst: &pgQuery.A_Const{
+					Isnull: true,
+				},
+			},
+		}
+	}
+
+	constNode := pgQuery.MakeAConstStrNode(val, 0)
+
+	return parserType.MakeTypeCastNode(constNode, pgType)
 }
