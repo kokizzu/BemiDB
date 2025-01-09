@@ -371,7 +371,18 @@ func (queryHandler *QueryHandler) rowsToDataMessages(rows *sql.Rows, query strin
 		}
 		messages = append(messages, dataRow)
 	}
-	messages = append(messages, &pgproto3.CommandComplete{CommandTag: []byte(FALLBACK_SQL_QUERY)})
+
+	commandTag := FALLBACK_SQL_QUERY
+	switch {
+	case strings.HasPrefix(query, "SET "):
+		commandTag = "SET"
+	case strings.HasPrefix(query, "SHOW "):
+		commandTag = "SHOW"
+	case strings.HasPrefix(query, "DISCARD ALL"):
+		commandTag = "DISCARD ALL"
+	}
+
+	messages = append(messages, &pgproto3.CommandComplete{CommandTag: []byte(commandTag)})
 	return messages, nil
 }
 

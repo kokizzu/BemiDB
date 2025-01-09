@@ -897,6 +897,10 @@ func TestHandleQuery(t *testing.T) {
 		testMessageTypes(t, messages, []pgproto3.Message{
 			&pgproto3.CommandComplete{},
 		})
+		commandComplete := messages[0].(*pgproto3.CommandComplete)
+		if string(commandComplete.CommandTag) != "SET" {
+			t.Errorf("Expected the command tag to be 'SET', got %v", string(commandComplete.CommandTag))
+		}
 	})
 }
 
