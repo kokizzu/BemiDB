@@ -203,6 +203,9 @@ func (remapper *QueryRemapper) remapCaseExpressions(selectStatement *pgQuery.Sel
 				if whenClause := when.GetCaseWhen(); whenClause != nil {
 					if whenClause.Expr != nil {
 						if aExpr := whenClause.Expr.GetAExpr(); aExpr != nil {
+							if aExpr.Kind == pgQuery.A_Expr_Kind_AEXPR_OP_ANY {
+								whenClause.Expr = remapper.remapperSelect.parserSelect.ConvertAnyToIn(aExpr)
+							}
 							if subLink := aExpr.Lexpr.GetSubLink(); subLink != nil {
 								remapper.traceTreeTraversal("CASE WHEN left", indentLevel+1)
 								subSelect := subLink.Subselect.GetSelectStmt()

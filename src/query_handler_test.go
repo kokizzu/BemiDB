@@ -744,6 +744,11 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {"f"},
 		},
+		"SELECT CASE WHEN nsp.nspname = ANY('{information_schema}') THEN false ELSE true END AS db_support FROM pg_catalog.pg_namespace nsp WHERE nsp.oid = 1268::OID;": {
+			"description": {"db_support"},
+			"types":       {Uint32ToString(pgtype.BoolOID)},
+			"values":      {"true"},
+		},
 
 		// WHERE pg functions
 		"SELECT gss_authenticated, encrypted FROM (SELECT false, false, false, false, false WHERE false) t(pid, gss_authenticated, principal, encrypted, credentials_delegated) WHERE pid = pg_backend_pid()": {
