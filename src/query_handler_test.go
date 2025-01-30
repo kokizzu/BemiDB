@@ -1023,7 +1023,7 @@ func TestHandleDescribeQuery(t *testing.T) {
 	t.Run("Handles DESCRIBE extended query step", func(t *testing.T) {
 		queryHandler := initQueryHandler()
 		query := "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
-		parseMessage := &pgproto3.Parse{Query: query, ParameterOIDs: []uint32{pgtype.TextOID}}
+		parseMessage := &pgproto3.Parse{Query: query}
 		_, preparedStatement, _ := queryHandler.HandleParseQuery(parseMessage)
 		bindMessage := &pgproto3.Bind{Parameters: [][]byte{[]byte("bemidb")}}
 		_, preparedStatement, _ = queryHandler.HandleBindQuery(bindMessage, preparedStatement)

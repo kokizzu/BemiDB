@@ -296,7 +296,7 @@ func (queryHandler *QueryHandler) HandleDescribeQuery(message *pgproto3.Describe
 		return []pgproto3.Message{&pgproto3.NoData{}}, preparedStatement, nil
 	}
 
-	if len(preparedStatement.ParameterOIDs) != len(preparedStatement.Variables) { // Bind step didn't happen before
+	if len(preparedStatement.ParameterOIDs) > 0 && len(preparedStatement.ParameterOIDs) != len(preparedStatement.Variables) { // Parse passed the parameters, but Bind didn't happen after
 		return []pgproto3.Message{&pgproto3.NoData{}}, preparedStatement, nil
 	}
 
