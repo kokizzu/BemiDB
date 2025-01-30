@@ -139,13 +139,13 @@ func (remapper *QueryRemapper) remapSelectStatement(selectStatement *pgQuery.Sel
 
 	// JOIN
 	if len(selectStatement.FromClause) > 0 && selectStatement.FromClause[0].GetJoinExpr() != nil {
-		selectStatement.FromClause[0] = remapper.remapJoinExpressions(selectStatement, selectStatement.FromClause[0], indentLevel+1) // recursive with self-recursion
+		selectStatement.FromClause[0] = remapper.remapJoinExpressions(selectStatement, selectStatement.FromClause[0], indentLevel+1) // recursive
 	}
 
 	// WHERE
 	if selectStatement.WhereClause != nil {
 		selectStatement.WhereClause = remapper.remapTypeCastsInNode(selectStatement.WhereClause)
-		selectStatement = remapper.remapperWhere.RemapWhereExpressions(selectStatement, selectStatement.WhereClause, indentLevel)
+		selectStatement = remapper.remapWhereExpressions(selectStatement, selectStatement.WhereClause, indentLevel) // recursive
 	}
 
 	// WITH
@@ -409,6 +409,37 @@ func (remapper *QueryRemapper) remapJoinExpressions(selectStatement *pgQuery.Sel
 	}
 
 	return node
+}
+
+func (remapper *QueryRemapper) remapWhereExpressions(selectStatement *pgQuery.SelectStmt, node *pgQuery.Node, indentLevel int) *pgQuery.SelectStmt {
+	remapper.traceTreeTraversal("WHERE statements", indentLevel)
+
+	boolExpr := node.GetBoolExpr()
+	if boolExpr != nil {
+		for _, arg := range boolExpr.Args {
+			selectStatement = remapper.remapWhereExpressions(selectStatement, arg, indentLevel+1) // self-recursion
+		}
+	}
+
+	subLink := node.GetSubLink()
+	if subLink != nil {
+		subSelect := subLink.Subselect.GetSelectStmt()
+		remapper.remapSelectStatement(subSelect, indentLevel+1) // recursive
+	}
+
+	aExpr := node.GetAExpr()
+	if aExpr != nil {
+		if aExpr.Lexpr != nil {
+			selectStatement = remapper.remapWhereExpressions(selectStatement, aExpr.Lexpr, indentLevel+1) // self-recursion
+		}
+		if aExpr.Rexpr != nil {
+			selectStatement = remapper.remapWhereExpressions(selectStatement, aExpr.Rexpr, indentLevel+1) // self-recursion
+		}
+	}
+
+	selectStatement = remapper.remapperWhere.RemapWhereExpressions(selectStatement, node)
+
+	return selectStatement
 }
 
 func (remapper *QueryRemapper) remapSelect(selectStatement *pgQuery.SelectStmt, indentLevel int) *pgQuery.SelectStmt {

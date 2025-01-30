@@ -627,6 +627,7 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {""},
 		},
+
 		// Typecasts
 		"SELECT objoid, classoid, objsubid, description FROM pg_description WHERE classoid = 'pg_class'::regclass": {
 			"description": {"objoid", "classoid", "objsubid", "description"},
@@ -755,6 +756,13 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"gss_authenticated", "encrypted"},
 			"types":       {Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID)},
 			"values":      {},
+		},
+
+		// WHERE with nested SELECT
+		"SELECT int2_column FROM test_table WHERE int2_column > 0 AND int2_column = (SELECT int2_column FROM test_table WHERE int2_column = 32767)": {
+			"description": {"int2_column"},
+			"types":       {Uint32ToString(pgtype.Int4OID)},
+			"values":      {"32767"},
 		},
 
 		// WITH
