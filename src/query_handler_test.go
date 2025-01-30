@@ -352,6 +352,16 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.Int8OID)},
 			"values":      {"-9223372036854775807"},
 		},
+		"SELECT hugeint_column FROM public.test_table WHERE hugeint_column IS NOT NULL": {
+			"description": {"hugeint_column"},
+			"types":       {Uint32ToString(pgtype.NumericOID)},
+			"values":      {"1e+19"},
+		},
+		"SELECT hugeint_column FROM public.test_table WHERE hugeint_column IS NULL": {
+			"description": {"hugeint_column"},
+			"types":       {Uint32ToString(pgtype.NumericOID)},
+			"values":      {""},
+		},
 		"SELECT xid_column FROM public.test_table WHERE xid_column IS NOT NULL": {
 			"description": {"xid_column"},
 			"types":       {Uint32ToString(pgtype.XIDOID)},

@@ -8,6 +8,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -112,6 +113,31 @@ func (nullUint64 *NullUint64) Scan(value interface{}) error {
 func (nullUint64 NullUint64) String() string {
 	if nullUint64.Present {
 		return fmt.Sprintf("%v", nullUint64.Value)
+	}
+	return ""
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type NullBigInt struct {
+	Present bool
+	Value   *big.Int
+}
+
+func (nullBigInt *NullBigInt) Scan(value interface{}) error {
+	if value == nil {
+		nullBigInt.Present = false
+		return nil
+	}
+
+	nullBigInt.Present = true
+	nullBigInt.Value = value.(*big.Int)
+	return nil
+}
+
+func (nullBigInt NullBigInt) String() string {
+	if nullBigInt.Present {
+		return fmt.Sprintf("%v", nullBigInt.Value)
 	}
 	return ""
 }
@@ -474,6 +500,10 @@ func (queryHandler *QueryHandler) columnTypeOid(col *sql.ColumnType) uint32 {
 		return pgtype.XID8OID
 	case "UBIGINT[]":
 		return pgtype.XID8ArrayOID
+	case "HUGEINT":
+		return pgtype.NumericOID
+	case "HUGEINT[]":
+		return pgtype.NumericArrayOID
 	case "FLOAT":
 		return pgtype.Float4OID
 	case "FLOAT[]":
@@ -540,7 +570,7 @@ func (queryHandler *QueryHandler) generateDataRow(rows *sql.Rows, cols []*sql.Co
 		case "int32":
 			var value sql.NullInt32
 			valuePtrs[i] = &value
-		case "int64", "*big.Int":
+		case "int64":
 			var value sql.NullInt64
 			valuePtrs[i] = &value
 		case "uint32": // xid
@@ -560,6 +590,9 @@ func (queryHandler *QueryHandler) generateDataRow(rows *sql.Rows, cols []*sql.Co
 			valuePtrs[i] = &value
 		case "time.Time":
 			var value sql.NullTime
+			valuePtrs[i] = &value
+		case "*big.Int":
+			var value NullBigInt
 			valuePtrs[i] = &value
 		case "duckdb.Decimal":
 			var value NullDecimal
@@ -640,6 +673,12 @@ func (queryHandler *QueryHandler) generateDataRow(rows *sql.Rows, cols []*sql.Co
 				default:
 					panic("Unsupported type: " + cols[i].DatabaseTypeName())
 				}
+			} else {
+				values = append(values, nil)
+			}
+		case *NullBigInt:
+			if value.Present {
+				values = append(values, []byte(value.String()))
 			} else {
 				values = append(values, nil)
 			}

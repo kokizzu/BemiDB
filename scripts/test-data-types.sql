@@ -19,11 +19,12 @@ CREATE TABLE test_table (
   int2_column INT2,
   int4_column INT4,
   int8_column INT8,
+  hugeint_column NUMERIC(20, 0),
   xid_column XID,
   xid8_column XID8,
   float4_column FLOAT4,
   float8_column FLOAT8,
-  numeric_column NUMERIC(10, 2),
+  numeric_column NUMERIC(40, 2),
   date_column DATE,
   time_column TIME,
   time_ms_column TIME(3),
@@ -58,6 +59,7 @@ INSERT INTO test_table (
   int2_column,
   int4_column,
   int8_column,
+  hugeint_column,
   xid_column,
   xid8_column,
   float4_column,
@@ -95,6 +97,7 @@ INSERT INTO test_table (
   32767::INT2,                              -- int2_column
   2147483647::INT4,                         -- int4_column
   9223372036854775807::INT8,                -- int8_column
+  10000000000000000000,                     -- hugeint_column
   '4294967295'::XID,                        -- xid_column
   '18446744073709551615'::XID8,             -- xid8_column
   3.14::FLOAT4,                             -- float4_column
@@ -132,6 +135,7 @@ INSERT INTO test_table (
   -32767::INT2,                             -- int2_column
   NULL,                                     -- int4_column
   -9223372036854775807::INT8,               -- int8_column
+  NULL,                                     -- hugeint_column
   NULL,                                     -- xid_column
   NULL,                                     -- xid8_column
   'NaN',                                    -- float4_column

@@ -63,6 +63,14 @@ var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 		Namespace:        "pg_catalog",
 	},
 	{
+		ColumnName:       "hugeint_column",
+		DataType:         "numeric",
+		UdtName:          "numeric",
+		NumericPrecision: "20", // Will be capped to 38
+		NumericScale:     "0",
+		Namespace:        "pg_catalog",
+	},
+	{
 		ColumnName: "xid_column",
 		DataType:   "xid",
 		UdtName:    "xid",
@@ -263,6 +271,7 @@ var TEST_LOADED_ROWS = [][]string{
 		"32767",                                // int2_column
 		"2147483647",                           // int4_column
 		"9223372036854775807",                  // int8_column
+		"10000000000000000000",                 // hugeint_column
 		"4294967295",                           // xid_column
 		"18446744073709551615",                 // xid8_column
 		"3.14",                                 // float4_column
@@ -302,6 +311,7 @@ var TEST_LOADED_ROWS = [][]string{
 		"-32767",                           // int2_column
 		PG_NULL_STRING,                     // int4_column
 		"-9223372036854775807",             // int8_column
+		PG_NULL_STRING,                     // hugeint_column
 		PG_NULL_STRING,                     // xid_column
 		PG_NULL_STRING,                     // xid8_column
 		"NaN",                              // float4_column
