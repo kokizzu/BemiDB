@@ -529,9 +529,9 @@ func (queryHandler *QueryHandler) columnTypeOid(col *sql.ColumnType) uint32 {
 	case "TIMESTAMP[]":
 		return pgtype.TimestampArrayOID
 	case "BLOB":
-		return pgtype.ByteaOID
+		return pgtype.UUIDOID
 	case "BLOB[]":
-		return pgtype.ByteaArrayOID
+		return pgtype.UUIDArrayOID
 	default:
 		if strings.HasPrefix(col.DatabaseTypeName(), "DECIMAL") {
 			if strings.HasSuffix(col.DatabaseTypeName(), "[]") {

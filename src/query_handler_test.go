@@ -492,14 +492,14 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TimestampOID)},
 			"values":      {"2024-01-01 07:00:00.12"},
 		},
-		"SELECT uuid_column FROM public.test_table WHERE uuid_column IS NOT NULL": {
+		"SELECT uuid_column FROM public.test_table WHERE uuid_column = '58a7c845-af77-44b2-8664-7ca613d92f04'": {
 			"description": {"uuid_column"},
-			"types":       {Uint32ToString(pgtype.ByteaOID)},
+			"types":       {Uint32ToString(pgtype.UUIDOID)},
 			"values":      {"58a7c845-af77-44b2-8664-7ca613d92f04"},
 		},
 		"SELECT uuid_column FROM public.test_table WHERE uuid_column IS NULL": {
 			"description": {"uuid_column"},
-			"types":       {Uint32ToString(pgtype.ByteaOID)},
+			"types":       {Uint32ToString(pgtype.UUIDOID)},
 			"values":      {""},
 		},
 		"SELECT bytea_column FROM public.test_table WHERE bytea_column IS NOT NULL": {

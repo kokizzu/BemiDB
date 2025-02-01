@@ -112,7 +112,7 @@ INSERT INTO test_table (
   '2024-01-01 12:00:00.123',                -- timestamp_ms_column
   '2024-01-01 12:00:00.123456-05',          -- timestamptz_column
   '2024-01-01 12:00:00.123-05',             -- timestamptz_ms_column
-  gen_random_uuid(),                        -- uuid_column
+  '58a7c845-af77-44b2-8664-7ca613d92f04',   -- uuid_column
   decode('48656c6c6f', 'hex'),              -- bytea_column
   '1 mon 2 days 01:00:01.000001'::INTERVAL, -- interval_column
   '(1, 2)'::POINT,                          -- point_column
