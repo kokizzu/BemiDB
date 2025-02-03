@@ -70,7 +70,6 @@ func (utils *ParserUtils) MakeSubselectWithRowsNode(tableName string, tableDef T
 }
 
 func (utils *ParserUtils) MakeSubselectWithoutRowsNode(tableName string, tableDef TableDefinition, alias string) *pgQuery.Node {
-	parserType := NewParserType(utils.config)
 	columnNodes := make([]*pgQuery.Node, len(tableDef.Columns))
 	for i, col := range tableDef.Columns {
 		columnNodes[i] = pgQuery.MakeStrNode(col.Name)
@@ -85,7 +84,7 @@ func (utils *ParserUtils) MakeSubselectWithoutRowsNode(tableName string, tableDe
 				},
 			},
 		}
-		typedNullNode := parserType.MakeTypeCastNode(nullNode, col.Type)
+		typedNullNode := utils.MakeTypeCastNode(nullNode, col.Type)
 		targetList[i] = pgQuery.MakeResTargetNodeWithVal(typedNullNode, 0)
 	}
 
@@ -154,8 +153,6 @@ func (utils *ParserUtils) MakeAConstBoolNode(val bool) *pgQuery.Node {
 }
 
 func (utils *ParserUtils) makeTypedConstNode(val string, pgType string) *pgQuery.Node {
-	parserType := NewParserType(utils.config)
-
 	if val == "NULL" {
 		return &pgQuery.Node{
 			Node: &pgQuery.Node_AConst{
@@ -168,5 +165,21 @@ func (utils *ParserUtils) makeTypedConstNode(val string, pgType string) *pgQuery
 
 	constNode := pgQuery.MakeAConstStrNode(val, 0)
 
-	return parserType.MakeTypeCastNode(constNode, pgType)
+	return utils.MakeTypeCastNode(constNode, pgType)
+}
+
+func (utils *ParserUtils) MakeTypeCastNode(arg *pgQuery.Node, typeName string) *pgQuery.Node {
+	return &pgQuery.Node{
+		Node: &pgQuery.Node_TypeCast{
+			TypeCast: &pgQuery.TypeCast{
+				Arg: arg,
+				TypeName: &pgQuery.TypeName{
+					Names: []*pgQuery.Node{
+						pgQuery.MakeStrNode(typeName),
+					},
+					Location: 0,
+				},
+			},
+		},
+	}
 }

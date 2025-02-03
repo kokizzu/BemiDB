@@ -679,6 +679,11 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.Int2OID)},
 			"values":      {"1"},
 		},
+		"SELECT 'pg_catalog.array_in'::regproc AS regproc": {
+			"description": {"regproc"},
+			"types":       {Uint32ToString(pgtype.TextOID)},
+			"values":      {"array_in"},
+		},
 
 		// SELECT * FROM function()
 		"SELECT * FROM pg_catalog.pg_get_keywords() LIMIT 1": {
