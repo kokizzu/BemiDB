@@ -290,7 +290,9 @@ func (queryHandler *QueryHandler) HandleBindQuery(message *pgproto3.Bind, prepar
 
 		if textFormat {
 			variables = append(variables, string(param))
-		} else {
+		} else if len(param) == 4 {
+			variables = append(variables, int32(binary.BigEndian.Uint32(param)))
+		} else if len(param) == 8 {
 			variables = append(variables, int64(binary.BigEndian.Uint64(param)))
 		}
 	}
