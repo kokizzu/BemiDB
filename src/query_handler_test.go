@@ -643,7 +643,12 @@ func TestHandleQuery(t *testing.T) {
 			"values":      {""},
 		},
 
-		// Typecasts
+		// Type casts
+		"SELECT 'public.test_table'::regclass::oid AS oid": {
+			"description": {"oid"},
+			"types":       {Uint32ToString(pgtype.OIDOID)},
+			"values":      {"1270"},
+		},
 		"SELECT objoid, classoid, objsubid, description FROM pg_description WHERE classoid = 'pg_class'::regclass": {
 			"description": {"objoid", "classoid", "objsubid", "description"},
 			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int4OID), Uint32ToString(pgtype.TextOID)},

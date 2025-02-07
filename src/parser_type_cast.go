@@ -66,6 +66,98 @@ func (parser *ParserTypeCast) MakeListValueFromArray(node *pgQuery.Node) *pgQuer
 	}
 }
 
+// SELECT c.oid
+// FROM pg_class c
+// JOIN pg_namespace n ON n.oid = c.relnamespace
+// WHERE n.nspname = 'schema' AND c.relname = 'table'
+func (parser *ParserTypeCast) MakeSubselectOidBySchemaTable(argumentNode *pgQuery.Node) *pgQuery.Node {
+	targetNode := pgQuery.MakeResTargetNodeWithVal(
+		pgQuery.MakeColumnRefNode([]*pgQuery.Node{
+			pgQuery.MakeStrNode("c"),
+			pgQuery.MakeStrNode("oid"),
+		}, 0),
+		0,
+	)
+
+	joinNode := pgQuery.MakeJoinExprNode(
+		pgQuery.JoinType_JOIN_INNER,
+		pgQuery.MakeFullRangeVarNode("", "pg_class", "c", 0),
+		pgQuery.MakeFullRangeVarNode("", "pg_namespace", "n", 0),
+		pgQuery.MakeAExprNode(
+			pgQuery.A_Expr_Kind_AEXPR_OP,
+			[]*pgQuery.Node{
+				pgQuery.MakeStrNode("="),
+			},
+			pgQuery.MakeColumnRefNode([]*pgQuery.Node{
+				pgQuery.MakeStrNode("n"),
+				pgQuery.MakeStrNode("oid"),
+			}, 0),
+			pgQuery.MakeColumnRefNode([]*pgQuery.Node{
+				pgQuery.MakeStrNode("c"),
+				pgQuery.MakeStrNode("relnamespace"),
+			}, 0),
+			0,
+		),
+	)
+
+	value := argumentNode.GetAConst().GetSval().Sval
+	parts := strings.Split(value, ".")
+	schema := PG_SCHEMA_PUBLIC
+	if len(parts) > 1 {
+		schema = parts[0]
+	}
+	table := parts[len(parts)-1]
+
+	whereNode := pgQuery.MakeBoolExprNode(
+		pgQuery.BoolExprType_AND_EXPR,
+		[]*pgQuery.Node{
+			pgQuery.MakeAExprNode(
+				pgQuery.A_Expr_Kind_AEXPR_OP,
+				[]*pgQuery.Node{
+					pgQuery.MakeStrNode("="),
+				},
+				pgQuery.MakeColumnRefNode([]*pgQuery.Node{
+					pgQuery.MakeStrNode("n"),
+					pgQuery.MakeStrNode("nspname"),
+				}, 0),
+				pgQuery.MakeAConstStrNode(schema, 0),
+				0,
+			),
+			pgQuery.MakeAExprNode(
+				pgQuery.A_Expr_Kind_AEXPR_OP,
+				[]*pgQuery.Node{
+					pgQuery.MakeStrNode("="),
+				},
+				pgQuery.MakeColumnRefNode([]*pgQuery.Node{
+					pgQuery.MakeStrNode("c"),
+					pgQuery.MakeStrNode("relname"),
+				}, 0),
+				pgQuery.MakeAConstStrNode(table, 0),
+				0,
+			),
+		},
+		0,
+	)
+
+	return &pgQuery.Node{
+		Node: &pgQuery.Node_SubLink{
+			SubLink: &pgQuery.SubLink{
+				SubLinkType: pgQuery.SubLinkType_EXPR_SUBLINK,
+				Subselect: &pgQuery.Node{
+					Node: &pgQuery.Node_SelectStmt{
+						SelectStmt: &pgQuery.SelectStmt{
+							TargetList:  []*pgQuery.Node{targetNode},
+							FromClause:  []*pgQuery.Node{joinNode},
+							WhereClause: whereNode,
+						},
+					},
+				},
+			},
+		},
+	}
+
+}
+
 func (parser *ParserTypeCast) inferNodeType(node *pgQuery.Node) string {
 	if typeCast := node.GetTypeCast(); typeCast != nil {
 		return typeCast.TypeName.Names[0].GetString_().Sval

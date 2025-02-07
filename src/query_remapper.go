@@ -60,7 +60,7 @@ func (remapper *QueryRemapper) RemapStatements(statements []*pgQuery.RawStmt) ([
 	}
 
 	for i, stmt := range statements {
-		LogTrace(remapper.config, "Remapping statement", i+1)
+		LogTrace(remapper.config, "Remapping statement #"+IntToString(i+1))
 
 		node := stmt.Stmt
 
@@ -115,7 +115,7 @@ func (remapper *QueryRemapper) remapSetStatement(stmt *pgQuery.RawStmt) *pgQuery
 }
 
 func (remapper *QueryRemapper) remapSelectStatement(selectStatement *pgQuery.SelectStmt, indentLevel int) *pgQuery.SelectStmt {
-	// Target Sublinks's
+	// Nested SELECT (SELECT ...) ...
 	for _, target := range selectStatement.TargetList {
 		if subLink := target.GetResTarget().Val.GetSubLink(); subLink != nil {
 			remapper.traceTreeTraversal("Target SubLink", indentLevel)
