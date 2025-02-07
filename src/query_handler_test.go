@@ -1141,7 +1141,12 @@ SET standard_conforming_strings = on;`
 		testNoError(t, err)
 		testMessageTypes(t, messages, []pgproto3.Message{
 			&pgproto3.CommandComplete{},
+			&pgproto3.CommandComplete{},
+			&pgproto3.CommandComplete{},
 		})
+		testCommandCompleteTag(t, messages[0], "SET")
+		testCommandCompleteTag(t, messages[1], "SET")
+		testCommandCompleteTag(t, messages[2], "SET")
 	})
 
 	t.Run("Handles mixed SET and SELECT statements", func(t *testing.T) {
@@ -1153,15 +1158,18 @@ SELECT passwd FROM pg_shadow WHERE usename='bemidb';`
 
 		testNoError(t, err)
 		testMessageTypes(t, messages, []pgproto3.Message{
+			&pgproto3.CommandComplete{},
 			&pgproto3.RowDescription{},
 			&pgproto3.DataRow{},
 			&pgproto3.CommandComplete{},
 		})
-		testDataRowValues(t, messages[1], []string{"bemidb-encrypted"})
+		testCommandCompleteTag(t, messages[0], "SET")
+		testDataRowValues(t, messages[2], []string{"bemidb-encrypted"})
+		testCommandCompleteTag(t, messages[3], "SELECT 1")
 	})
 
 	t.Run("Handles multiple SELECT statements", func(t *testing.T) {
-		query := `SELECT passwd FROM pg_shadow WHERE usename='bemidb';
+		query := `SELECT 1;
 SELECT passwd FROM pg_shadow WHERE usename='bemidb';`
 		queryHandler := initQueryHandler()
 
@@ -1172,8 +1180,14 @@ SELECT passwd FROM pg_shadow WHERE usename='bemidb';`
 			&pgproto3.RowDescription{},
 			&pgproto3.DataRow{},
 			&pgproto3.CommandComplete{},
+			&pgproto3.RowDescription{},
+			&pgproto3.DataRow{},
+			&pgproto3.CommandComplete{},
 		})
-		testDataRowValues(t, messages[1], []string{"bemidb-encrypted"})
+		testDataRowValues(t, messages[1], []string{"1"})
+		testCommandCompleteTag(t, messages[2], "SELECT 1")
+		testDataRowValues(t, messages[4], []string{"bemidb-encrypted"})
+		testCommandCompleteTag(t, messages[5], "SELECT 1")
 	})
 
 	t.Run("Handles error in any of multiple statements", func(t *testing.T) {

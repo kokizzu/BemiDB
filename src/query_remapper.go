@@ -60,6 +60,8 @@ func (remapper *QueryRemapper) RemapStatements(statements []*pgQuery.RawStmt) ([
 	}
 
 	for i, stmt := range statements {
+		LogTrace(remapper.config, "Remapping statement", i+1)
+
 		node := stmt.Stmt
 
 		switch {

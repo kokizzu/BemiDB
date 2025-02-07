@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	FALLBACK_SQL_QUERY = "SELECT 1"
+	FALLBACK_SQL_QUERY  = "SELECT 1"
+	INSPECT_SQL_COMMENT = " --INSPECT"
 )
 
 type QueryHandler struct {
@@ -199,64 +200,78 @@ func NewQueryHandler(config *Config, duckdb *Duckdb, icebergReader *IcebergReade
 }
 
 func (queryHandler *QueryHandler) HandleQuery(originalQuery string) ([]pgproto3.Message, error) {
-	query, err := queryHandler.remapQuery(originalQuery)
+	queryStatements, originalQueryStatements, err := queryHandler.parseAndRemapQuery(originalQuery)
 	if err != nil {
 		LogError(queryHandler.config, "Couldn't map query:", originalQuery+"\n"+err.Error())
 		return nil, err
 	}
-
-	if query == "" {
+	if len(queryStatements) == 0 {
 		return []pgproto3.Message{&pgproto3.EmptyQueryResponse{}}, nil
 	}
 
-	rows, err := queryHandler.duckdb.QueryContext(context.Background(), query)
-	if err != nil {
-		errorMessage := err.Error()
+	var queriesMessages []pgproto3.Message
 
-		if errorMessage == "Binder Error: UNNEST requires a single list as input" {
-			// https://github.com/duckdb/duckdb/issues/11693
-			LogWarn(queryHandler.config, "Couldn't handle query via DuckDB:", query+"\n"+err.Error())
-			return queryHandler.HandleQuery(FALLBACK_SQL_QUERY)
-		} else {
-			LogError(queryHandler.config, "Couldn't handle query via DuckDB:", query+"\n"+err.Error())
+	for i, queryStatement := range queryStatements {
+		rows, err := queryHandler.duckdb.QueryContext(context.Background(), queryStatement)
+		if err != nil {
+			errorMessage := err.Error()
+			if errorMessage == "Binder Error: UNNEST requires a single list as input" {
+				// https://github.com/duckdb/duckdb/issues/11693
+				LogWarn(queryHandler.config, "Couldn't handle query via DuckDB:", queryStatement+"\n"+err.Error())
+				queriesMsgs, err := queryHandler.HandleQuery(FALLBACK_SQL_QUERY) // self-recursion
+				if err != nil {
+					return nil, err
+				}
+				queriesMessages = append(queriesMessages, queriesMsgs...)
+				continue
+			} else {
+				LogError(queryHandler.config, "Couldn't handle query via DuckDB:", queryStatement+"\n"+err.Error())
+				return nil, err
+			}
+		}
+		defer rows.Close()
+
+		var queryMessages []pgproto3.Message
+		descriptionMessages, err := queryHandler.rowsToDescriptionMessages(rows, queryStatement)
+		if err != nil {
 			return nil, err
 		}
-	}
-	defer rows.Close()
+		queryMessages = append(queryMessages, descriptionMessages...)
+		dataMessages, err := queryHandler.rowsToDataMessages(rows, originalQueryStatements[i])
+		if err != nil {
+			return nil, err
+		}
+		queryMessages = append(queryMessages, dataMessages...)
 
-	var messages []pgproto3.Message
-	descriptionMessages, err := queryHandler.rowsToDescriptionMessages(rows, query)
-	if err != nil {
-		return nil, err
+		queriesMessages = append(queriesMessages, queryMessages...)
 	}
-	messages = append(messages, descriptionMessages...)
-	dataMessages, err := queryHandler.rowsToDataMessages(rows, originalQuery)
-	if err != nil {
-		return nil, err
-	}
-	messages = append(messages, dataMessages...)
-	return messages, nil
+
+	return queriesMessages, nil
 }
 
 func (queryHandler *QueryHandler) HandleParseQuery(message *pgproto3.Parse) ([]pgproto3.Message, *PreparedStatement, error) {
 	ctx := context.Background()
 	originalQuery := string(message.Query)
-	query, err := queryHandler.remapQuery(originalQuery)
+	queryStatements, _, err := queryHandler.parseAndRemapQuery(originalQuery)
 	if err != nil {
 		LogError(queryHandler.config, "Couldn't map query:", originalQuery+"\n"+err.Error())
 		return nil, nil, err
+	}
+	if len(queryStatements) > 1 {
+		return nil, nil, errors.New("multiple queries in a single parse message are not supported")
 	}
 
 	preparedStatement := &PreparedStatement{
 		Name:          message.Name,
 		OriginalQuery: originalQuery,
-		Query:         query,
 		ParameterOIDs: message.ParameterOIDs,
 	}
-	if query == "" {
+	if len(queryStatements) == 0 {
 		return []pgproto3.Message{&pgproto3.EmptyQueryResponse{}}, preparedStatement, nil
 	}
 
+	query := queryStatements[0]
+	preparedStatement.Query = query
 	statement, err := queryHandler.duckdb.PrepareContext(ctx, query)
 	preparedStatement.Statement = statement
 	if err != nil {
@@ -398,10 +413,10 @@ func (queryHandler *QueryHandler) rowsToDescriptionMessages(rows *sql.Rows, quer
 	return messages, nil
 }
 
-func (queryHandler *QueryHandler) rowsToDataMessages(rows *sql.Rows, originalQuery string) ([]pgproto3.Message, error) {
+func (queryHandler *QueryHandler) rowsToDataMessages(rows *sql.Rows, originalQueryStatement string) ([]pgproto3.Message, error) {
 	cols, err := rows.ColumnTypes()
 	if err != nil {
-		LogError(queryHandler.config, "Couldn't get column types", originalQuery+"\n"+err.Error())
+		LogError(queryHandler.config, "Couldn't get column types", originalQueryStatement+"\n"+err.Error())
 		return nil, err
 	}
 
@@ -409,7 +424,7 @@ func (queryHandler *QueryHandler) rowsToDataMessages(rows *sql.Rows, originalQue
 	for rows.Next() {
 		dataRow, err := queryHandler.generateDataRow(rows, cols)
 		if err != nil {
-			LogError(queryHandler.config, "Couldn't get data row", originalQuery+"\n"+err.Error())
+			LogError(queryHandler.config, "Couldn't get data row", originalQueryStatement+"\n"+err.Error())
 			return nil, err
 		}
 		messages = append(messages, dataRow)
@@ -417,11 +432,11 @@ func (queryHandler *QueryHandler) rowsToDataMessages(rows *sql.Rows, originalQue
 
 	commandTag := FALLBACK_SQL_QUERY
 	switch {
-	case strings.HasPrefix(originalQuery, "SET "):
+	case strings.HasPrefix(originalQueryStatement, "SET "):
 		commandTag = "SET"
-	case strings.HasPrefix(originalQuery, "SHOW "):
+	case strings.HasPrefix(originalQueryStatement, "SHOW "):
 		commandTag = "SHOW"
-	case strings.HasPrefix(originalQuery, "DISCARD ALL"):
+	case strings.HasPrefix(originalQueryStatement, "DISCARD ALL"):
 		commandTag = "DISCARD ALL"
 	}
 
@@ -429,23 +444,41 @@ func (queryHandler *QueryHandler) rowsToDataMessages(rows *sql.Rows, originalQue
 	return messages, nil
 }
 
-func (queryHandler *QueryHandler) remapQuery(query string) (string, error) {
+func (queryHandler *QueryHandler) parseAndRemapQuery(query string) ([]string, []string, error) {
 	queryTree, err := pgQuery.Parse(query)
 	if err != nil {
 		LogError(queryHandler.config, "Error parsing query:", query+"\n"+err.Error())
-		return "", err
+		return nil, nil, err
 	}
 
-	if strings.HasSuffix(query, " --INSPECT") {
+	if strings.HasSuffix(query, INSPECT_SQL_COMMENT) {
 		LogDebug(queryHandler.config, queryTree.Stmts)
 	}
 
-	queryTree.Stmts, err = queryHandler.queryRemapper.RemapStatements(queryTree.Stmts)
-	if err != nil {
-		return "", err
+	var originalQueryStatements []string
+	for _, stmt := range queryTree.Stmts {
+		originalQueryStatement, err := pgQuery.Deparse(&pgQuery.ParseResult{Stmts: []*pgQuery.RawStmt{stmt}})
+		if err != nil {
+			return nil, nil, err
+		}
+		originalQueryStatements = append(originalQueryStatements, originalQueryStatement)
 	}
 
-	return pgQuery.Deparse(queryTree)
+	remappedStatements, err := queryHandler.queryRemapper.RemapStatements(queryTree.Stmts)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var queryStatements []string
+	for _, remappedStatement := range remappedStatements {
+		queryStatement, err := pgQuery.Deparse(&pgQuery.ParseResult{Stmts: []*pgQuery.RawStmt{remappedStatement}})
+		if err != nil {
+			return nil, nil, err
+		}
+		queryStatements = append(queryStatements, queryStatement)
+	}
+
+	return queryStatements, originalQueryStatements, nil
 }
 
 func (queryHandler *QueryHandler) generateRowDescription(cols []*sql.ColumnType) *pgproto3.RowDescription {
