@@ -188,7 +188,11 @@ func (remapper *QueryRemapperTable) RemapWhereClauseForTable(qSchemaTable QueryS
 
 		// FROM pg_catalog.pg_namespace -> FROM pg_catalog.pg_namespace WHERE oid NOT IN (3 'main' schema oids, 2 'pg_catalog' and 2 'information_schema' duplicate oids)
 		case PG_TABLE_PG_NAMESPACE:
-			withoutDuckdbOidsWhereCondition := remapper.parserWhere.MakeNotInExpressionNode("oid", REDUNDANT_PG_NAMESPACE_OIDS, qSchemaTable.Alias)
+			alias := qSchemaTable.Alias
+			if alias == "" {
+				alias = PG_TABLE_PG_NAMESPACE
+			}
+			withoutDuckdbOidsWhereCondition := remapper.parserWhere.MakeNotInExpressionNode("oid", REDUNDANT_PG_NAMESPACE_OIDS, alias)
 			remapper.parserWhere.AppendWhereCondition(selectStatement, withoutDuckdbOidsWhereCondition)
 
 		// FROM pg_catalog.pg_statio_user_tables -> FROM pg_catalog.pg_statio_user_tables WHERE false

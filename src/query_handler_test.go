@@ -183,6 +183,11 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {"public"},
 		},
+		"SELECT rel.oid FROM pg_class rel LEFT JOIN pg_extension ON rel.oid = pg_extension.oid ORDER BY rel.oid LIMIT 1;": {
+			"description": {"oid"},
+			"types":       {Uint32ToString(pgtype.OIDOID)},
+			"values":      {"1262"},
+		},
 		"SELECT pg_total_relation_size(relid) AS total_size FROM pg_catalog.pg_statio_user_tables WHERE schemaname = 'public'": {
 			"description": {"total_size"},
 			"types":       {Uint32ToString(pgtype.TextOID)},
