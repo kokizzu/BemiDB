@@ -139,6 +139,11 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int8OID)},
 			"values":      {"16388", "bemidb", "10"},
 		},
+		"SELECT COALESCE(NULL, (SELECT datname FROM pg_database WHERE datname = 'bemidb')) AS datname": {
+			"description": {"datname"},
+			"types":       {Uint32ToString(pgtype.TextOID)},
+			"values":      {"bemidb"},
+		},
 		"SELECT * FROM pg_catalog.pg_stat_gssapi": {
 			"description": {"pid", "gss_authenticated", "principal", "encrypted", "credentials_delegated"},
 			"types":       {Uint32ToString(pgtype.Int4OID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.BoolOID)},

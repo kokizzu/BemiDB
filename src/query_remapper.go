@@ -69,13 +69,13 @@ func (remapper *QueryRemapper) RemapStatements(statements []*pgQuery.RawStmt) ([
 		case node == nil:
 			return nil, errors.New("empty statement")
 
-		// SELECT ...
+		// SELECT
 		case node.GetSelectStmt() != nil:
 			remappedSelect := remapper.remapSelectStatement(stmt.Stmt.GetSelectStmt(), 1)
 			stmt.Stmt = &pgQuery.Node{Node: &pgQuery.Node_SelectStmt{SelectStmt: remappedSelect}}
 			statements[i] = stmt
 
-		// SET ...
+		// SET
 		case node.GetVariableSetStmt() != nil:
 			statements[i] = remapper.remapSetStatement(stmt)
 
@@ -83,7 +83,7 @@ func (remapper *QueryRemapper) RemapStatements(statements []*pgQuery.RawStmt) ([
 		case node.GetDiscardStmt() != nil:
 			statements[i] = FALLBACK_QUERY_TREE.Stmts[0]
 
-		// SHOW ...
+		// SHOW
 		case node.GetVariableShowStmt() != nil:
 			statements[i] = remapper.remapperShow.RemapShowStatement(stmt)
 
@@ -115,15 +115,6 @@ func (remapper *QueryRemapper) remapSetStatement(stmt *pgQuery.RawStmt) *pgQuery
 }
 
 func (remapper *QueryRemapper) remapSelectStatement(selectStatement *pgQuery.SelectStmt, indentLevel int) *pgQuery.SelectStmt {
-	// Nested SELECT (SELECT ...) ...
-	for _, target := range selectStatement.TargetList {
-		if subLink := target.GetResTarget().Val.GetSubLink(); subLink != nil {
-			remapper.traceTreeTraversal("Target SubLink", indentLevel)
-			subSelect := subLink.Subselect.GetSelectStmt()
-			remapper.remapSelectStatement(subSelect, indentLevel+1) // self-recursion
-		}
-	}
-
 	// UNION
 	if selectStatement.FromClause == nil && selectStatement.Larg != nil && selectStatement.Rarg != nil {
 		remapper.traceTreeTraversal("UNION left", indentLevel)
@@ -438,16 +429,30 @@ func (remapper *QueryRemapper) remapSelect(selectStatement *pgQuery.SelectStmt, 
 	remapper.traceTreeTraversal("SELECT statements", indentLevel)
 
 	// SELECT ...
-	for i, targetNode := range selectStatement.TargetList {
-		if targetNode.GetResTarget().Val.GetCaseExpr() == nil {
-			targetNode.GetResTarget().Val = remapper.remapTypeCastsInNode(targetNode.GetResTarget().Val) // recursive
-		} else {
+	for targetNodeIdx, targetNode := range selectStatement.TargetList {
+		if targetNode.GetResTarget().Val.GetCaseExpr() != nil {
 			// CASE
 			remapper.remapCaseExpressions(selectStatement, indentLevel) // recursive
+		} else if targetNode.GetResTarget().Val.GetSubLink() != nil {
+			// Nested SELECT
+			subSelect := targetNode.GetResTarget().Val.GetSubLink().Subselect.GetSelectStmt()
+			remapper.remapSelectStatement(subSelect, indentLevel+1) // recursive
+		} else if targetNode.GetResTarget().Val.GetCoalesceExpr() != nil {
+			// COALESCE(value1, value2, ...)
+			coalesceExpr := targetNode.GetResTarget().Val.GetCoalesceExpr()
+			for _, arg := range coalesceExpr.Args {
+				if arg.GetSubLink() != nil {
+					// Nested SELECT
+					subSelect := arg.GetSubLink().Subselect.GetSelectStmt()
+					remapper.remapSelectStatement(subSelect, indentLevel+1) // recursive
+				}
+			}
+		} else {
+			targetNode.GetResTarget().Val = remapper.remapTypeCastsInNode(targetNode.GetResTarget().Val) // recursive
 		}
 
 		targetNode = remapper.remapperSelect.RemapSelect(targetNode)
-		selectStatement.TargetList[i] = targetNode
+		selectStatement.TargetList[targetNodeIdx] = targetNode
 	}
 
 	// VALUES (...)
