@@ -18,6 +18,7 @@ const (
 	PG_FUNCTION_ACLEXPLODE           = "aclexplode"
 	PG_FUNCTION_PG_GET_VIEWDEF       = "pg_get_viewdef"
 
+	PG_TABLE_PG_ATTRIBUTE          = "pg_attribute"
 	PG_TABLE_PG_AUTH_MEMBERS       = "pg_auth_members"
 	PG_TABLE_PG_CLASS              = "pg_class"
 	PG_TABLE_PG_DATABASE           = "pg_database"

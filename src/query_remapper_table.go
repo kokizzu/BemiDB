@@ -204,6 +204,19 @@ func (remapper *QueryRemapperTable) RemapWhereClauseForTable(qSchemaTable QueryS
 	return selectStatement
 }
 
+func (remapper *QueryRemapperTable) RemapOrderByForTable(qSchemaTable QuerySchemaTable, selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
+	if remapper.isTableFromPgCatalog(qSchemaTable) {
+		switch qSchemaTable.Table {
+
+		// FROM pg_catalog.pg_attribute ORDER BY ... -> FROM pg_catalog.pg_attribute
+		case PG_TABLE_PG_ATTRIBUTE:
+			return remapper.parserTable.RemoveOrderBy(selectStatement)
+		}
+	}
+
+	return selectStatement
+}
+
 func (remapper *QueryRemapperTable) reloadIceberSchemaTables() {
 	icebergSchemaTables, err := remapper.icebergReader.SchemaTables()
 	PanicIfError(err)

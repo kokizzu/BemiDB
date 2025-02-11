@@ -157,6 +157,7 @@ func (remapper *QueryRemapper) remapSelectStatement(selectStatement *pgQuery.Sel
 				selectStatement.FromClause[i] = remapper.remapperTable.RemapTable(fromNode)
 				qSchemaTable := remapper.parserTable.NodeToQuerySchemaTable(fromNode)
 				selectStatement = remapper.remapperTable.RemapWhereClauseForTable(qSchemaTable, selectStatement)
+				selectStatement = remapper.remapperTable.RemapOrderByForTable(qSchemaTable, selectStatement)
 			} else if fromNode.GetRangeSubselect() != nil {
 				// FROM (SELECT ...)
 				remapper.traceTreeTraversal("FROM subselect", indentLevel)
@@ -358,6 +359,7 @@ func (remapper *QueryRemapper) remapJoinExpressions(selectStatement *pgQuery.Sel
 		remapper.traceTreeTraversal("WHERE left", indentLevel+1)
 		qSchemaTable := remapper.parserTable.NodeToQuerySchemaTable(leftJoinNode)
 		selectStatement = remapper.remapperTable.RemapWhereClauseForTable(qSchemaTable, selectStatement)
+		selectStatement = remapper.remapperTable.RemapOrderByForTable(qSchemaTable, selectStatement)
 		// TABLE
 		remapper.traceTreeTraversal("TABLE left", indentLevel+1)
 		leftJoinNode = remapper.remapperTable.RemapTable(leftJoinNode)
@@ -375,7 +377,8 @@ func (remapper *QueryRemapper) remapJoinExpressions(selectStatement *pgQuery.Sel
 		// WHERE
 		remapper.traceTreeTraversal("WHERE right", indentLevel+1)
 		qSchemaTable := remapper.parserTable.NodeToQuerySchemaTable(rightJoinNode)
-		remapper.remapperTable.RemapWhereClauseForTable(qSchemaTable, selectStatement)
+		selectStatement = remapper.remapperTable.RemapWhereClauseForTable(qSchemaTable, selectStatement)
+		remapper.remapperTable.RemapOrderByForTable(qSchemaTable, selectStatement)
 		// TABLE
 		remapper.traceTreeTraversal("TABLE right", indentLevel+1)
 		rightJoinNode = remapper.remapperTable.RemapTable(rightJoinNode)

@@ -235,6 +235,11 @@ func TestHandleQuery(t *testing.T) {
 		"SELECT * FROM pg_auth_members": {
 			"description": {"oid", "roleid", "member", "grantor", "admin_option", "inherit_option", "set_option"},
 		},
+		"SELECT ARRAY(select pg_get_indexdef(indexrelid, attnum, true) FROM pg_attribute WHERE attrelid = indexrelid ORDER BY attnum) AS expressions FROM pg_index": {
+			"description": {"expressions"},
+			"types":       {Uint32ToString(pgtype.TextArrayOID)},
+			"values":      {},
+		},
 
 		// Information schema
 		"SELECT * FROM information_schema.tables": {
