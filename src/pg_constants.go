@@ -21,6 +21,7 @@ const (
 	PG_TABLE_PG_ATTRIBUTE          = "pg_attribute"
 	PG_TABLE_PG_AUTH_MEMBERS       = "pg_auth_members"
 	PG_TABLE_PG_CLASS              = "pg_class"
+	PG_TABLE_PG_COLLATION          = "pg_collation"
 	PG_TABLE_PG_DATABASE           = "pg_database"
 	PG_TABLE_PG_EXTENSION          = "pg_extension"
 	PG_TABLE_PG_INHERITS           = "pg_inherits"
@@ -247,6 +248,37 @@ var PG_EXTENSION_DEFINITION = TableDefinition{
 		"11",
 		"false",
 		"1.0",
+		"NULL",
+		"NULL",
+	},
+}
+
+var PG_COLLATION_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"oid", "oid"},
+		{"collname", "text"},
+		{"collnamespace", "oid"},
+		{"collowner", "oid"},
+		{"collprovider", "text"},
+		{"collisdeterministic", "bool"},
+		{"collencoding", "int4"},
+		{"collcollate", "text"},
+		{"collctype", "text"},
+		{"colliculocale", "text"},
+		{"collicurules", "text"},
+		{"collversion", "text"},
+	},
+	Values: []string{
+		"100",
+		"default",
+		"11",
+		"10",
+		"d",
+		"TRUE",
+		"-1",
+		"NULL",
+		"NULL",
+		"NULL",
 		"NULL",
 		"NULL",
 	},

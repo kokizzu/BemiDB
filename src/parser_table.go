@@ -70,6 +70,12 @@ func (parser *ParserTable) MakePgExtensionNode(alias string) *pgQuery.Node {
 	return parser.utils.MakeSubselectWithRowsNode(PG_TABLE_PG_EXTENSION, tableDef, [][]string{tableDef.Values}, alias)
 }
 
+// pg_catalog.pg_collation -> VALUES(values...) t(columns...)
+func (parser *ParserTable) MakePgCollationNode(alias string) *pgQuery.Node {
+	tableDef := PG_COLLATION_DEFINITION
+	return parser.utils.MakeSubselectWithRowsNode(PG_TABLE_PG_COLLATION, tableDef, [][]string{tableDef.Values}, alias)
+}
+
 // pg_catalog.pg_database -> VALUES(values...) t(columns...)
 func (parser *ParserTable) MakePgDatabaseNode(database string, alias string) *pgQuery.Node {
 	tableDef := PG_DATABASE_DEFINITION

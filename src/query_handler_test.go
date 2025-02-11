@@ -173,6 +173,11 @@ func TestHandleQuery(t *testing.T) {
 			"description": {"schemaname", "viewname", "viewowner", "definition"},
 			"types":       {Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID)},
 		},
+		"SELECT oid FROM pg_collation": {
+			"description": {"oid"},
+			"types":       {Uint32ToString(pgtype.OIDOID)},
+			"values":      {"100"},
+		},
 		"SELECT schemaname, relname, n_live_tup FROM pg_stat_user_tables": {
 			"description": {"schemaname", "relname", "n_live_tup"},
 			"types":       {Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int8OID)},

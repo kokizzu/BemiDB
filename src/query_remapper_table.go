@@ -105,6 +105,10 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 		case PG_TABLE_PG_STAT_USER_TABLES:
 			return parser.MakePgStatUserTablesNode(remapper.icebergSchemaTables, qSchemaTable.Alias)
 
+		// pg_collation -> return hard-coded collation (encoding) info
+		case PG_TABLE_PG_COLLATION:
+			return parser.MakePgCollationNode(qSchemaTable.Alias)
+
 		// pg_catalog.pg_* other system tables -> return as is
 		default:
 			return node
