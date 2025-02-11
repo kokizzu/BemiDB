@@ -28,16 +28,16 @@ func (remapper *QueryRemapperTypeCast) RemapTypeCast(node *pgQuery.Node) *pgQuer
 
 	typeName := remapper.parserTypeCast.TypeName(typeCast)
 	switch typeName {
-	case "regclass":
-		// 'schema.table'::regclass -> 'schema.table'
-		return typeCast.Arg
 	case "text":
 		// '{a,b,c}'::text[] -> ARRAY['a', 'b', 'c']
 		return remapper.parserTypeCast.MakeListValueFromArray(typeCast.Arg)
 	case "regproc":
 		// 'schema.function_name'::regproc -> 'function_name'
-		functionNameParts := strings.Split(remapper.parserTypeCast.ArgStringValue(typeCast), ".")
-		return pgQuery.MakeAConstStrNode(functionNameParts[len(functionNameParts)-1], 0)
+		nameParts := strings.Split(remapper.parserTypeCast.ArgStringValue(typeCast), ".")
+		return pgQuery.MakeAConstStrNode(nameParts[len(nameParts)-1], 0)
+	case "regclass":
+		// 'schema.table'::regclass -> SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'schema' AND c.relname = 'table'
+		return remapper.parserTypeCast.MakeSubselectOidBySchemaTable(typeCast.Arg)
 	case "oid":
 		// 'schema.table'::regclass::oid -> SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'schema' AND c.relname = 'table'
 		nestedNode := typeCast.Arg

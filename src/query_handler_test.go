@@ -664,6 +664,11 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.OIDOID)},
 			"values":      {"1270"},
 		},
+		"SELECT attrelid FROM pg_attribute WHERE attrelid = '\"public\".\"test_table\"'::regclass": {
+			"description": {"attrelid"},
+			"types":       {Uint32ToString(pgtype.Int8OID)},
+			"values":      {},
+		},
 		"SELECT objoid, classoid, objsubid, description FROM pg_description WHERE classoid = 'pg_class'::regclass": {
 			"description": {"objoid", "classoid", "objsubid", "description"},
 			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int4OID), Uint32ToString(pgtype.TextOID)},
