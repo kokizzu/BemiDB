@@ -178,6 +178,10 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.OIDOID)},
 			"values":      {"100"},
 		},
+		"SELECT * FROM pg_opclass": {
+			"description": {"oid", "opcmethod", "opcname", "opcnamespace", "opcowner", "opcfamily", "opcintype", "opcdefault", "opckeytype"},
+			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.Int8OID), Uint32ToString(pgtype.BoolOID), Uint32ToString(pgtype.Int8OID)},
+		},
 		"SELECT schemaname, relname, n_live_tup FROM pg_stat_user_tables": {
 			"description": {"schemaname", "relname", "n_live_tup"},
 			"types":       {Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.TextOID), Uint32ToString(pgtype.Int8OID)},

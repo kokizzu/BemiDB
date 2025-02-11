@@ -109,6 +109,10 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 		case PG_TABLE_PG_COLLATION:
 			return parser.MakePgCollationNode(qSchemaTable.Alias)
 
+		// pg_opclass -> return empty table
+		case PG_TABLE_PG_OPCLASS:
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_OPCLASS, PG_OPCLASS_DEFINITION, qSchemaTable.Alias)
+
 		// pg_catalog.pg_* other system tables -> return as is
 		default:
 			return node

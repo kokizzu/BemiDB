@@ -27,6 +27,7 @@ const (
 	PG_TABLE_PG_INHERITS           = "pg_inherits"
 	PG_TABLE_PG_MATVIEWS           = "pg_matviews"
 	PG_TABLE_PG_NAMESPACE          = "pg_namespace"
+	PG_TABLE_PG_OPCLASS            = "pg_opclass"
 	PG_TABLE_PG_REPLICATION_SLOTS  = "pg_replication_slots"
 	PG_TABLE_PG_ROLES              = "pg_roles"
 	PG_TABLE_PG_SHADOW             = "pg_shadow"
@@ -408,6 +409,20 @@ var PG_MATVIEWS_DEFINITION = TableDefinition{
 		{"hasindexes", "bool"},
 		{"ispopulated", "bool"},
 		{"definition", "text"},
+	},
+}
+
+var PG_OPCLASS_DEFINITION = TableDefinition{
+	Columns: []ColumnDefinition{
+		{"oid", "oid"},
+		{"opcmethod", "oid"},
+		{"opcname", "text"},
+		{"opcnamespace", "oid"},
+		{"opcowner", "oid"},
+		{"opcfamily", "oid"},
+		{"opcintype", "oid"},
+		{"opcdefault", "bool"},
+		{"opckeytype", "oid"},
 	},
 }
 
