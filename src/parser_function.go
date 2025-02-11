@@ -84,10 +84,17 @@ func (parser *ParserFunction) RemapQuoteIdentToConcat(functionCall *pgQuery.Func
 	return functionCall
 }
 
-// pg_get_expr(pg_node_tree, relation_oid, pretty_bool) -> pg_get_expr(pg_node_tree, relation_oid)
-func (parser *ParserFunction) RemoveThirdArgumentFromPgGetExpr(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
+func (parser *ParserFunction) RemoveThirdArgument(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
 	if len(functionCall.Args) > 2 {
 		functionCall.Args = functionCall.Args[:2]
+	}
+
+	return functionCall
+}
+
+func (parser *ParserFunction) RemoveSecondArgument(functionCall *pgQuery.FuncCall) *pgQuery.FuncCall {
+	if len(functionCall.Args) > 1 {
+		functionCall.Args = functionCall.Args[:1]
 	}
 
 	return functionCall

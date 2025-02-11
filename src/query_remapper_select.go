@@ -121,7 +121,12 @@ func (remapper *QueryRemapperSelect) remappedFunctionArgs(functionCall *pgQuery.
 
 	// pg_catalog.pg_get_expr(pg_node_tree, relation_oid, pretty_bool) -> pg_catalog.pg_get_expr(pg_node_tree, relation_oid)
 	if (schemaFunction.Schema == PG_SCHEMA_PG_CATALOG || schemaFunction.Schema == "") && schemaFunction.Function == PG_FUNCTION_PG_GET_EXPR {
-		return remapper.parserFunction.RemoveThirdArgumentFromPgGetExpr(functionCall)
+		return remapper.parserFunction.RemoveThirdArgument(functionCall)
+	}
+
+	// pg_catalog.pg_get_viewdef(view_oid, pretty_bool) -> pg_catalog.pg_get_viewdef(view_oid)
+	if (schemaFunction.Schema == PG_SCHEMA_PG_CATALOG || schemaFunction.Schema == "") && schemaFunction.Function == PG_FUNCTION_PG_GET_VIEWDEF {
+		return remapper.parserFunction.RemoveSecondArgument(functionCall)
 	}
 
 	return nil
