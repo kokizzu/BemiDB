@@ -6,10 +6,11 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"golang.org/x/crypto/pbkdf2"
 	"os"
 	"strconv"
 	"unicode"
+
+	"golang.org/x/crypto/pbkdf2"
 )
 
 func PanicIfError(err error, message ...string) {
@@ -75,6 +76,11 @@ func StringContainsUpper(str string) bool {
 		}
 	}
 	return false
+}
+
+func StringToSha256Hash(input string) string {
+	sum := sha256Hash([]byte(input))
+	return fmt.Sprintf("%x", sum)
 }
 
 func hmacSha256Hash(key []byte, message []byte) []byte {
