@@ -17,6 +17,7 @@ var DEFAULT_BOOT_QUERIES = []string{
 	"SELECT oid FROM pg_catalog.pg_namespace",
 	"CREATE SCHEMA public",
 	"USE public",
+	"SET scalar_subquery_error_on_multiple_rows=false",
 }
 
 type Duckdb struct {
