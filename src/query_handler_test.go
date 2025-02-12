@@ -717,6 +717,11 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextOID)},
 			"values":      {"abort"},
 		},
+		"SELECT NULL::text AS word": {
+			"description": {"word"},
+			"types":       {Uint32ToString(pgtype.TextOID)},
+			"values":      {""},
+		},
 		"SELECT t.x FROM (VALUES (1::int2, 'pg_type'::regclass)) t(x, y)": {
 			"description": {"x"},
 			"types":       {Uint32ToString(pgtype.Int2OID)},

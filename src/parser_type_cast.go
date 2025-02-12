@@ -29,7 +29,14 @@ func (parser *ParserTypeCast) TypeCast(node *pgQuery.Node) *pgQuery.TypeCast {
 }
 
 func (parser *ParserTypeCast) TypeName(typeCast *pgQuery.TypeCast) string {
-	return typeCast.TypeName.Names[0].GetString_().Sval
+	typeNameNode := typeCast.TypeName
+	typeName := typeNameNode.Names[0].GetString_().Sval
+
+	if typeNameNode.ArrayBounds != nil {
+		return typeName + "[]"
+	}
+
+	return typeName
 }
 
 func (parser *ParserTypeCast) ArgStringValue(typeCast *pgQuery.TypeCast) string {

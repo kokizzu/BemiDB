@@ -28,7 +28,7 @@ func (remapper *QueryRemapperTypeCast) RemapTypeCast(node *pgQuery.Node) *pgQuer
 
 	typeName := remapper.parserTypeCast.TypeName(typeCast)
 	switch typeName {
-	case "text":
+	case "text[]":
 		// '{a,b,c}'::text[] -> ARRAY['a', 'b', 'c']
 		return remapper.parserTypeCast.MakeListValueFromArray(typeCast.Arg)
 	case "regproc":
