@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
 
@@ -169,16 +171,30 @@ func (utils *ParserUtils) makeTypedConstNode(val string, pgType string) *pgQuery
 }
 
 func (utils *ParserUtils) MakeTypeCastNode(arg *pgQuery.Node, typeName string) *pgQuery.Node {
+	var typeNameNode *pgQuery.TypeName
+
+	if strings.HasSuffix(typeName, "[]") {
+		typeNameNode = &pgQuery.TypeName{
+			Names: []*pgQuery.Node{
+				pgQuery.MakeStrNode(strings.TrimSuffix(typeName, "[]")),
+			},
+			ArrayBounds: []*pgQuery.Node{
+				pgQuery.MakeIntNode(-1),
+			},
+		}
+	} else {
+		typeNameNode = &pgQuery.TypeName{
+			Names: []*pgQuery.Node{
+				pgQuery.MakeStrNode(typeName),
+			},
+		}
+	}
+
 	return &pgQuery.Node{
 		Node: &pgQuery.Node_TypeCast{
 			TypeCast: &pgQuery.TypeCast{
-				Arg: arg,
-				TypeName: &pgQuery.TypeName{
-					Names: []*pgQuery.Node{
-						pgQuery.MakeStrNode(typeName),
-					},
-					Location: 0,
-				},
+				Arg:      arg,
+				TypeName: typeNameNode,
 			},
 		},
 	}

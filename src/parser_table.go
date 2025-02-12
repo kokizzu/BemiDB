@@ -128,6 +128,28 @@ func (parser *ParserTable) MakePgStatUserTablesNode(schemaTables []IcebergSchema
 	return parser.utils.MakeSubselectWithRowsNode(PG_TABLE_PG_STAT_USER_TABLES, tableDef, rowsValues, alias)
 }
 
+// pg_index -> returns (SELECT *, FALSE AS indnullsnotdistinct FROM pg_index)
+func (parser *ParserTable) MakePgIndexNode(qSchemaTable QuerySchemaTable) *pgQuery.Node {
+	targetList := []*pgQuery.Node{
+		pgQuery.MakeResTargetNodeWithVal(
+			pgQuery.MakeColumnRefNode(
+				[]*pgQuery.Node{pgQuery.MakeAStarNode()},
+				0,
+			),
+			0,
+		),
+		pgQuery.MakeResTargetNodeWithNameAndVal(
+			"indnullsnotdistinct",
+			parser.utils.MakeAConstBoolNode(false),
+			0,
+		),
+	}
+
+	fromNode := pgQuery.MakeSimpleRangeVarNode(PG_TABLE_PG_INDEX, 0)
+
+	return parser.utils.MakeSubselectFromNode(qSchemaTable.Table, targetList, fromNode, qSchemaTable.Alias)
+}
+
 // Other information_schema.* tables
 func (parser *ParserTable) IsTableFromInformationSchema(qSchemaTable QuerySchemaTable) bool {
 	return qSchemaTable.Schema == PG_SCHEMA_INFORMATION_SCHEMA

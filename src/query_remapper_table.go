@@ -113,6 +113,10 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 		case PG_TABLE_PG_OPCLASS:
 			return parser.MakeEmptyTableNode(PG_TABLE_PG_OPCLASS, PG_OPCLASS_DEFINITION, qSchemaTable.Alias)
 
+		// pg_index -> returns (SELECT *, FALSE AS indnullsnotdistinct FROM pg_index)
+		case PG_TABLE_PG_INDEX:
+			return parser.MakePgIndexNode(qSchemaTable)
+
 		// pg_catalog.pg_* other system tables -> return as is
 		default:
 			return node

@@ -22,13 +22,15 @@ func (remapper *QueryRemapperSelect) RemapFunctionToConstant(functionCall *pgQue
 	return remapper.parserFunction.RemapToConstant(functionCall)
 }
 
-// SELECT [PG_FUNCTION()]
+// SELECT ...
 func (remapper *QueryRemapperSelect) RemapSelect(targetNode *pgQuery.Node) *pgQuery.Node {
+	// PG_FUNCTION().value
 	newTargetNode := remapper.remappedInderectionFunctionCall(targetNode)
 	if newTargetNode != nil {
 		return newTargetNode
 	}
 
+	// PG_FUNCTION()
 	functionCall := remapper.parserFunction.FunctionCall(targetNode)
 	if functionCall == nil {
 		return targetNode

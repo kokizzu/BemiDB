@@ -249,6 +249,10 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TextArrayOID)},
 			"values":      {},
 		},
+		"SELECT indnullsnotdistinct FROM pg_index": {
+			"description": {"indnullsnotdistinct"},
+			"types":       {Uint32ToString(pgtype.BoolOID)},
+		},
 
 		// Information schema
 		"SELECT * FROM information_schema.tables": {

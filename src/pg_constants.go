@@ -24,6 +24,7 @@ const (
 	PG_TABLE_PG_COLLATION          = "pg_collation"
 	PG_TABLE_PG_DATABASE           = "pg_database"
 	PG_TABLE_PG_EXTENSION          = "pg_extension"
+	PG_TABLE_PG_INDEX              = "pg_index"
 	PG_TABLE_PG_INHERITS           = "pg_inherits"
 	PG_TABLE_PG_MATVIEWS           = "pg_matviews"
 	PG_TABLE_PG_NAMESPACE          = "pg_namespace"
