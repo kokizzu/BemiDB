@@ -771,6 +771,10 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.OIDOID), Uint32ToString(pgtype.TextOID)},
 			"values":      {"10", ""},
 		},
+		"SELECT (SELECT 1 FROM (SELECT 1 AS inner_val) JOIN (SELECT NULL) ON inner_val = indclass[1]) AS test FROM pg_index": {
+			"description": {"test"},
+			"types":       {Uint32ToString(pgtype.Int4OID)},
+		},
 
 		// CASE
 		"SELECT CASE WHEN true THEN 'yes' ELSE 'no' END AS case": {

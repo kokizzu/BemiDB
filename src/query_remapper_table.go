@@ -31,6 +31,10 @@ func NewQueryRemapperTable(config *Config, icebergReader *IcebergReader, duckdb 
 	return remapper
 }
 
+func (remapper *QueryRemapperTable) NodeToQuerySchemaTable(node *pgQuery.Node) QuerySchemaTable {
+	return remapper.parserTable.NodeToQuerySchemaTable(node)
+}
+
 // FROM / JOIN [TABLE]
 func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node {
 	parser := remapper.parserTable

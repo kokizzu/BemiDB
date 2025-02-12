@@ -26,7 +26,6 @@ var FALLBACK_QUERY_TREE, _ = pgQuery.Parse(FALLBACK_SQL_QUERY)
 var FALLBACK_SET_QUERY_TREE, _ = pgQuery.Parse("SET schema TO public")
 
 type QueryRemapper struct {
-	parserTable      *ParserTable
 	parserTypeCast   *ParserTypeCast
 	remapperTable    *QueryRemapperTable
 	remapperTypeCast *QueryRemapperTypeCast
@@ -40,7 +39,6 @@ type QueryRemapper struct {
 
 func NewQueryRemapper(config *Config, icebergReader *IcebergReader, duckdb *Duckdb) *QueryRemapper {
 	return &QueryRemapper{
-		parserTable:      NewParserTable(config),
 		parserTypeCast:   NewParserTypeCast(config),
 		remapperTable:    NewQueryRemapperTable(config, icebergReader, duckdb),
 		remapperTypeCast: NewQueryRemapperTypeCast(config),
@@ -155,7 +153,7 @@ func (remapper *QueryRemapper) remapSelectStatement(selectStatement *pgQuery.Sel
 				// FROM [TABLE]
 				remapper.traceTreeTraversal("FROM table", indentLevel)
 				selectStatement.FromClause[i] = remapper.remapperTable.RemapTable(fromNode)
-				qSchemaTable := remapper.parserTable.NodeToQuerySchemaTable(fromNode)
+				qSchemaTable := remapper.remapperTable.NodeToQuerySchemaTable(fromNode)
 				selectStatement = remapper.remapperTable.RemapWhereClauseForTable(qSchemaTable, selectStatement)
 				selectStatement = remapper.remapperTable.RemapOrderByForTable(qSchemaTable, selectStatement)
 			} else if fromNode.GetRangeSubselect() != nil {
@@ -357,7 +355,7 @@ func (remapper *QueryRemapper) remapJoinExpressions(selectStatement *pgQuery.Sel
 	} else if leftJoinNode.GetRangeVar() != nil {
 		// WHERE
 		remapper.traceTreeTraversal("WHERE left", indentLevel+1)
-		qSchemaTable := remapper.parserTable.NodeToQuerySchemaTable(leftJoinNode)
+		qSchemaTable := remapper.remapperTable.NodeToQuerySchemaTable(leftJoinNode)
 		selectStatement = remapper.remapperTable.RemapWhereClauseForTable(qSchemaTable, selectStatement)
 		selectStatement = remapper.remapperTable.RemapOrderByForTable(qSchemaTable, selectStatement)
 		// TABLE
@@ -376,7 +374,7 @@ func (remapper *QueryRemapper) remapJoinExpressions(selectStatement *pgQuery.Sel
 	} else if rightJoinNode.GetRangeVar() != nil {
 		// WHERE
 		remapper.traceTreeTraversal("WHERE right", indentLevel+1)
-		qSchemaTable := remapper.parserTable.NodeToQuerySchemaTable(rightJoinNode)
+		qSchemaTable := remapper.remapperTable.NodeToQuerySchemaTable(rightJoinNode)
 		selectStatement = remapper.remapperTable.RemapWhereClauseForTable(qSchemaTable, selectStatement)
 		remapper.remapperTable.RemapOrderByForTable(qSchemaTable, selectStatement)
 		// TABLE
@@ -390,7 +388,28 @@ func (remapper *QueryRemapper) remapJoinExpressions(selectStatement *pgQuery.Sel
 
 	remapper.traceTreeTraversal("JOIN on", indentLevel)
 	if node.GetJoinExpr().Quals != nil {
-		node.GetJoinExpr().Quals = remapper.remapTypeCastsInNode(node.GetJoinExpr().Quals) // recursive
+		node.GetJoinExpr().Quals = remapper.remapTypeCastsInNode(node.GetJoinExpr().Quals) // recursion
+
+		// DuckDB doesn't support non-INNER JOINs with ON clauses that reference columns from outer tables:
+		//
+		//   SELECT (
+		//     SELECT 1 AS test FROM (SELECT 1 AS inner_val) LEFT JOIN (SELECT NULL) ON inner_val = *outer_val*
+		//   ) FROM (SELECT 1 AS outer_val)
+		//
+		//   > "Non-inner join on correlated columns not supported"
+		//
+		// References:
+		// - https://github.com/duckdb/duckdb/blob/f6ae05d0a23cae549c6f612026eda27130fe1600/src/planner/joinside.cpp#L63
+		// - https://github.com/duckdb/duckdb/discussions/16012
+		if node.GetJoinExpr().Jointype != pgQuery.JoinType_JOIN_INNER {
+			// Change the JOIN type to INNER in some cases like: ON ... = indclass[i] (sent via Postico)
+			if indentLevel > 2 && node.GetJoinExpr().Quals.GetAExpr() != nil && node.GetJoinExpr().Quals.GetAExpr().Rexpr.GetAIndirection() != nil {
+				rightIndirectionColumnRef := node.GetJoinExpr().Quals.GetAExpr().Rexpr.GetAIndirection().Arg.GetColumnRef().Fields[0].GetString_().Sval
+				if rightIndirectionColumnRef == "indclass" {
+					node.GetJoinExpr().Jointype = pgQuery.JoinType_JOIN_INNER
+				}
+			}
+		}
 	}
 
 	return node
