@@ -32,6 +32,8 @@ const (
 	ENV_PG_INCLUDE_TABLES  = "PG_INCLUDE_TABLES"
 	ENV_PG_EXCLUDE_TABLES  = "PG_EXCLUDE_TABLES"
 
+	ENV_DISABLE_ANONYMOUS_ANALYTICS     = "DISABLE_ANONYMOUS_ANALYTICS"
+
 	DEFAULT_PORT              = "54321"
 	DEFAULT_DATABASE          = "bemidb"
 	DEFAULT_USER              = ""
@@ -78,6 +80,7 @@ type Config struct {
 	StoragePath       string
 	Aws               AwsConfig
 	Pg                PgConfig
+	DisableAnalytics  bool
 }
 
 type configParseValues struct {
@@ -117,6 +120,7 @@ func registerFlags() {
 	flag.StringVar(&_config.Aws.S3Bucket, "aws-s3-bucket", os.Getenv(ENV_AWS_S3_BUCKET), "AWS S3 bucket name")
 	flag.StringVar(&_config.Aws.AccessKeyId, "aws-access-key-id", os.Getenv(ENV_AWS_ACCESS_KEY_ID), "AWS access key ID")
 	flag.StringVar(&_config.Aws.SecretAccessKey, "aws-secret-access-key", os.Getenv(ENV_AWS_SECRET_ACCESS_KEY), "AWS secret access key")
+	flag.BoolVar(&_config.DisableAnalytics, "disable-anonymous-analytics", os.Getenv(ENV_DISABLE_ANONYMOUS_ANALYTICS) == "true", "Disable anonymous analytics collection")
 }
 
 func parseFlags() {
