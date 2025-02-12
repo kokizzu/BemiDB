@@ -839,6 +839,13 @@ func TestHandleQuery(t *testing.T) {
 			"values":      {"10", "bemidb"},
 		},
 
+		// ORDER BY
+		"SELECT ARRAY(SELECT 1 FROM pg_enum ORDER BY enumsortorder) AS array": {
+			"description": {"array"},
+			"types":       {Uint32ToString(pgtype.Int4ArrayOID)},
+			"values":      {"{}"},
+		},
+
 		// Table alias
 		"SELECT pg_shadow.usename FROM pg_shadow": {
 			"description": {"usename"},

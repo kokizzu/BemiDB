@@ -391,11 +391,9 @@ func (remapper *QueryRemapper) remapJoinExpressions(selectStatement *pgQuery.Sel
 		node.GetJoinExpr().Quals = remapper.remapTypeCastsInNode(node.GetJoinExpr().Quals) // recursion
 
 		// DuckDB doesn't support non-INNER JOINs with ON clauses that reference columns from outer tables:
-		//
 		//   SELECT (
 		//     SELECT 1 AS test FROM (SELECT 1 AS inner_val) LEFT JOIN (SELECT NULL) ON inner_val = *outer_val*
 		//   ) FROM (SELECT 1 AS outer_val)
-		//
 		//   > "Non-inner join on correlated columns not supported"
 		//
 		// References:
@@ -457,8 +455,18 @@ func (remapper *QueryRemapper) remapSelect(selectStatement *pgQuery.SelectStmt, 
 			remapper.remapCaseExpressions(selectStatement, indentLevel) // recursive
 		} else if targetNode.GetResTarget().Val.GetSubLink() != nil {
 			// Nested SELECT
-			subSelect := targetNode.GetResTarget().Val.GetSubLink().Subselect.GetSelectStmt()
+			subLink := targetNode.GetResTarget().Val.GetSubLink()
+			subSelect := subLink.Subselect.GetSelectStmt()
 			remapper.remapSelectStatement(subSelect, indentLevel+1) // recursive
+
+			// DuckDB doesn't work with ORDER BY in ARRAY subqueries:
+			//   SELECT ARRAY(SELECT 1 FROM pg_enum ORDER BY enumsortorder)
+			//   > Referenced column "enumsortorder" not found in FROM clause!
+			//
+			// Remove ORDER BY from ARRAY subqueries
+			if subLink.SubLinkType == pgQuery.SubLinkType_ARRAY_SUBLINK && subSelect.SortClause != nil {
+				subSelect.SortClause = nil
+			}
 		} else if targetNode.GetResTarget().Val.GetCoalesceExpr() != nil {
 			// COALESCE(value1, value2, ...)
 			coalesceExpr := targetNode.GetResTarget().Val.GetCoalesceExpr()
