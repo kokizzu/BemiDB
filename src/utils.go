@@ -9,6 +9,7 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 	"os"
 	"strconv"
+	"unicode"
 )
 
 func PanicIfError(err error, message ...string) {
@@ -65,6 +66,15 @@ func StringToScramSha256(password string) string {
 		base64.StdEncoding.EncodeToString(storedKeyHash),
 		base64.StdEncoding.EncodeToString(serverKeyHash),
 	)
+}
+
+func StringContainsUpper(str string) bool {
+	for _, char := range str {
+		if unicode.IsUpper(char) {
+			return true
+		}
+	}
+	return false
 }
 
 func hmacSha256Hash(key []byte, message []byte) []byte {

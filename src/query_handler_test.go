@@ -672,7 +672,7 @@ func TestHandleQuery(t *testing.T) {
 		},
 
 		// Type casts
-		"SELECT 'public.test_table'::regclass::oid AS oid": {
+		"SELECT '\"public\".\"test_table\"'::regclass::oid AS oid": {
 			"description": {"oid"},
 			"types":       {Uint32ToString(pgtype.OIDOID)},
 			"values":      {"1270"},
@@ -680,7 +680,7 @@ func TestHandleQuery(t *testing.T) {
 		"SELECT attrelid FROM pg_attribute WHERE attrelid = '\"public\".\"test_table\"'::regclass": {
 			"description": {"attrelid"},
 			"types":       {Uint32ToString(pgtype.Int8OID)},
-			"values":      {},
+			"values":      {"1270"},
 		},
 		"SELECT objoid, classoid, objsubid, description FROM pg_description WHERE classoid = 'pg_class'::regclass": {
 			"description": {"objoid", "classoid", "objsubid", "description"},
