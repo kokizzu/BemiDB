@@ -32,7 +32,7 @@ const (
 	ENV_PG_INCLUDE_TABLES  = "PG_INCLUDE_TABLES"
 	ENV_PG_EXCLUDE_TABLES  = "PG_EXCLUDE_TABLES"
 
-	ENV_DISABLE_ANONYMOUS_ANALYTICS     = "DISABLE_ANONYMOUS_ANALYTICS"
+	ENV_DISABLE_ANONYMOUS_ANALYTICS = "DISABLE_ANONYMOUS_ANALYTICS"
 
 	DEFAULT_PORT              = "54321"
 	DEFAULT_DATABASE          = "bemidb"
@@ -60,12 +60,12 @@ type AwsConfig struct {
 
 type PgConfig struct {
 	DatabaseUrl    string
-	SyncInterval   string // optional
-	SchemaPrefix   string // optional
-	IncludeSchemas *Set   // optional
-	ExcludeSchemas *Set   // optional
-	IncludeTables  *Set   // optional
-	ExcludeTables  *Set   // optional
+	SyncInterval   string      // optional
+	SchemaPrefix   string      // optional
+	IncludeSchemas Set[string] // optional
+	ExcludeSchemas Set[string] // optional
+	IncludeTables  Set[string] // optional
+	ExcludeTables  Set[string] // optional
 }
 
 type Config struct {

@@ -15,7 +15,7 @@ func (reader *IcebergReader) Schemas() (icebergSchemas []string, err error) {
 	return reader.storage.IcebergSchemas()
 }
 
-func (reader *IcebergReader) SchemaTables() (icebergSchemaTables []IcebergSchemaTable, err error) {
+func (reader *IcebergReader) SchemaTables() (icebergSchemaTables Set[IcebergSchemaTable], err error) {
 	LogDebug(reader.config, "Reading Iceberg tables...")
 	return reader.storage.IcebergSchemaTables()
 }

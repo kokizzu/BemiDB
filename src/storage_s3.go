@@ -70,7 +70,8 @@ func (storage *StorageS3) IcebergSchemas() (icebergSchemas []string, err error) 
 	return icebergSchemas, nil
 }
 
-func (storage *StorageS3) IcebergSchemaTables() (icebergSchemaTables []IcebergSchemaTable, err error) {
+func (storage *StorageS3) IcebergSchemaTables() (Set[IcebergSchemaTable], error) {
+	icebergSchemaTables := make(Set[IcebergSchemaTable])
 	icebergSchemas, err := storage.IcebergSchemas()
 	if err != nil {
 		return nil, err
@@ -86,7 +87,7 @@ func (storage *StorageS3) IcebergSchemaTables() (icebergSchemaTables []IcebergSc
 			tableParts := strings.Split(tablePrefix, "/")
 			table := tableParts[len(tableParts)-2]
 
-			icebergSchemaTables = append(icebergSchemaTables, IcebergSchemaTable{Schema: icebergSchema, Table: table})
+			icebergSchemaTables.Add(IcebergSchemaTable{Schema: icebergSchema, Table: table})
 		}
 	}
 

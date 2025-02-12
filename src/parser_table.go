@@ -107,11 +107,11 @@ func (parser *ParserTable) MakePgUserNode(user string, alias string) *pgQuery.No
 }
 
 // pg_catalog.pg_stat_user_tables -> VALUES(values...) t(columns...)
-func (parser *ParserTable) MakePgStatUserTablesNode(schemaTables []IcebergSchemaTable, alias string) *pgQuery.Node {
+func (parser *ParserTable) MakePgStatUserTablesNode(schemaTables Set[IcebergSchemaTable], alias string) *pgQuery.Node {
 	tableDef := PG_STAT_USER_TABLES_DEFINITION
 	var rowsValues [][]string
 
-	for _, schemaTable := range schemaTables {
+	for _, schemaTable := range schemaTables.Values() {
 		values := tableDef.Values
 
 		for i, col := range tableDef.Columns {

@@ -34,7 +34,8 @@ func (storage *StorageLocal) IcebergSchemas() (icebergSchemas []string, err erro
 	return icebergSchemas, nil
 }
 
-func (storage *StorageLocal) IcebergSchemaTables() (icebergSchemaTables []IcebergSchemaTable, err error) {
+func (storage *StorageLocal) IcebergSchemaTables() (Set[IcebergSchemaTable], error) {
+	icebergSchemaTables := make(Set[IcebergSchemaTable])
 	schemasPath := storage.absoluteIcebergPath()
 	icebergSchemas, err := storage.IcebergSchemas()
 	if err != nil {
@@ -49,7 +50,7 @@ func (storage *StorageLocal) IcebergSchemaTables() (icebergSchemaTables []Iceber
 		}
 
 		for _, table := range tables {
-			icebergSchemaTables = append(icebergSchemaTables, IcebergSchemaTable{Schema: icebergSchema, Table: table})
+			icebergSchemaTables.Add(IcebergSchemaTable{Schema: icebergSchema, Table: table})
 		}
 	}
 

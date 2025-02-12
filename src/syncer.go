@@ -319,7 +319,7 @@ func (syncer *Syncer) deleteOldIcebergSchemaTables(pgSchemaTables []PgSchemaTabl
 	icebergSchemaTables, err := syncer.icebergReader.SchemaTables()
 	PanicIfError(err)
 
-	for _, icebergSchemaTable := range icebergSchemaTables {
+	for _, icebergSchemaTable := range icebergSchemaTables.Values() {
 		found := false
 		for _, pgSchemaTable := range prefixedPgSchemaTables {
 			if icebergSchemaTable.String() == pgSchemaTable.String() {

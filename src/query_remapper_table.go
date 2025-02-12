@@ -12,7 +12,7 @@ type QueryRemapperTable struct {
 	parserTable         *ParserTable
 	parserWhere         *ParserWhere
 	parserFunction      *ParserFunction
-	icebergSchemaTables []IcebergSchemaTable
+	icebergSchemaTables Set[IcebergSchemaTable]
 	icebergReader       *IcebergReader
 	duckdb              *Duckdb
 	config              *Config
@@ -52,46 +52,54 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 		case PG_TABLE_PG_ROLES:
 			return parser.MakePgRolesNode(remapper.config.User, qSchemaTable.Alias)
 
-		// pg_catalog.pg_class -> reload Iceberg tables
-		case PG_TABLE_PG_CLASS:
-			remapper.reloadIceberSchemaTables()
-			return node
-
-		// pg_catalog.pg_inherits -> return nothing
-		case PG_TABLE_PG_INHERITS:
-			return parser.MakeEmptyTableNode(PG_TABLE_PG_INHERITS, PG_INHERITS_DEFINITION, qSchemaTable.Alias)
-
-		// pg_catalog.pg_shdescription -> return nothing
-		case PG_TABLE_PG_SHDESCRIPTION:
-			return parser.MakeEmptyTableNode(PG_TABLE_PG_SHDESCRIPTION, PG_SHDESCRIPTION_DEFINITION, qSchemaTable.Alias)
-
-		// pg_catalog.pg_statio_user_tables -> return nothing
-		case PG_TABLE_PG_STATIO_USER_TABLES:
-			return parser.MakeEmptyTableNode(PG_TABLE_PG_STATIO_USER_TABLES, PG_STATIO_USER_TABLES_DEFINITION, qSchemaTable.Alias)
-
 		// pg_catalog.pg_extension -> return hard-coded extension info
 		case PG_TABLE_PG_EXTENSION:
 			return parser.MakePgExtensionNode(qSchemaTable.Alias)
-
-		// pg_replication_slots -> return nothing
-		case PG_TABLE_PG_REPLICATION_SLOTS:
-			return parser.MakeEmptyTableNode(PG_TABLE_PG_REPLICATION_SLOTS, PG_REPLICATION_SLOTS_DEFINITION, qSchemaTable.Alias)
 
 		// pg_catalog.pg_database -> return hard-coded database info
 		case PG_TABLE_PG_DATABASE:
 			return parser.MakePgDatabaseNode(remapper.config.Database, qSchemaTable.Alias)
 
-		// pg_catalog.pg_stat_gssapi -> return nothing
+		// pg_catalog.pg_user -> return hard-coded user info
+		case PG_TABLE_PG_USER:
+			return parser.MakePgUserNode(remapper.config.User, qSchemaTable.Alias)
+
+		// pg_stat_user_tables -> return hard-coded table info
+		case PG_TABLE_PG_STAT_USER_TABLES:
+			return parser.MakePgStatUserTablesNode(remapper.icebergSchemaTables, qSchemaTable.Alias)
+
+		// pg_collation -> return hard-coded collation (encoding) info
+		case PG_TABLE_PG_COLLATION:
+			return parser.MakePgCollationNode(qSchemaTable.Alias)
+
+		// pg_index -> returns (SELECT *, FALSE AS indnullsnotdistinct FROM pg_index)
+		// DuckDB does not support indnullsnotdistinct column
+		case PG_TABLE_PG_INDEX:
+			return parser.MakePgIndexNode(qSchemaTable)
+
+		// pg_catalog.pg_inherits -> return empty table
+		case PG_TABLE_PG_INHERITS:
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_INHERITS, PG_INHERITS_DEFINITION, qSchemaTable.Alias)
+
+		// pg_catalog.pg_shdescription -> return empty table
+		case PG_TABLE_PG_SHDESCRIPTION:
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_SHDESCRIPTION, PG_SHDESCRIPTION_DEFINITION, qSchemaTable.Alias)
+
+		// pg_catalog.pg_statio_user_tables -> return empty table
+		case PG_TABLE_PG_STATIO_USER_TABLES:
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_STATIO_USER_TABLES, PG_STATIO_USER_TABLES_DEFINITION, qSchemaTable.Alias)
+
+		// pg_replication_slots -> return empty table
+		case PG_TABLE_PG_REPLICATION_SLOTS:
+			return parser.MakeEmptyTableNode(PG_TABLE_PG_REPLICATION_SLOTS, PG_REPLICATION_SLOTS_DEFINITION, qSchemaTable.Alias)
+
+		// pg_catalog.pg_stat_gssapi -> return empty table
 		case PG_TABLE_PG_STAT_GSSAPI:
 			return parser.MakeEmptyTableNode(PG_TABLE_PG_STAT_GSSAPI, PG_STAT_GSSAPI_DEFINITION, qSchemaTable.Alias)
 
 		// pg_catalog.pg_auth_members -> return empty table
 		case PG_TABLE_PG_AUTH_MEMBERS:
 			return parser.MakeEmptyTableNode(PG_TABLE_PG_AUTH_MEMBERS, PG_AUTH_MEMBERS_DEFINITION, qSchemaTable.Alias)
-
-		// pg_catalog.pg_user -> return hard-coded user info
-		case PG_TABLE_PG_USER:
-			return parser.MakePgUserNode(remapper.config.User, qSchemaTable.Alias)
 
 		// pg_stat_activity -> return empty table
 		case PG_TABLE_PG_STAT_ACTIVITY:
@@ -105,24 +113,18 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 		case PG_TABLE_PG_MATVIEWS:
 			return parser.MakeEmptyTableNode(PG_TABLE_PG_MATVIEWS, PG_MATVIEWS_DEFINITION, qSchemaTable.Alias)
 
-		// pg_stat_user_tables -> return hard-coded table info
-		case PG_TABLE_PG_STAT_USER_TABLES:
-			return parser.MakePgStatUserTablesNode(remapper.icebergSchemaTables, qSchemaTable.Alias)
-
-		// pg_collation -> return hard-coded collation (encoding) info
-		case PG_TABLE_PG_COLLATION:
-			return parser.MakePgCollationNode(qSchemaTable.Alias)
-
 		// pg_opclass -> return empty table
 		case PG_TABLE_PG_OPCLASS:
 			return parser.MakeEmptyTableNode(PG_TABLE_PG_OPCLASS, PG_OPCLASS_DEFINITION, qSchemaTable.Alias)
 
-		// pg_index -> returns (SELECT *, FALSE AS indnullsnotdistinct FROM pg_index)
-		case PG_TABLE_PG_INDEX:
-			return parser.MakePgIndexNode(qSchemaTable)
-
 		// pg_catalog.pg_* other system tables -> return as is
 		default:
+			// pg_catalog.pg_class -> reload Iceberg tables
+			switch qSchemaTable.Table {
+			case PG_TABLE_PG_CLASS:
+				remapper.reloadIceberSchemaTables()
+			}
+
 			return node
 		}
 	}
@@ -147,9 +149,9 @@ func (remapper *QueryRemapperTable) RemapTable(node *pgQuery.Node) *pgQuery.Node
 		qSchemaTable.Schema = PG_SCHEMA_PUBLIC
 	}
 	schemaTable := qSchemaTable.ToIcebergSchemaTable()
-	if !remapper.icebergSchemaTableExists(schemaTable) {
+	if !remapper.icebergSchemaTables.Contains(schemaTable) {
 		remapper.reloadIceberSchemaTables()
-		if !remapper.icebergSchemaTableExists(schemaTable) {
+		if !remapper.icebergSchemaTables.Contains(schemaTable) {
 			return node // Let it return "Catalog Error: Table with name _ does not exist!"
 		}
 	}
@@ -220,38 +222,23 @@ func (remapper *QueryRemapperTable) RemapWhereClauseForTable(qSchemaTable QueryS
 	return selectStatement
 }
 
-func (remapper *QueryRemapperTable) RemapOrderByForTable(qSchemaTable QuerySchemaTable, selectStatement *pgQuery.SelectStmt) *pgQuery.SelectStmt {
-	if remapper.isTableFromPgCatalog(qSchemaTable) {
-		switch qSchemaTable.Table {
-
-		// FROM pg_catalog.pg_attribute ORDER BY ... -> FROM pg_catalog.pg_attribute
-		case PG_TABLE_PG_ATTRIBUTE:
-			return remapper.parserTable.RemoveOrderBy(selectStatement)
-		}
-	}
-
-	return selectStatement
-}
-
 func (remapper *QueryRemapperTable) reloadIceberSchemaTables() {
-	icebergSchemaTables, err := remapper.icebergReader.SchemaTables()
+	newIcebergSchemaTables, err := remapper.icebergReader.SchemaTables()
 	PanicIfError(err)
 
 	ctx := context.Background()
-	for _, icebergSchemaTable := range icebergSchemaTables {
-		remapper.duckdb.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS "+icebergSchemaTable.String()+" (id INT)", nil)
-	}
-
-	remapper.icebergSchemaTables = icebergSchemaTables
-}
-
-func (remapper *QueryRemapperTable) icebergSchemaTableExists(schemaTable IcebergSchemaTable) bool {
-	for _, icebergSchemaTable := range remapper.icebergSchemaTables {
-		if icebergSchemaTable == schemaTable {
-			return true
+	for _, icebergSchemaTable := range newIcebergSchemaTables.Values() {
+		if !remapper.icebergSchemaTables.Contains(icebergSchemaTable) {
+			remapper.duckdb.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS "+icebergSchemaTable.String()+" (id INT)", nil)
 		}
 	}
-	return false
+	for _, icebergSchemaTable := range remapper.icebergSchemaTables.Values() {
+		if !newIcebergSchemaTables.Contains(icebergSchemaTable) {
+			remapper.duckdb.ExecContext(ctx, "DROP TABLE IF EXISTS "+icebergSchemaTable.String(), nil)
+		}
+	}
+
+	remapper.icebergSchemaTables = newIcebergSchemaTables
 }
 
 // System pg_* tables
@@ -259,7 +246,7 @@ func (remapper *QueryRemapperTable) isTableFromPgCatalog(qSchemaTable QuerySchem
 	return qSchemaTable.Schema == PG_SCHEMA_PG_CATALOG ||
 		(qSchemaTable.Schema == "" &&
 			(PG_SYSTEM_TABLES.Contains(qSchemaTable.Table) || PG_SYSTEM_VIEWS.Contains(qSchemaTable.Table)) &&
-			!remapper.icebergSchemaTableExists(qSchemaTable.ToIcebergSchemaTable()))
+			!remapper.icebergSchemaTables.Contains(qSchemaTable.ToIcebergSchemaTable()))
 }
 
 func (remapper *QueryRemapperTable) isFunctionFromPgCatalog(schemaFunction PgSchemaFunction) bool {

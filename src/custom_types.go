@@ -48,14 +48,10 @@ func (orderedMap *OrderedMap) Values() []string {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-type Set struct {
-	valueByItem map[string]bool
-}
+type Set[T comparable] map[T]struct{}
 
-func NewSet(items []string) *Set {
-	set := &Set{
-		valueByItem: make(map[string]bool),
-	}
+func NewSet[T comparable](items []T) Set[T] {
+	set := make(Set[T])
 
 	for _, item := range items {
 		set.Add(item)
@@ -64,13 +60,22 @@ func NewSet(items []string) *Set {
 	return set
 }
 
-func (set *Set) Add(item string) {
-	set.valueByItem[item] = true
+func (set Set[T]) Add(item T) {
+	set[item] = struct{}{}
 }
 
-func (set *Set) Contains(item string) bool {
-	_, ok := set.valueByItem[item]
+func (set Set[T]) Contains(item T) bool {
+	_, ok := set[item]
 	return ok
+}
+
+func (set Set[T]) Values() []T {
+	values := make([]T, 0, len(set))
+	for val := range set {
+		values = append(values, val)
+	}
+
+	return values
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
