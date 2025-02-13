@@ -25,6 +25,7 @@ CREATE TABLE test_table (
   float4_column FLOAT4,
   float8_column FLOAT8,
   numeric_column NUMERIC(40, 2),
+  numeric_column_without_precision NUMERIC,
   date_column DATE,
   time_column TIME,
   timeMsColumn TIME(3),
@@ -65,6 +66,7 @@ INSERT INTO test_table (
   float4_column,
   float8_column,
   numeric_column,
+  numeric_column_without_precision,
   date_column,
   time_column,
   timeMsColumn,
@@ -103,6 +105,7 @@ INSERT INTO test_table (
   3.14::FLOAT4,                             -- float4_column
   3.141592653589793::FLOAT8,                -- float8_column
   12345.67::NUMERIC(10, 2),                 -- numeric_column
+  12345.67,                                 -- numeric_column_without_precision
   '2024-01-01',                             -- date_column
   '12:00:00.123456',                        -- time_column
   '12:00:00.123',                           -- timeMsColumn
@@ -141,6 +144,7 @@ INSERT INTO test_table (
   'NaN',                                    -- float4_column
   -3.141592653589793::FLOAT8,               -- float8_column
   -12345.00::NUMERIC(10, 2),                -- numeric_column
+  NULL,                                     -- numeric_column_without_precision
   NULL,                                     -- date_column
   '12:00:00.123',                           -- time_column
   NULL,                                     -- timeMsColumn

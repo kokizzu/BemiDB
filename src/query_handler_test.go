@@ -445,6 +445,16 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.NumericOID)},
 			"values":      {"-12345"},
 		},
+		"SELECT numeric_column_without_precision FROM public.test_table WHERE numeric_column_without_precision IS NOT NULL": {
+			"description": {"numeric_column_without_precision"},
+			"types":       {Uint32ToString(pgtype.NumericOID)},
+			"values":      {"12345.67"},
+		},
+		"SELECT numeric_column_without_precision FROM public.test_table WHERE numeric_column_without_precision IS NULL": {
+			"description": {"numeric_column_without_precision"},
+			"types":       {Uint32ToString(pgtype.NumericOID)},
+			"values":      {""},
+		},
 		"SELECT date_column FROM public.test_table WHERE date_column IS NOT NULL": {
 			"description": {"date_column"},
 			"types":       {Uint32ToString(pgtype.DateOID)},
@@ -685,7 +695,7 @@ func TestHandleQuery(t *testing.T) {
 		"SELECT COUNT(*) AS count FROM pg_attribute WHERE attrelid = '\"public\".\"test_table\"'::regclass": {
 			"description": {"count"},
 			"types":       {Uint32ToString(pgtype.Int8OID)},
-			"values":      {"38"},
+			"values":      {"39"},
 		},
 		"SELECT objoid, classoid, objsubid, description FROM pg_description WHERE classoid = 'pg_class'::regclass": {
 			"description": {"objoid", "classoid", "objsubid", "description"},

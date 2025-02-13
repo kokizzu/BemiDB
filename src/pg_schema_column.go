@@ -20,6 +20,7 @@ const (
 
 	PARQUET_NAN                   = "NaN"
 	PARQUET_MAX_DECIMAL_PRECISION = 38
+	PARQUET_UUID_LENGTH           = 36
 
 	// 0000-01-01 00:00:00 +0000 UTC
 	EPOCH_TIME_MS = -62167219200000
@@ -188,13 +189,16 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 		PanicIfError(err)
 		if precision > PARQUET_MAX_DECIMAL_PRECISION {
 			precision = PARQUET_MAX_DECIMAL_PRECISION
+		} else if precision == 0 {
+			precision = PARQUET_MAX_DECIMAL_PRECISION / 2
+			scale = PARQUET_MAX_DECIMAL_PRECISION / 2
 		}
 
 		parquetSchemaField.Scale = IntToString(scale)
 		parquetSchemaField.Precision = IntToString(precision)
 		parquetSchemaField.Length = IntToString(scale + precision)
 	case "uuid":
-		parquetSchemaField.Length = "36"
+		parquetSchemaField.Length = IntToString(PARQUET_UUID_LENGTH)
 	default:
 		if pgSchemaColumn.DataType == PG_DATA_TYPE_ARRAY {
 			parquetSchemaField.NestedType = parquetSchemaField.Type
@@ -376,6 +380,10 @@ func (pgSchemaColumn *PgSchemaColumn) icebergPrimitiveType() string {
 	case "float4", "float8":
 		return "float"
 	case "numeric":
+		if pgSchemaColumn.NumericScale == "0" {
+			return "decimal"
+		}
+
 		precision, err := StringToInt(pgSchemaColumn.NumericPrecision)
 		PanicIfError(err)
 		if precision > PARQUET_MAX_DECIMAL_PRECISION {

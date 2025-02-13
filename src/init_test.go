@@ -105,6 +105,14 @@ var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 		Namespace:        "pg_catalog",
 	},
 	{
+		ColumnName:       "numeric_column_without_precision",
+		DataType:         "numeric",
+		UdtName:          "numeric",
+		NumericPrecision: "0", // Will be changed to 19
+		NumericScale:     "0", // Will be changed to 19
+		Namespace:        "pg_catalog",
+	},
+	{
 		ColumnName:        "date_column",
 		DataType:          "date",
 		UdtName:           "date",
@@ -277,6 +285,7 @@ var TEST_LOADED_ROWS = [][]string{
 		"3.14",                                 // float4_column
 		"3.141592653589793",                    // float8_column
 		"12345.67",                             // numeric_column
+		"12345.67",                             // numeric_column_without_precision
 		"2021-01-01",                           // date_column
 		"12:00:00.123456",                      // time_column
 		"12:00:00.123",                         // timeMsColumn
@@ -317,6 +326,7 @@ var TEST_LOADED_ROWS = [][]string{
 		"NaN",                              // float4_column
 		"-3.141592653589793",               // float8_column
 		"-12345.00",                        // numeric_column
+		PG_NULL_STRING,                     // numeric_column_without_precision
 		PG_NULL_STRING,                     // date_column
 		"12:00:00.123",                     // time_column
 		PG_NULL_STRING,                     // timeMsColumn
