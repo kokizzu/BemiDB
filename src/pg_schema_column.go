@@ -18,8 +18,8 @@ const (
 	PARQUET_SCHEMA_REPETITION_TYPE_REQUIRED = "REQUIRED"
 	PARQUET_SCHEMA_REPETITION_TYPE_OPTIONAL = "OPTIONAL"
 
-	PARQUET_NAN           = "NaN"
-	PARQUET_MAX_PRECISION = 38
+	PARQUET_NAN                   = "NaN"
+	PARQUET_MAX_DECIMAL_PRECISION = 38
 
 	// 0000-01-01 00:00:00 +0000 UTC
 	EPOCH_TIME_MS = -62167219200000
@@ -186,8 +186,8 @@ func (pgSchemaColumn *PgSchemaColumn) toParquetSchemaField() ParquetSchemaField 
 		PanicIfError(err)
 		precision, err := StringToInt(pgSchemaColumn.NumericPrecision)
 		PanicIfError(err)
-		if precision > PARQUET_MAX_PRECISION {
-			precision = PARQUET_MAX_PRECISION
+		if precision > PARQUET_MAX_DECIMAL_PRECISION {
+			precision = PARQUET_MAX_DECIMAL_PRECISION
 		}
 
 		parquetSchemaField.Scale = IntToString(scale)
@@ -376,7 +376,12 @@ func (pgSchemaColumn *PgSchemaColumn) icebergPrimitiveType() string {
 	case "float4", "float8":
 		return "float"
 	case "numeric":
-		return "decimal(" + pgSchemaColumn.NumericPrecision + ", " + pgSchemaColumn.NumericScale + ")"
+		precision, err := StringToInt(pgSchemaColumn.NumericPrecision)
+		PanicIfError(err)
+		if precision > PARQUET_MAX_DECIMAL_PRECISION {
+			precision = PARQUET_MAX_DECIMAL_PRECISION
+		}
+		return "decimal(" + IntToString(precision) + ", " + pgSchemaColumn.NumericScale + ")"
 	case "bool":
 		return "boolean"
 	case "date":

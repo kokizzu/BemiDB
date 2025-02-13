@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -92,6 +93,26 @@ func (storage *StorageS3) IcebergSchemaTables() (Set[IcebergSchemaTable], error)
 	}
 
 	return icebergSchemaTables, nil
+}
+
+func (storage *StorageS3) IcebergTableFields(icebergSchemaTable IcebergSchemaTable) ([]IcebergTableField, error) {
+	metadataPath := storage.tablePrefix(icebergSchemaTable, true) + "metadata/v1.metadata.json"
+
+	ctx := context.Background()
+	getObjectResponse, err := storage.s3Client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(storage.config.Aws.S3Bucket),
+		Key:    aws.String(metadataPath),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	metadataContent, err := io.ReadAll(getObjectResponse.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return storage.storageBase.ParseIcebergTableFields(metadataContent)
 }
 
 // Write ---------------------------------------------------------------------------------------------------------------

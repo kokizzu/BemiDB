@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -26,8 +27,52 @@ const (
 	VERSION_HINT_FILE_NAME = "version-hint.text"
 )
 
+type MetadataJson struct {
+	Schemas []struct {
+		Fields []struct {
+			ID       int         `json:"id"`
+			Name     string      `json:"name"`
+			Type     interface{} `json:"type"`
+			Required bool        `json:"required"`
+		} `json:"fields"`
+	} `json:"schemas"`
+}
+
 type StorageBase struct {
 	config *Config
+}
+
+func (storage *StorageBase) ParseIcebergTableFields(metadataContent []byte) ([]IcebergTableField, error) {
+	var metadataJson MetadataJson
+	err := json.Unmarshal(metadataContent, &metadataJson)
+	if err != nil {
+		return nil, err
+	}
+
+	var icebergTableFields []IcebergTableField
+	for _, schema := range metadataJson.Schemas {
+		if schema.Fields != nil {
+			for _, field := range schema.Fields {
+				icebergTableField := IcebergTableField{
+					Name: field.Name,
+				}
+
+				if reflect.TypeOf(field.Type).Kind() == reflect.String {
+					icebergTableField.Type = field.Type.(string)
+					icebergTableField.Required = field.Required
+				} else {
+					listType := field.Type.(map[string]interface{})
+					icebergTableField.Type = listType["element"].(string)
+					icebergTableField.Required = listType["element-required"].(bool)
+					icebergTableField.IsList = true
+				}
+
+				icebergTableFields = append(icebergTableFields, icebergTableField)
+			}
+		}
+	}
+
+	return icebergTableFields, nil
 }
 
 func (storage *StorageBase) WriteParquetFile(fileWriter source.ParquetFile, pgSchemaColumns []PgSchemaColumn, loadRows func() [][]string) (recordCount int64, err error) {

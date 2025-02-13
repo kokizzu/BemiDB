@@ -27,7 +27,7 @@ CREATE TABLE test_table (
   numeric_column NUMERIC(40, 2),
   date_column DATE,
   time_column TIME,
-  time_ms_column TIME(3),
+  timeMsColumn TIME(3),
   timetz_column TIMETZ,
   timetz_ms_column TIMETZ(3),
   timestamp_column TIMESTAMP,
@@ -67,7 +67,7 @@ INSERT INTO test_table (
   numeric_column,
   date_column,
   time_column,
-  time_ms_column,
+  timeMsColumn,
   timetz_column,
   timetz_ms_column,
   timestamp_column,
@@ -105,7 +105,7 @@ INSERT INTO test_table (
   12345.67::NUMERIC(10, 2),                 -- numeric_column
   '2024-01-01',                             -- date_column
   '12:00:00.123456',                        -- time_column
-  '12:00:00.123',                           -- time_ms_column
+  '12:00:00.123',                           -- timeMsColumn
   '12:00:00.123456-05',                     -- timetz_column
   '12:00:00.123-05',                        -- timetz_ms_column
   '2024-01-01 12:00:00.123456',             -- timestamp_column
@@ -143,7 +143,7 @@ INSERT INTO test_table (
   -12345.00::NUMERIC(10, 2),                -- numeric_column
   NULL,                                     -- date_column
   '12:00:00.123',                           -- time_column
-  NULL,                                     -- time_ms_column
+  NULL,                                     -- timeMsColumn
   '12:00:00.12300+05',                      -- timetz_column
   '12:00:00.1+05',                          -- timetz_ms_column
   '2024-01-01 12:00:00',                    -- timestamp_column

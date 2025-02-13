@@ -465,13 +465,13 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.TimeOID)},
 			"values":      {"12:00:00.123"},
 		},
-		"SELECT time_ms_column FROM public.test_table WHERE time_ms_column IS NOT NULL": {
-			"description": {"time_ms_column"},
+		"SELECT timeMsColumn FROM public.test_table WHERE timeMsColumn IS NOT NULL": {
+			"description": {"timeMsColumn"},
 			"types":       {Uint32ToString(pgtype.TimeOID)},
 			"values":      {"12:00:00.123"},
 		},
-		"SELECT time_ms_column FROM public.test_table WHERE time_ms_column IS NULL": {
-			"description": {"time_ms_column"},
+		"SELECT timeMsColumn FROM public.test_table WHERE timeMsColumn IS NULL": {
+			"description": {"timeMsColumn"},
 			"types":       {Uint32ToString(pgtype.TimeOID)},
 			"values":      {""},
 		},
@@ -677,10 +677,15 @@ func TestHandleQuery(t *testing.T) {
 			"types":       {Uint32ToString(pgtype.OIDOID)},
 			"values":      {"1270"},
 		},
-		"SELECT attrelid FROM pg_attribute WHERE attrelid = '\"public\".\"test_table\"'::regclass": {
+		"SELECT attrelid FROM pg_attribute WHERE attrelid = '\"public\".\"test_table\"'::regclass LIMIT 1": {
 			"description": {"attrelid"},
 			"types":       {Uint32ToString(pgtype.Int8OID)},
 			"values":      {"1270"},
+		},
+		"SELECT COUNT(*) AS count FROM pg_attribute WHERE attrelid = '\"public\".\"test_table\"'::regclass": {
+			"description": {"count"},
+			"types":       {Uint32ToString(pgtype.Int8OID)},
+			"values":      {"38"},
 		},
 		"SELECT objoid, classoid, objsubid, description FROM pg_description WHERE classoid = 'pg_class'::regclass": {
 			"description": {"objoid", "classoid", "objsubid", "description"},

@@ -20,6 +20,11 @@ func (reader *IcebergReader) SchemaTables() (icebergSchemaTables Set[IcebergSche
 	return reader.storage.IcebergSchemaTables()
 }
 
+func (reader *IcebergReader) TableFields(icebergSchemaTable IcebergSchemaTable) (icebergTableFields []IcebergTableField, err error) {
+	LogDebug(reader.config, "Reading Iceberg table "+icebergSchemaTable.String()+" fields...")
+	return reader.storage.IcebergTableFields(icebergSchemaTable)
+}
+
 func (reader *IcebergReader) MetadataFilePath(icebergSchemaTable IcebergSchemaTable) string {
 	return reader.storage.IcebergMetadataFilePath(icebergSchemaTable)
 }

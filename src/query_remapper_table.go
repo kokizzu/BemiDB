@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 
 	pgQuery "github.com/pganalyze/pg_query_go/v5"
 )
@@ -229,12 +230,22 @@ func (remapper *QueryRemapperTable) reloadIceberSchemaTables() {
 	ctx := context.Background()
 	for _, icebergSchemaTable := range newIcebergSchemaTables.Values() {
 		if !remapper.icebergSchemaTables.Contains(icebergSchemaTable) {
-			remapper.duckdb.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS "+icebergSchemaTable.String()+" (id INT)", nil)
+			icebergTableFields, err := remapper.icebergReader.TableFields(icebergSchemaTable)
+			PanicIfError(err)
+
+			var sqlColumns []string
+			for _, icebergTableField := range icebergTableFields {
+				sqlColumns = append(sqlColumns, icebergTableField.ToSql())
+			}
+
+			_, err = remapper.duckdb.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS "+icebergSchemaTable.String()+" ("+strings.Join(sqlColumns, ", ")+")", nil)
+			PanicIfError(err)
 		}
 	}
 	for _, icebergSchemaTable := range remapper.icebergSchemaTables.Values() {
 		if !newIcebergSchemaTables.Contains(icebergSchemaTable) {
-			remapper.duckdb.ExecContext(ctx, "DROP TABLE IF EXISTS "+icebergSchemaTable.String(), nil)
+			_, err = remapper.duckdb.ExecContext(ctx, "DROP TABLE IF EXISTS "+icebergSchemaTable.String(), nil)
+			PanicIfError(err)
 		}
 	}
 

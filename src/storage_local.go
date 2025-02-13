@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -55,6 +56,22 @@ func (storage *StorageLocal) IcebergSchemaTables() (Set[IcebergSchemaTable], err
 	}
 
 	return icebergSchemaTables, nil
+}
+
+func (storage *StorageLocal) IcebergTableFields(icebergSchemaTable IcebergSchemaTable) ([]IcebergTableField, error) {
+	metadataPath := storage.IcebergMetadataFilePath(icebergSchemaTable)
+	metadataFile, err := os.Open(metadataPath)
+	if err != nil {
+		return nil, err
+	}
+	defer metadataFile.Close()
+
+	metadataContent, err := io.ReadAll(metadataFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return storage.storageBase.ParseIcebergTableFields(metadataContent)
 }
 
 func (storage *StorageLocal) absoluteIcebergPath(relativePaths ...string) string {

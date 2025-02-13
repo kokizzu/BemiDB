@@ -119,7 +119,7 @@ var TEST_PG_SCHEMA_COLUMNS = []PgSchemaColumn{
 		Namespace:         "pg_catalog",
 	},
 	{
-		ColumnName:        "time_ms_column",
+		ColumnName:        "timeMsColumn",
 		DataType:          "time without time zone",
 		UdtName:           "time",
 		DatetimePrecision: "3",
@@ -279,7 +279,7 @@ var TEST_LOADED_ROWS = [][]string{
 		"12345.67",                             // numeric_column
 		"2021-01-01",                           // date_column
 		"12:00:00.123456",                      // time_column
-		"12:00:00.123",                         // time_ms_column
+		"12:00:00.123",                         // timeMsColumn
 		"12:00:00.123456-05",                   // timetz_column
 		"12:00:00.123-05",                      // timetz_ms_column
 		"2024-01-01 12:00:00.123456",           // timestamp_column
@@ -319,7 +319,7 @@ var TEST_LOADED_ROWS = [][]string{
 		"-12345.00",                        // numeric_column
 		PG_NULL_STRING,                     // date_column
 		"12:00:00.123",                     // time_column
-		PG_NULL_STRING,                     // time_ms_column
+		PG_NULL_STRING,                     // timeMsColumn
 		"12:00:00.12300+05",                // timetz_column
 		"12:00:00.1+05",                    // timetz_ms_column
 		"2024-01-01 12:00:00",              // timestamp_column

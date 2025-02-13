@@ -89,6 +89,31 @@ func (schemaTable IcebergSchemaTable) String() string {
 	return fmt.Sprintf(`"%s"."%s"`, schemaTable.Schema, schemaTable.Table)
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type IcebergTableField struct {
+	Name     string
+	Type     string
+	Required bool
+	IsList   bool
+}
+
+func (tableField IcebergTableField) ToSql() string {
+	sql := fmt.Sprintf(`"%s" %s`, tableField.Name, tableField.Type)
+
+	if tableField.IsList {
+		sql += "[]"
+	}
+
+	if tableField.Required {
+		sql += " NOT NULL"
+	}
+
+	return sql
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 type QuerySchemaTable struct {
 	Schema string
 	Table  string
@@ -122,6 +147,8 @@ func (qSchemaTable QuerySchemaTable) ToIcebergSchemaTable() IcebergSchemaTable {
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 type PgSchemaTable struct {
 	Schema                 string
 	Table                  string
@@ -138,6 +165,8 @@ func (pgSchemaTable PgSchemaTable) ToIcebergSchemaTable() IcebergSchemaTable {
 		Table:  pgSchemaTable.Table,
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type PgSchemaFunction struct {
 	Schema   string
